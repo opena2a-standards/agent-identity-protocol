@@ -88,7 +88,7 @@ Requirements:
 
 ### 2.1 Relationship to A2A-IDF identity levels
 
-AIP's `Local`, `Managed`, and `Federated` conformance levels describe *deployment topology* (what infrastructure operates the agent identity). The A2A Identity Trust Framework (A2A-IDF, `a2aproject/A2A#1496`) defines a separate three-level taxonomy of `SELF_ASSERTED`, `DOMAIN_VERIFIED`, and `ORGANIZATION_VERIFIED` that describes *provenance of identity binding* (how the identity claim was verified at discovery time). Both taxonomies apply independently to the same agent. A `Managed` AIP agent may be `DOMAIN_VERIFIED` or `ORGANIZATION_VERIFIED` under A2A-IDF; a `Local` AIP agent may be `SELF_ASSERTED` or `DOMAIN_VERIFIED`. AIP conformance does not constrain A2A-IDF level assignment and vice versa.
+AIP's `Local`, `Managed`, and `Federated` conformance levels describe *deployment topology* (what infrastructure operates the agent identity). The A2A Identity Trust Framework (A2A-IDF, `a2aproject/A2A#1496`) defines a separate three-level taxonomy of `SELF_ASSERTED`, `DOMAIN_VERIFIED`, and `ORGANIZATION_VERIFIED` that describes *provenance of identity binding* (how the identity claim was verified at discovery time). Both taxonomies apply independently to the same agent. A `Local` AIP agent may be `SELF_ASSERTED` or `DOMAIN_VERIFIED` under A2A-IDF; a `Managed` AIP agent may be `DOMAIN_VERIFIED` or `ORGANIZATION_VERIFIED`; a `Federated` AIP agent may be `DOMAIN_VERIFIED` or `ORGANIZATION_VERIFIED`. AIP conformance does not constrain A2A-IDF level assignment and vice versa.
 
 ---
 
@@ -405,7 +405,7 @@ trust_score = Σ (factor_weight * factor_score * confidence)
 
 Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 = sufficient data). Factors with no data are excluded and their weights redistributed proportionally.
 
-**Reference implementation.** The 9-factor algorithm above is implemented in the AIM (Agent Identity Management) reference implementation as the `TrustCalculator` service. AIP §6.1 specifies the factor set, weights, and composition rule; AIP-conformant implementations MAY substitute their own factor scoring functions provided the weights and 0.0-1.0 composite remain unchanged. The AIM `TrustCalculator` is the named reference number for "what trust looks like" in OpenA2A's ecosystem.
+**Reference implementation.** The 9-factor algorithm above is implemented in the AIM (Agent Identity Management) reference implementation as the `TrustCalculator` service. AIP §6.1 specifies the factor set, weights, and composition rule; AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged. The AIM `TrustCalculator` is the named reference implementation for AIP §6.1 in OpenA2A's ecosystem.
 
 ### 6.2 Trust Levels
 
@@ -804,7 +804,7 @@ The reference implementation's coverage is uneven and the gaps are tracked publi
 | §9 Audit (append-only) | Shipped, not cryptographically signed | `repository/audit_log_repository.go` enforces append-only at the repository layer. Hash-chain or signed-log fields (`signature`, `hash`, `previous_hash`) are not present; integrity relies on database-level access control today. |
 | Local offline verification | Go only | Standalone offline-verify package exists at the registry's `pkg/atcverify`. TypeScript, Python, and Java SDKs do not yet ship a local-verify library; offline verification is single-language today. |
 
-The runtime self-attestation and protocol-enforcement layer that AIP references is implemented today as a first-party module inside HMA (`hackmyagent/src/arp/`), not yet inside AIM. The AIM-side integration is on the AIM roadmap as a separate track.
+Note on runtime self-attestation and protocol-enforcement: AIP does not specify a runtime self-attestation layer (that surface belongs to ATX core §5 and the ARC runtime layer, not AIP). For ecosystem context: OpenA2A's reference implementation of the runtime layer ships today as a first-party module inside HMA (`hackmyagent/src/arp/`), not yet inside AIM. AIM-side integration is on the AIM roadmap as a separate track.
 
 ## Appendix B: Relationship to ATP
 
