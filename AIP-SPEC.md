@@ -86,6 +86,10 @@ Requirements:
 - Cross-platform capability negotiation (Section 4.3)
 - ATP integration for ecosystem trust (Section 6.5)
 
+### 2.1 Relationship to A2A-IDF identity levels
+
+AIP's `Local`, `Managed`, and `Federated` conformance levels describe *deployment topology* (what infrastructure operates the agent identity). The A2A Identity Trust Framework (A2A-IDF, `a2aproject/A2A#1496`) defines a separate three-level taxonomy of `SELF_ASSERTED`, `DOMAIN_VERIFIED`, and `ORGANIZATION_VERIFIED` that describes *provenance of identity binding* (how the identity claim was verified at discovery time). Both taxonomies apply independently to the same agent. A `Local` AIP agent may be `SELF_ASSERTED` or `DOMAIN_VERIFIED` under A2A-IDF; a `Managed` AIP agent may be `DOMAIN_VERIFIED` or `ORGANIZATION_VERIFIED`; a `Federated` AIP agent may be `DOMAIN_VERIFIED` or `ORGANIZATION_VERIFIED`. AIP conformance does not constrain A2A-IDF level assignment and vice versa.
+
 ---
 
 ## 3. Agent Identity
@@ -118,15 +122,17 @@ Both keys are generated simultaneously. Classical-only verifiers check the Ed255
 
 ### 3.2 Decentralized Identifier (DID)
 
-At Level 3, agents are identified by DIDs conforming to W3C DID Core:
+At Level 3, agents are identified by DIDs conforming to W3C DID Core. AIP uses the unified `did:opena2a` method shared with ATP (Agent Trust Protocol) and ATX (Agent Trust eXtension):
 
 ```
-did:aip:<agent_id>
+did:opena2a:<type>:<id>
 ```
+
+Where `<type>` is one of the registered type prefixes: `agent`, `authority`, `publisher`, `mcp_server`, `a2a_agent`, `skill`, `ai_tool`, `llm`. For agent identities at AIP Level 3, the type is `agent`.
 
 Example:
 ```
-did:aip:aim_7f3a9c2e
+did:opena2a:agent:aim_7f3a9c2e
 ```
 
 The DID Document includes the agent's public keys, capabilities, and service endpoints:
@@ -137,12 +143,12 @@ The DID Document includes the agent's public keys, capabilities, and service end
     "https://www.w3.org/ns/did/v1",
     "https://w3id.org/security/suites/ed25519-2020/v1"
   ],
-  "id": "did:aip:aim_7f3a9c2e",
-  "controller": "did:aip:org_acme",
+  "id": "did:opena2a:agent:aim_7f3a9c2e",
+  "controller": "did:opena2a:authority:org_acme",
   "verificationMethod": [{
-    "id": "did:aip:aim_7f3a9c2e#key-1",
+    "id": "did:opena2a:agent:aim_7f3a9c2e#key-1",
     "type": "Ed25519VerificationKey2020",
-    "controller": "did:aip:aim_7f3a9c2e",
+    "controller": "did:opena2a:agent:aim_7f3a9c2e",
     "publicKeyMultibase": "z6Mkf5rGMoatrSj1f..."
   }],
   "capabilityInvocation": ["#key-1"],
@@ -379,24 +385,27 @@ JWT claims:
 
 ### 6.1 Multi-Factor Algorithm
 
-AIP defines an 8-factor trust scoring algorithm. Each factor contributes a weighted score. The composite score is 0.0 (no trust) to 1.0 (full trust).
+AIP defines a 9-factor trust scoring algorithm. Each factor contributes a weighted score. The composite score is 0.0 (no trust) to 1.0 (full trust). Weights sum to 100.
 
 | Factor | Weight | Input | Score Range |
 |--------|--------|-------|-------------|
-| **Verification** | 25% | Signature verification success rate | 0.0-1.0 |
-| **Uptime** | 15% | Health check responsiveness | 0.0-1.0 |
-| **Success Rate** | 15% | Action completion rate | 0.0-1.0 |
-| **Security** | 15% | Active security alerts (weighted by severity) | 0.0-1.0 |
-| **Compliance** | 10% | Framework adherence (SOC 2, HIPAA, GDPR) | 0.0-1.0 |
-| **Age** | 10% | Operational history | <7d: 0.3, 7-30d: 0.5, 30-90d: 0.75, 90d+: 1.0 |
-| **Drift** | 5% | Behavioral consistency vs baseline | 0.0-1.0 |
-| **Feedback** | 5% | Explicit trust ratings from humans | 0.0-1.0 |
+| **Verification status** | 25% | Signature verification success rate | 0.0-1.0 |
+| **Uptime and availability** | 15% | Health check responsiveness | 0.0-1.0 |
+| **Action success rate** | 15% | Action completion rate | 0.0-1.0 |
+| **Security alerts** | 15% | Active security alerts (weighted by severity) | 0.0-1.0 |
+| **Compliance** | 10% | Framework adherence (SOC 2, HIPAA, GDPR, etc.) | 0.0-1.0 |
+| **Execution isolation** | 10% | Sandbox / process isolation posture | 0.0-1.0 |
+| **Age and history** | 5% | Operational history | <7d: 0.3, 7-30d: 0.5, 30-90d: 0.75, 90d+: 1.0 |
+| **Drift detection** | 3% | Behavioral consistency vs baseline | 0.0-1.0 |
+| **User feedback** | 2% | Explicit trust ratings from humans | 0.0-1.0 |
 
 ```
 trust_score = Σ (factor_weight * factor_score * confidence)
 ```
 
 Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 = sufficient data). Factors with no data are excluded and their weights redistributed proportionally.
+
+**Reference implementation.** The 9-factor algorithm above is implemented in the AIM (Agent Identity Management) reference implementation as the `TrustCalculator` service. AIP §6.1 specifies the factor set, weights, and composition rule; AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged. The AIM `TrustCalculator` is the named reference implementation for AIP §6.1 in OpenA2A's ecosystem.
 
 ### 6.2 Trust Levels
 
@@ -429,11 +438,11 @@ At Level 3, trust scores SHOULD be expressible as W3C Verifiable Credentials:
     "https://opena2a.org/credentials/v1"
   ],
   "type": ["VerifiableCredential", "AgentTrustCredential"],
-  "issuer": "did:aip:provider_opena2a",
+  "issuer": "did:opena2a:authority:provider_opena2a",
   "issuanceDate": "2026-03-22T14:00:00Z",
   "expirationDate": "2026-03-23T14:00:00Z",
   "credentialSubject": {
-    "id": "did:aip:aim_7f3a9c2e",
+    "id": "did:opena2a:agent:aim_7f3a9c2e",
     "trustScore": 0.82,
     "trustLevel": "standard",
     "capabilities": ["file:read", "api:call"],
@@ -443,7 +452,7 @@ At Level 3, trust scores SHOULD be expressible as W3C Verifiable Credentials:
   "proof": {
     "type": "Ed25519Signature2020",
     "created": "2026-03-22T14:00:00Z",
-    "verificationMethod": "did:aip:provider_opena2a#key-1",
+    "verificationMethod": "did:opena2a:authority:provider_opena2a#key-1",
     "proofPurpose": "assertionMethod",
     "proofValue": "z58DAdFfa9SkqZMVPxAQp..."
   }
@@ -632,7 +641,7 @@ GET /.well-known/aip
 
 ```json
 {
-  "providerDid": "did:aip:provider_opena2a",
+  "providerDid": "did:opena2a:authority:provider_opena2a",
   "version": "1.0",
   "conformanceLevel": 2,
   "endpoints": {
@@ -741,9 +750,9 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 
 ## 13. IANA Considerations
 
-- **DID Method:** `did:aip` — Decentralized Identifier method for AI agent identity
-- **Well-Known URI:** `/.well-known/aip` — Identity provider discovery
-- **Capability Namespace Registry:** Standard capability namespaces (file, db, api, network, system, mcp, data, payment, user, agent)
+- **DID Method:** `did:opena2a` (shared across AIP, ATP, and ATX). Decentralized Identifier method for AI agent identity, with registered type prefixes `agent`, `authority`, `publisher`, `mcp_server`, `a2a_agent`, `skill`, `ai_tool`, `llm`.
+- **Well-Known URI:** `/.well-known/aip`. Identity provider discovery.
+- **Capability Namespace Registry:** Standard capability namespaces (file, db, api, network, system, mcp, data, payment, user, agent).
 
 ---
 
@@ -771,13 +780,31 @@ The OpenA2A AIM platform (`github.com/opena2a-org/agent-identity-management`) is
 | Ed25519 identity | `apps/backend/internal/crypto/keygen.go` |
 | Hybrid PQC signing | `apps/backend/internal/crypto/pqc/hybrid.go` |
 | Agent lifecycle | `apps/backend/internal/application/agent_service.go` |
-| Trust scoring | `apps/backend/internal/application/trust_calculator.go` |
+| Trust scoring (9-factor reference) | `apps/backend/internal/application/trust_calculator.go` |
 | Capability enforcement | `apps/backend/internal/application/capability_service.go` |
 | Drift detection | `apps/backend/internal/application/drift_detection_service.go` |
 | MCP verification | `apps/backend/internal/application/mcp_service.go` |
 | A2A verification | `apps/backend/internal/application/a2a_service.go` |
 | Registry bridge | `apps/backend/internal/application/registry_bridge_service.go` |
 | TypeScript SDK | `sdk/typescript/src/` |
+
+### A.1 Spec sections currently implemented by AIM
+
+The reference implementation's coverage is uneven and the gaps are tracked publicly here. Any cross-implementation pitch should scope claims to the rows marked Shipped.
+
+| AIP / AIP-adjacent section | AIM status | Notes |
+|---|---|---|
+| §3 Agent Identity (Ed25519 keypair, agent ID, DID) | Shipped | `crypto/keygen.go`, `domain/agent.go`. Server-side key generation; agent receives Ed25519 public key registered on its record. |
+| §3 Hybrid PQC signing (Ed25519 + ML-DSA-65) | Spec mandate; partial in impl | Full hybrid stack (`crypto/pqc/hybrid.go`, `dilithium.go`) is implemented and tested. Issuance call site does not yet invoke `HybridSign()`; issued credentials are Ed25519-only today. Call-site flip is imminent. |
+| §4 Capabilities | Shipped | `application/capability_service.go`, FGA engine at `application/fga_engine.go` with 5-step blocking enforcement (capability, attribute, context, chain, intent). |
+| §4 JIT capability grants with TTL | Partial | TTL exists for PAM (Privileged Access Management) emergency-escalation grants. Routine capability grants are static. |
+| §5 Verification (challenge-response) | Shipped | `/authorize` endpoint exists; direct SDK callers are pending. |
+| §6 Trust Scoring (9-factor) | Shipped | `application/trust_calculator.go`, reference algorithm with audited weights. |
+| §6.5 ATP integration | Not yet integrated | ATP-SPEC v1.0.0-rc1 is recent; cross-wiring of AIP trust scores into ATP transparency log is upcoming work. |
+| §9 Audit (append-only) | Shipped, not cryptographically signed | `repository/audit_log_repository.go` enforces append-only at the repository layer. Hash-chain or signed-log fields (`signature`, `hash`, `previous_hash`) are not present; integrity relies on database-level access control today. |
+| Local offline verification | Go only | Standalone offline-verify package exists at the registry's `pkg/atcverify`. TypeScript, Python, and Java SDKs do not yet ship a local-verify library; offline verification is single-language today. |
+
+Note on runtime self-attestation and protocol-enforcement: AIP does not specify a runtime self-attestation layer (that surface belongs to ATX core §5 and the ARC runtime layer, not AIP). For ecosystem context: OpenA2A's reference implementation of the runtime layer ships today as a first-party module inside HMA (`hackmyagent/src/arp/`), not yet inside AIM. AIM-side integration is on the AIM roadmap as a separate track.
 
 ## Appendix B: Relationship to ATP
 
