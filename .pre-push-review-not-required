@@ -1,0 +1,1 @@
+Spec/docs-only repository. No CLI, build, test suite, or runnable artifacts in this repo. The 8-phase /pre-push-review (new-user walkthrough, adversarial corpus, score sanity, concept-explainer, real-world dev-tree scan) is not applicable. Review of spec text happens via PR review and downstream issue threads.
