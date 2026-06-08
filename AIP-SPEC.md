@@ -1,4 +1,4 @@
-# Agent Identity Protocol (AIP)
+# OpenA2A Agent Identity Protocol (OpenA2A AIP)
 
 ## An Open Standard for AI Agent Identity, Capabilities, and Trust
 
@@ -6,11 +6,13 @@
 **Authors:** OpenA2A
 **Date:** March 2026
 
+> **Naming note.** The abbreviation "AIP" is used by at least two other Internet-Drafts as of mid-2026 (Cao and Arango at NVIDIA, March 16, 2026; Singla, April 17, 2026). When referenced outside this document, please use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
+
 ---
 
 ## Abstract
 
-The Agent Identity Protocol (AIP) defines an open standard for creating, managing, and verifying cryptographic identities for AI agents. As AI agents proliferate across browsers, cloud platforms, and enterprise environments, the question "which agent is this, what can it do, and should I trust it?" needs a standardized answer.
+The OpenA2A Agent Identity Protocol (OpenA2A AIP) defines an open standard for creating, managing, and verifying cryptographic identities for AI agents. As AI agents proliferate across browsers, cloud platforms, and enterprise environments, the question "which agent is this, what can it do, and should I trust it?" needs a standardized answer.
 
 AIP provides:
 

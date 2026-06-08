@@ -1,11 +1,13 @@
 > **OpenA2A specs** · [did:opena2a](https://github.com/opena2a-standards/did-method-opena2a) · **AIP** · [ATX](https://github.com/opena2a-standards/atx-spec) · [ATP](https://github.com/opena2a-standards/agent-trust-protocol) · [AAP](https://github.com/opena2a-standards/agent-authorization-protocol) · [AIM](https://github.com/opena2a-org/agent-identity-management) · [all specs ↗](https://specs.opena2a.org)
 
 > **[OpenA2A](https://github.com/opena2a-org/opena2a)**: [CLI](https://github.com/opena2a-org/opena2a) · [HackMyAgent](https://github.com/opena2a-org/hackmyagent) · [Secretless](https://github.com/opena2a-org/secretless-ai) · [AIM](https://github.com/opena2a-org/agent-identity-management) · [Browser Guard](https://github.com/opena2a-org/AI-BrowserGuard) · [DVAA](https://github.com/opena2a-org/damn-vulnerable-ai-agent)
-# Agent Identity Protocol (AIP)
+# OpenA2A Agent Identity Protocol (OpenA2A AIP)
 
-An open standard for AI agent identity, capabilities, and trust.
+OpenA2A's open standard for AI agent identity, capabilities, and trust.
 
-AIP answers "Who is this agent, what can it do, and should I trust it?" with cryptographic identity, structured capabilities, and multi-factor trust scoring.
+OpenA2A AIP answers "Who is this agent, what can it do, and should I trust it?" with cryptographic identity, structured capabilities, and multi-factor trust scoring.
+
+> **Naming note.** Multiple independent specifications use the abbreviation "AIP" for "Agent Identity Protocol" (see [Naming and prior art](#naming-and-prior-art) below). When referenced outside this repository, please use the fully qualified name **"OpenA2A AIP"** to disambiguate. The bare "AIP" is retained inside this repository where context is unambiguous.
 
 ## Quick Start
 
@@ -60,6 +62,20 @@ The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-managem
 
 - [ATP (Agent Trust Protocol)](https://github.com/opena2a-org/agent-trust-protocol) — ecosystem trust
 - [OASB (Open Agent Security Benchmark)](https://github.com/opena2a-org/oasb) — security controls
+
+## Naming and prior art
+
+The abbreviation "AIP" for "Agent Identity Protocol" appears in at least three independent specifications as of mid-2026. Implementers comparing options should be aware of this collision and pin to the fully qualified name when referencing any of them.
+
+| Spec                                                                                                 | Authors                                | First publication | Scope                                                                                                                                              |
+| ---------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **OpenA2A AIP** (this repository)                                                                    | OpenA2A                                | March 2026        | Identity, capabilities, verification, trust scoring, governance, lifecycle, audit. Reference implementation in [AIM](https://github.com/opena2a-org/agent-identity-management). |
+| **[draft-aip-agent-identity-protocol-00](https://datatracker.ietf.org/doc/draft-aip-agent-identity-protocol/)** | James Cao, Carlos Eduardo Arango Gutierrez (NVIDIA) | March 16, 2026    | Two-layer model: unique agent identity with cryptographic signing + policy enforcement through an interposing proxy.                                |
+| **[draft-singla-agent-identity-protocol-00](https://datatracker.ietf.org/doc/draft-singla-agent-identity-protocol/00/)** | Paras Singla (Independent)             | April 17, 2026    | Decentralized identity + delegation; introduces the `did:aip` DID method, capability-based authorization, cryptographic delegation chains.          |
+
+The three specs are independent of one another. OpenA2A AIP has the broadest surface (identity through audit), the Cao/Arango draft is closest to OpenA2A AIP's capability + enforcement scope, and the Singla draft overlaps with OpenA2A's [`did:opena2a` method](https://github.com/opena2a-standards/did-method-opena2a) on the DID-method axis (`did:aip` vs `did:opena2a`).
+
+OpenA2A's position is that the three specs solve adjacent but distinct problems and that coordination on shared vocabulary is preferable to a name fight. Outreach to the IETF draft authors is tracked separately. In the meantime, the "OpenA2A AIP" branding in this repository is the unilateral disambiguation step.
 
 ## License
 
