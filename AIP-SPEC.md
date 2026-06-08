@@ -181,12 +181,24 @@ Identity file format:
   "publicKey": "ed25519:x8Kp2mN...4RqW",
   "encryptedPrivateKey": "aes-256-gcm:...",
   "capabilities": ["file:read", "api:call"],
+  "declaredPurpose": {
+    "vocabVersion": "1",
+    "category": "customer-support",
+    "taskScopes": ["support:triage"],
+    "capabilityJustification": {
+      "file:read": ["support:triage"],
+      "api:call": ["support:triage"]
+    },
+    "autonomy": "supervised"
+  },
   "createdAt": "2026-03-22T10:00:00Z",
   "status": "verified"
 }
 ```
 
 Private keys MUST be encrypted at rest. The default encryption is AES-256-GCM with a key derived from the user's system keychain or a passphrase.
+
+`declaredPurpose` is **optional**: a structured declaration of what the agent is *for* (`category`, `taskScopes`, `capabilityJustification`, `autonomy`, and the optional `dataScopes` / `egressScopes`). It is an identity and attestation property plus an offline detection signal — it MUST NOT be used as an authorization input, and a verifier MUST NOT reject an identity for lacking it. Its full vocabulary and semantics are defined in [`atx-spec` core.md §1.5](https://github.com/opena2a-org/atx-spec); when carried in an ATX it is covered by the v1.1 signed payload. At the DID layer, declared purpose is surfaced only as a `PurposeAttestation` service-endpoint pointer, never inline in the DID Document body.
 
 ### 3.4 Agent Types
 
