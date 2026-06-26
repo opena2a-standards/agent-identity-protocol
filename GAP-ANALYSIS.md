@@ -98,3 +98,48 @@ Based on source code review of `agent-identity-management` (March 2026).
 6. **WebAuthn/FIDO2** — browser-based key storage for Chrome integration
 7. **Capability negotiation** — runtime negotiation protocol between agents
 8. **YAML policy format** — declarative governance policies
+
+---
+
+## Prior Art and Naming in the IETF Landscape (June 2026)
+
+The abbreviations "AIP" and the sibling "AAP" are each used by more than one
+Internet-Draft. This section records that prior art and how OpenA2A AIP relates to
+it, so implementers and reviewers can disambiguate. When referenced outside this
+repository, use the fully qualified name **OpenA2A AIP**.
+
+### Drafts using the "AIP" / "AAP" names
+
+| Draft | Author(s) | datatracker (initial) | Scope |
+|---|---|---|---|
+| draft-aip-agent-identity-protocol | Cao, Arango (NVIDIA) | -00, 2026-03-16 | Agent identity registry + enforcement proxy |
+| draft-singla-agent-identity-protocol | Singla | -00, 2026-04-17 | Agent identity + delegation |
+| draft-aap-oauth-profile, "Agent Authorization Profile" | Cruz (independent) | -01, 2026-02-07 | OAuth 2.0 profile for agent-to-API authorization |
+| OpenA2A AIP (this spec) | OpenA2A | not yet filed | Identity, capabilities, verification, trust scoring, governance, lifecycle, audit |
+| OpenA2A AAP (companion) | OpenA2A | not yet filed | Authorization token model + broker/resolution layer |
+
+### OpenA2A AIP vs draft-aip-agent-identity-protocol (NVIDIA)
+
+The two specifications share a common spine — a Layer 1 agent-identity registry
+and a Layer 2 policy/enforcement proxy — and differ on what is built above it.
+
+| Dimension | draft-aip-agent-identity-protocol-00 | OpenA2A AIP |
+|---|---|---|
+| Agent identifier | host-prefixed UUIDv4 (`host/uuid`) | DID (`did:opena2a`; W3C did-extensions PR #717) |
+| Signing keys | Ed25519 | Ed25519, with ML-DSA-65 hybrid in the ATX credential |
+| Identity registry | HTTP registry, agent record | Managed / federated identity (Conformance Levels 2–3) |
+| Per-call attestation | per-call signed AIP token (argumentsHash + nonce) | challenge-response verification (Section 5) |
+| Enforcement | Layer 2 forward proxy; ALLOW / DENY / HOLD; YAML policy, DLP, HITL | governance (Section 7) + proxy enforcement |
+| Capability model | tool allowlists only | structured capability vocabulary + reserved namespaces (Section 4) |
+| Trust score | not defined | multi-factor trust score + levels + history (Section 6) |
+| Portable credential | per-call JSON token | ATX signed portable credential via ATP |
+| Transparency log | not defined | RFC 6962 Merkle log (Registry) |
+| Verifiable Credentials | not defined | W3C VC expression of trust (Section 6.4) |
+| Revocation | status + SSE invalidation | suspension / revocation + drift detection (Section 8) |
+
+The identity-and-enforcement spine is common to both. The elements specific to
+OpenA2A AIP — DID-based identity, a structured capability vocabulary, a
+multi-factor trust score, a portable signed credential (ATX) carried via ATP, a
+transparency log, and W3C Verifiable Credential expression — are not present in
+draft-aip-agent-identity-protocol-00. OpenA2A AIP leads with those elements rather
+than with the shared identity spine.
