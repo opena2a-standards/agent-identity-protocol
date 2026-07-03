@@ -419,6 +419,8 @@ trust_score = Σ (factor_weight * factor_score * confidence)
 
 Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 = sufficient data). Factors with no data are excluded and their weights redistributed proportionally.
 
+**Anti-gaming ceiling.** Redistribution alone rewards data withholding: an excluded factor effectively inherits the agent's included average, so an operator could raise a well-behaved agent's score by never supplying compliance or feedback data (no data would outscore a measured 0.9). Implementations MUST therefore cap the published composite at the value obtained by scoring every excluded factor at its neutral default (0.5, or the factor's documented no-data baseline): a factor with no data can never contribute more than a neutral measurement would. Agents whose renormalized composite is below the neutral-imputed value keep the renormalized (lower) score — exclusion never props a poorly-scoring agent up toward neutral. Implementations SHOULD report which factors were excluded alongside the score.
+
 **Reference implementation.** The 9-factor algorithm above is implemented in the AIM (Agent Identity Management) reference implementation as the `TrustCalculator` service. AIP §6.1 specifies the factor set, weights, and composition rule; AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged. The AIM `TrustCalculator` is the named reference implementation for AIP §6.1 in OpenA2A's ecosystem.
 
 ### 6.2 Trust Levels
