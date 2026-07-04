@@ -1,0 +1,12 @@
+[
+  {
+    "file": "AIP-SPEC.md",
+    "heading": "#### 5.1.1 Challenge body (IdP → RP)",
+    "schema": "schemas/challenge-body-v1.schema.json"
+  },
+  {
+    "file": "AIP-SPEC.md",
+    "heading": "#### 5.1.2 Response body (Agent → RP)",
+    "schema": "schemas/response-body-v1.schema.json"
+  }
+]

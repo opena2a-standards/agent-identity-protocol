@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.opena2a.org/schemas/aip/challenge-body-v1.schema.json",
+  "title": "AIP challenge body (IdP to RP, section 5.1.1)",
+  "description": "Structural schema for the AIP section 5.1.1 challenge body, the wire form ratified from the aip-conformance suite (v0.2). Shape only: freshness, expiry windows, and nonce-replay state are verifier concerns (section 5.1.4).",
+  "type": "object",
+  "required": ["challenge", "agentDid", "nonce", "issuedAt", "expiresAt", "issuerDid"],
+  "properties": {
+    "challenge": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{43}$",
+      "description": "32 random bytes, unpadded base64 (43 characters)."
+    },
+    "agentDid": { "$ref": "#/$defs/did" },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{22}$",
+      "description": "16 random bytes, unpadded base64 (22 characters)."
+    },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time",
+      "description": "issuedAt + 5 minutes (section 5.1.1); the window rule is enforced by the verifier, not the schema."
+    },
+    "issuerDid": { "$ref": "#/$defs/did" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "did": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[A-Za-z0-9._:@/-]+(#[A-Za-z0-9._-]+)?$"
+    }
+  }
+}
