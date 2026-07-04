@@ -2,7 +2,7 @@
 
 ## What Exists vs What the Spec Requires
 
-Based on source code review of `agent-identity-management` (March 2026).
+Based on source code review of `agent-identity-management` (March 2026; rows marked *updated 2026-07* re-verified against the current tree).
 
 ### Identity (Section 3)
 
@@ -11,8 +11,8 @@ Based on source code review of `agent-identity-management` (March 2026).
 | Ed25519 keypair generation | Complete | `apps/backend/internal/crypto/keygen.go` |
 | ML-DSA-65 hybrid signing | Complete | `apps/backend/internal/crypto/pqc/hybrid.go` |
 | Agent ID format (aim_XXXXXXXX) | Complete | `apps/backend/internal/domain/agent.go` |
-| DID resolution (did:aip:) | NOT IMPLEMENTED — listed in verification_event.go but no code | - |
-| DID Document generation | NOT IMPLEMENTED | - |
+| DID resolution (did:aip:) | Complete (*updated 2026-07*) — `did:aip:aim_<uuid>` resolver; other methods rejected | `handlers/aip_handler.go` (ResolveDID), `domain/agent_did.go` |
+| DID Document generation | Complete (*updated 2026-07*) — W3C DID Document served by the resolver | `handlers/aip_handler.go` |
 | Local identity file format | Partial — SDK creates files but format not standardized | `sdk/typescript/` |
 | Key rotation with grace period | Complete | `agent.go` (KeyRotationGraceUntil, PreviousPublicKey) |
 
@@ -42,15 +42,16 @@ Based on source code review of `agent-identity-management` (March 2026).
 
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
-| 8-factor algorithm | 5 of 8 factors implemented | `trust_calculator.go` |
+| 9-factor algorithm (spec §6.1) | 6 of 9 factors implemented (*updated 2026-07*; execution isolation measured; §6.1 exclusion + anti-gaming cap implemented) | `trust_calculator.go` |
 | Verification factor (25%) | Complete | `trust_calculator.go` |
 | Uptime factor (15%) | Complete | `trust_calculator.go` |
 | Success rate factor (15%) | Complete | `trust_calculator.go` |
 | Security alerts factor (15%) | Complete | `trust_calculator.go` |
-| Compliance factor (10%) | STUB (TODO comment) | `trust_calculator.go:334` |
-| Age factor (10%) | Complete | `trust_calculator.go` |
-| Drift factor (5%) | STUB (TODO comment) | `trust_calculator.go:363` |
-| Feedback factor (5%) | STUB (TODO comment) | `trust_calculator.go:376` |
+| Compliance factor (10%) | STUB (TODO comment) | `trust_calculator.go` |
+| Execution isolation factor (10%) | Complete (*updated 2026-07*) — measured in the composite; persistence of the stored breakdown column is a filed follow-up | `trust_calculator.go` |
+| Age factor (5%) | Complete | `trust_calculator.go` |
+| Drift factor (3%) | STUB (TODO comment) | `trust_calculator.go` |
+| Feedback factor (2%) | STUB (TODO comment) | `trust_calculator.go` |
 | Verifiable Credential expression | NOT IMPLEMENTED | - |
 | ATP integration | Partial (one-way push via registry bridge) | `registry_bridge_service.go` |
 

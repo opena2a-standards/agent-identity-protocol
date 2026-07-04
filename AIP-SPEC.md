@@ -2,9 +2,9 @@
 
 ## An Open Standard for AI Agent Identity, Capabilities, and Trust
 
-**Version:** 1.0.0-draft
+**Version:** 1.0.1-draft
 **Authors:** OpenA2A
-**Date:** March 2026
+**Date:** July 2026 (first published March 2026)
 
 > **Naming note.** The abbreviation "AIP" is used by at least two other Internet-Drafts as of mid-2026 (Cao and Arango at NVIDIA, March 16, 2026; Singla, April 17, 2026). When referenced outside this document, please use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
 
@@ -124,18 +124,24 @@ Both keys are generated simultaneously. Classical-only verifiers check the Ed255
 
 ### 3.2 Decentralized Identifier (DID)
 
-At Level 3, agents are identified by DIDs conforming to W3C DID Core. AIP uses the unified `did:opena2a` method shared with ATP (Agent Trust Protocol) and ATX (Agent Trust eXtension):
+At Level 3, agents are identified by DIDs conforming to W3C DID Core. Two DID methods with distinct scopes participate in the stack; AIP identities use the first.
+
+**Provider-scoped: `did:aip` (the AIP-layer method).** An AIP identity provider issues its agents DIDs of the form:
 
 ```
-did:opena2a:<type>:<id>
+did:aip:<namespace>_<id>
 ```
 
-Where `<type>` is one of the registered type prefixes: `agent`, `authority`, `publisher`, `mcp_server`, `a2a_agent`, `skill`, `ai_tool`, `llm`. For agent identities at AIP Level 3, the type is `agent`.
+where `<namespace>` identifies the issuing provider's namespace and `<id>` is the provider-assigned identifier. Resolution is provider-anchored: the DID is resolved against the issuing provider's `didResolve` endpoint discovered via `/.well-known/aip` (§10.1). The reference implementation (AIM) issues `did:aip:aim_<uuid>` and identifies itself as `did:aip:provider_opena2a`. A provider MUST reject resolution requests for DID methods it does not serve.
 
 Example:
 ```
-did:opena2a:agent:aim_7f3a9c2e
+did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6
 ```
+
+**Ecosystem-scoped: `did:opena2a` (the trust-fabric method, informative here).** The unified `did:opena2a:<type>:<id>` method — with registered type prefixes `agent`, `authority`, `publisher`, `mcp_server`, `a2a_agent`, `skill`, `ai_tool`, `llm` — is shared by ATP (Agent Trust Protocol) and ATX (Agent Trust eXtension) and is anchored at the OpenA2A Registry, which operates its public resolver. It names cross-provider trust-fabric participants (issuing authorities, publishers, Registry-listed agents). An AIP identity provider does not serve `did:opena2a`; an agent acquires an ecosystem identifier when it is registered in the Registry, and a provider MAY record that binding in the agent's DID Document via `alsoKnownAs`. The method is normatively specified in [`did-method-opena2a`](https://github.com/opena2a-standards/did-method-opena2a).
+
+Identifiers in AIP protocol messages (for example `agentDid` in the §5.1 transcript) are treated as opaque strings bound to keys by the verifier's registration state: verification semantics do not depend on which method the identifier uses.
 
 The DID Document includes the agent's public keys, capabilities, and service endpoints:
 
@@ -145,12 +151,12 @@ The DID Document includes the agent's public keys, capabilities, and service end
     "https://www.w3.org/ns/did/v1",
     "https://w3id.org/security/suites/ed25519-2020/v1"
   ],
-  "id": "did:opena2a:agent:aim_7f3a9c2e",
-  "controller": "did:opena2a:authority:org_acme",
+  "id": "did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
+  "controller": "did:aip:provider_opena2a",
   "verificationMethod": [{
-    "id": "did:opena2a:agent:aim_7f3a9c2e#key-1",
+    "id": "did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6#key-1",
     "type": "Ed25519VerificationKey2020",
-    "controller": "did:opena2a:agent:aim_7f3a9c2e",
+    "controller": "did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
     "publicKeyMultibase": "z6Mkf5rGMoatrSj1f..."
   }],
   "capabilityInvocation": ["#key-1"],
@@ -161,6 +167,8 @@ The DID Document includes the agent's public keys, capabilities, and service end
   }]
 }
 ```
+
+> **Method-scoping note (2026-07).** Earlier drafts of this section said AIP itself uses the unified `did:opena2a` method. That never matched the reference implementation, which has always issued `did:aip:` identifiers and hard-rejects other methods at its resolver, and it conflated two trust domains: a self-hosted identity provider must not mint identifiers inside the ecosystem-shared namespace that the Registry anchors. The scoping above — `did:aip` provider-scoped at the AIP layer, `did:opena2a` ecosystem-scoped at the ATP/ATX layer — is the ratified resolution of that conflict.
 
 ### 3.3 Identity File Format
 
@@ -308,21 +316,114 @@ Agent identity verification uses Ed25519 challenge-response:
 1. Relying Party → Identity Provider:
    POST /api/v1/agents/{agentId}/challenge
 
-2. Identity Provider → Relying Party:
-   { "challenge": "random-32-bytes-base64", "expiresAt": "..." }
+2. Identity Provider → Relying Party: the challenge body (§5.1.1)
 
-3. Relying Party → Agent:
-   "Sign this challenge with your private key"
+3. Relying Party → Agent: the challenge body, for signing
 
-4. Agent → Relying Party:
-   { "signature": "ed25519-signature-base64", "publicKey": "..." }
+4. Agent → Relying Party: the response body (§5.1.2)
 
-5. Relying Party verifies:
-   - Signature valid for challenge + public key
-   - Public key matches registered agent
-   - Challenge not expired (5-minute window)
-   - Nonce not reused
+5. Relying Party verifies (§5.1.4)
 ```
+
+The wire bodies, the canonical signing form, and the replay rule below were
+first pinned by the [`aip-conformance`](https://github.com/opena2a-standards/aip-conformance)
+suite (v0.2) and are ratified here as normative. A transcript that verifies
+against this section produces the same verdict as the suite's reference
+verifiers.
+
+#### 5.1.1 Challenge body (IdP → RP)
+
+```json
+{
+  "challenge": "random-32-bytes-base64-no-padding",
+  "agentDid":  "<the agent identifier the challenge was minted for>",
+  "nonce":     "random-16-bytes-base64-no-padding",
+  "issuedAt":  "RFC 3339 UTC",
+  "expiresAt": "RFC 3339 UTC (issuedAt + 5 minutes)",
+  "issuerDid": "<the identity provider's DID>"
+}
+```
+
+All six fields are REQUIRED. `challenge` and `nonce` MUST be freshly generated
+from a cryptographically secure source per challenge and encoded as unpadded
+base64.
+
+#### 5.1.2 Response body (Agent → RP)
+
+```json
+{
+  "agentDid":  "...", "challenge": "...", "nonce": "...",
+  "issuedAt":  "...", "expiresAt": "...",
+  "signature": "ed25519-signature-base64-no-padding",
+  "publicKey": "agent-public-key-base64-no-padding",
+  "keyId":     "<agentDid>#key-1",
+  "signedAt":  "RFC 3339 UTC",
+  "algorithm": "Ed25519"
+}
+```
+
+The agent echoes the five challenge fields it is signing over and attaches the
+signature plus key metadata.
+
+#### 5.1.3 Canonical signing form
+
+The signature covers a pipe-delimited UTF-8 string of exactly five fields, in
+this order (mirroring the ATX eleven-field and ATP seven-field precedent):
+
+```
+<challenge>|<agentDid>|<nonce>|<issuedAt>|<expiresAt>
+```
+
+The field values are joined with a single `|` character (U+007C, no
+surrounding whitespace) — the byte construction is `challenge + "|" + agentDid
++ "|" + nonce + "|" + issuedAt + "|" + expiresAt`. Before joining, `issuedAt`
+and `expiresAt` are normalized to UTC RFC 3339 (`Z`-suffixed, second
+precision), so an equivalent offset form (`+00:00`) produces the same signed
+bytes; `challenge`, `agentDid`, and `nonce` are used byte-exactly as they
+appear in the challenge body. Binding `agentDid` and the IdP-issued
+`nonce` into the signed bytes is what prevents cross-relying-party replay: a
+signature produced for one RP's challenge cannot be presented to another,
+because the other RP's IdP would have issued different bytes.
+
+**Unsigned response fields are unauthenticated.** `publicKey`, `keyId`,
+`signedAt`, and `algorithm` are NOT covered by the signature. A verifier MUST
+resolve the agent's key from its own registration record (or DID document) for
+the claimed `agentDid` and MUST NOT trust the response's `publicKey` field as
+the verification key by itself — a response that verifies only under its own
+embedded key proves possession of *some* key, not the agent's bound key.
+JCS-canonical JSON signing (RFC 8785) over the full response is a candidate
+hardening for a future major revision; the five-field form is normative for
+AIP 1.x.
+
+#### 5.1.4 Verification rules
+
+A relying party MUST reject the transcript unless all of the following hold.
+The checks run in this order and the first failure determines the reject
+category (the property the conformance fixtures pin):
+
+1. **Signature** — the Ed25519 signature verifies over the §5.1.3 canonical
+   bytes under the response's `publicKey` (reject category
+   `SIGNATURE_INVALID`). This proves possession of the presented key; step 2
+   proves it is the right key.
+2. **Bound key** — the presented `publicKey` matches the key bound to
+   `agentDid` in the verifier's registration state or resolved DID document
+   (reject category `UNTRUSTED_KEY`). A transcript MUST NOT be accepted on
+   step 1 alone.
+3. **Freshness** — the verifier's clock is before `expiresAt` (the window is
+   5 minutes from issuance; reject category `CHALLENGE_EXPIRED`).
+4. **Nonce single-use** — the nonce has not been consumed by a prior
+   verification. Verifiers MUST record consumed nonces at least until the
+   corresponding challenge's `expiresAt` (reject category `NONCE_REPLAY`).
+5. **Trusted issuer** — `issuerDid` is in the verifier's trusted-issuer set.
+
+#### 5.1.5 Conformance fixtures
+
+Byte-stable transcript fixtures for this section — valid, wrong-key,
+stale-challenge, and nonce-replay, each pinned by SHA-256 and verified by
+parity-gated Go and Python reference verifiers — live at
+[`opena2a-standards/aip-conformance`](https://github.com/opena2a-standards/aip-conformance).
+An implementation claiming §5.1 conformance MUST produce the pinned verdict on
+every fixture.
 
 ### 5.2 Protocol-Specific Verification
 
@@ -423,6 +524,8 @@ Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 
 
 **Reference implementation.** The 9-factor algorithm above is implemented in the AIM (Agent Identity Management) reference implementation as the `TrustCalculator` service. AIP §6.1 specifies the factor set, weights, and composition rule; AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged. The AIM `TrustCalculator` is the named reference implementation for AIP §6.1 in OpenA2A's ecosystem.
 
+**Per-factor implementation status (reference implementation, 2026-07).** Six of the nine factors are measured today: verification status, uptime, action success rate, security alerts, execution isolation, and age. Three are **Proposed — stubbed in the reference implementation**: **compliance**, **drift detection**, and **user feedback** currently report no data, so they are excluded and their weights redistributed under the exclusion-and-cap rules above. A composite from the reference implementation therefore reflects the six measured factors capped by neutral imputation of the stubs. Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them.
+
 ### 6.2 Trust Levels
 
 Trust scores map to discrete levels for policy decisions:
@@ -445,6 +548,8 @@ Identity providers MUST maintain a trust score history with:
 
 ### 6.4 Verifiable Credential Expression
 
+*Status: Proposed — not yet implemented by the reference implementation (see GAP-ANALYSIS). The equivalent shipped artifact for signed trust expression is the ATP trust proof (§6.5).*
+
 At Level 3, trust scores SHOULD be expressible as W3C Verifiable Credentials:
 
 ```json
@@ -454,7 +559,7 @@ At Level 3, trust scores SHOULD be expressible as W3C Verifiable Credentials:
     "https://opena2a.org/credentials/v1"
   ],
   "type": ["VerifiableCredential", "AgentTrustCredential"],
-  "issuer": "did:opena2a:authority:provider_opena2a",
+  "issuer": "did:opena2a:authority:opena2a.org",
   "issuanceDate": "2026-03-22T14:00:00Z",
   "expirationDate": "2026-03-23T14:00:00Z",
   "credentialSubject": {
@@ -468,7 +573,7 @@ At Level 3, trust scores SHOULD be expressible as W3C Verifiable Credentials:
   "proof": {
     "type": "Ed25519Signature2020",
     "created": "2026-03-22T14:00:00Z",
-    "verificationMethod": "did:opena2a:authority:provider_opena2a#key-1",
+    "verificationMethod": "did:opena2a:authority:opena2a.org#key-1",
     "proofPurpose": "assertionMethod",
     "proofValue": "z58DAdFfa9SkqZMVPxAQp..."
   }
@@ -657,7 +762,7 @@ GET /.well-known/aip
 
 ```json
 {
-  "providerDid": "did:opena2a:authority:provider_opena2a",
+  "providerDid": "did:aip:provider_opena2a",
   "version": "1.0",
   "conformanceLevel": 2,
   "endpoints": {
@@ -766,7 +871,7 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 
 ## 13. IANA Considerations
 
-- **DID Method:** `did:opena2a` (shared across AIP, ATP, and ATX). Decentralized Identifier method for AI agent identity, with registered type prefixes `agent`, `authority`, `publisher`, `mcp_server`, `a2a_agent`, `skill`, `ai_tool`, `llm`.
+- **DID Methods:** `did:aip` (provider-scoped, the AIP-layer method issued and resolved by identity providers; §3.2) and `did:opena2a` (ecosystem-scoped, anchored at the OpenA2A Registry and shared with ATP and ATX, with registered type prefixes `agent`, `authority`, `publisher`, `mcp_server`, `a2a_agent`, `skill`, `ai_tool`, `llm`; specified in [`did-method-opena2a`](https://github.com/opena2a-standards/did-method-opena2a)).
 - **Well-Known URI:** `/.well-known/aip`. Identity provider discovery.
 - **Capability Namespace Registry:** Standard capability namespaces (file, db, api, network, system, mcp, data, payment, user, agent).
 
