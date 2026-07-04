@@ -4,6 +4,23 @@ All notable changes to the OpenA2A Agent Identity Protocol specification are
 documented here. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|final}`.
 
+## [Unreleased]
+
+### Added
+
+- `schemas/challenge-body-v1.schema.json` and
+  `schemas/response-body-v1.schema.json`: machine-readable JSON Schemas
+  (draft 2020-12) for the §5.1.1/§5.1.2 wire bodies, fixture-ground-truth
+  derived (all four `aip-conformance` transcripts validate).
+- `scripts/validate_examples.py` + `schemas/examples-map.json` + CI workflow:
+  schemas metaschema-checked and both §5.1 examples validated on every push/PR.
+
+### Changed
+
+- §5.1.1/§5.1.2 example blocks now carry the suite's `challenge-response-valid`
+  fixture bytes (a transcript that actually verifies) instead of placeholder
+  annotations; the annotations moved into the surrounding prose.
+
 ## [1.0.1-draft] - 2026-07-03
 
 ### Added

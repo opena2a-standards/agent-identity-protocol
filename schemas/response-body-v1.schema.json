@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://specs.opena2a.org/schemas/aip/response-body-v1.schema.json",
+  "title": "AIP response body (Agent to RP, section 5.1.2)",
+  "description": "Structural schema for the AIP section 5.1.2 response body, the wire form ratified from the aip-conformance suite (v0.2). The signature covers the pipe-delimited five-field canonical form of section 5.1.3 - a byte rule the verifier enforces, not the schema.",
+  "type": "object",
+  "required": [
+    "agentDid",
+    "challenge",
+    "nonce",
+    "issuedAt",
+    "expiresAt",
+    "signature",
+    "publicKey",
+    "keyId",
+    "signedAt",
+    "algorithm"
+  ],
+  "properties": {
+    "agentDid": { "$ref": "#/$defs/did" },
+    "challenge": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{43}$",
+      "description": "Echo of the challenge field being signed over."
+    },
+    "nonce": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{22}$",
+      "description": "Echo of the challenge nonce."
+    },
+    "issuedAt": { "type": "string", "format": "date-time" },
+    "expiresAt": { "type": "string", "format": "date-time" },
+    "signature": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{86}$",
+      "description": "Ed25519 signature (64 bytes), unpadded base64 (86 characters)."
+    },
+    "publicKey": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9+/]{43}$",
+      "description": "Agent Ed25519 public key (32 bytes), unpadded base64."
+    },
+    "keyId": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[A-Za-z0-9._:@/-]+#[A-Za-z0-9._-]+$",
+      "description": "Fragment-qualified key reference, <agentDid>#key-N."
+    },
+    "signedAt": { "type": "string", "format": "date-time" },
+    "algorithm": { "enum": ["Ed25519"] }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "did": {
+      "type": "string",
+      "pattern": "^did:[a-z0-9]+:[A-Za-z0-9._:@/-]+(#[A-Za-z0-9._-]+)?$"
+    }
+  }
+}

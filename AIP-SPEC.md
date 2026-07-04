@@ -335,35 +335,47 @@ verifiers.
 
 ```json
 {
-  "challenge": "random-32-bytes-base64-no-padding",
-  "agentDid":  "<the agent identifier the challenge was minted for>",
-  "nonce":     "random-16-bytes-base64-no-padding",
-  "issuedAt":  "RFC 3339 UTC",
-  "expiresAt": "RFC 3339 UTC (issuedAt + 5 minutes)",
-  "issuerDid": "<the identity provider's DID>"
+  "challenge": "ClvWi9D7pyXv3ttNMoKSQIct2T6MCf6Eme9f06GC6wY",
+  "agentDid":  "did:opena2a:agent:agent_conformance_test_001",
+  "nonce":     "nJKmKdgYM3lMNkzxAGiNdA",
+  "issuedAt":  "2026-05-27T23:58:00Z",
+  "expiresAt": "2026-05-28T00:03:00Z",
+  "issuerDid": "did:opena2a:authority:opena2a.org"
 }
 ```
 
-All six fields are REQUIRED. `challenge` and `nonce` MUST be freshly generated
-from a cryptographically secure source per challenge and encoded as unpadded
-base64.
+The example is the suite's `challenge-response-valid` fixture bytes. All six
+fields are REQUIRED. `challenge` is 32 random bytes and `nonce` 16 random bytes,
+each freshly generated from a cryptographically secure source per challenge and
+encoded as unpadded base64; `agentDid` is the agent identifier the challenge was
+minted for, `issuerDid` the identity provider's DID, and both timestamps are
+RFC 3339 UTC with `expiresAt` = `issuedAt` + 5 minutes. The machine-readable
+shape is [`schemas/challenge-body-v1.schema.json`](./schemas/challenge-body-v1.schema.json).
 
 #### 5.1.2 Response body (Agent → RP)
 
 ```json
 {
-  "agentDid":  "...", "challenge": "...", "nonce": "...",
-  "issuedAt":  "...", "expiresAt": "...",
-  "signature": "ed25519-signature-base64-no-padding",
-  "publicKey": "agent-public-key-base64-no-padding",
-  "keyId":     "<agentDid>#key-1",
-  "signedAt":  "RFC 3339 UTC",
+  "agentDid":  "did:opena2a:agent:agent_conformance_test_001",
+  "challenge": "ClvWi9D7pyXv3ttNMoKSQIct2T6MCf6Eme9f06GC6wY",
+  "nonce":     "nJKmKdgYM3lMNkzxAGiNdA",
+  "issuedAt":  "2026-05-27T23:58:00Z",
+  "expiresAt": "2026-05-28T00:03:00Z",
+  "signature": "8bno3dn0bwJ4/CiC9D8fq6ScFBdjVZAw8gp1I+gL6bUMdxoaKcyMt1h8SYteAWD1YZZnVuf7mUsBlw2dvB1TBw",
+  "publicKey": "PUAXw+hDiVqStwqnTRt+vJyYLM8uxJaMwM1V8Sr0Zgw",
+  "keyId":     "did:opena2a:agent:agent_conformance_test_001#key-1",
+  "signedAt":  "2026-05-27T23:58:30Z",
   "algorithm": "Ed25519"
 }
 ```
 
-The agent echoes the five challenge fields it is signing over and attaches the
-signature plus key metadata.
+The example is the suite's `challenge-response-valid` fixture bytes — a
+transcript that actually verifies. The agent echoes the five challenge fields
+it is signing over (unpadded base64: `signature` 64 bytes, `publicKey` 32
+bytes) and attaches the signature plus key metadata; `keyId` is the
+fragment-qualified `<agentDid>#key-N` reference and `signedAt` is RFC 3339 UTC.
+The machine-readable shape is
+[`schemas/response-body-v1.schema.json`](./schemas/response-body-v1.schema.json).
 
 #### 5.1.3 Canonical signing form
 
