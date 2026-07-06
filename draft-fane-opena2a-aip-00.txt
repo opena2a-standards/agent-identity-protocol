@@ -1,0 +1,1232 @@
+
+
+
+
+Individual Submission                                            A. Fane
+Internet-Draft                                                   OpenA2A
+Intended status: Standards Track                             6 July 2026
+Expires: 7 January 2027
+
+
+                 OpenA2A Agent Identity Protocol (AIP)
+                       draft-fane-opena2a-aip-00
+
+Abstract
+
+   This document defines the OpenA2A Agent Identity Protocol (OpenA2A
+   AIP), an open standard for creating, managing, and verifying
+   cryptographic identities for AI agents.  As AI agents proliferate
+   across browsers, cloud platforms, and enterprise environments,
+   systems need a standardized answer to the question of which agent is
+   present, what it is permitted to do, and whether it should be
+   trusted.
+
+   OpenA2A AIP is distinguished by five elements that it places at the
+   center of the design: a multi-factor behavioral trust score that is
+   computed from independently verifiable signals; a portable signed
+   credential, the Agent Trust eXtension, carrying a hybrid Ed25519 and
+   ML-DSA-65 signature for post-quantum readiness; an append-only, RFC
+   6962-style Merkle transparency log for identity and credential
+   issuance; agent identifiers expressed as W3C Decentralized
+   Identifiers under the did:opena2a method; and a structured capability
+   vocabulary with reserved namespaces.  On top of these, the protocol
+   specifies challenge-response verification, behavioral governance
+   policies, a lifecycle model, and an append-only audit log.
+
+   The qualifier "OpenA2A AIP" is used throughout this document because
+   the abbreviation "AIP" is shared by other Internet-Drafts.  OpenA2A
+   AIP is framed as complementary to agent communication protocols such
+   as A2A and the Model Context Protocol, and to identity and credential
+   standards such as OpenID Connect, WebAuthn, and the W3C Verifiable
+   Credentials Data Model.
+
+Status of This Memo
+
+   This Internet-Draft is submitted in full conformance with the
+   provisions of BCP 78 and BCP 79.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF).  Note that other groups may also distribute
+   working documents as Internet-Drafts.  The list of current Internet-
+   Drafts is at https://datatracker.ietf.org/drafts/current/.
+
+
+
+
+Fane                     Expires 7 January 2027                 [Page 1]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   This Internet-Draft will expire on 7 January 2027.
+
+Copyright Notice
+
+   Copyright (c) 2026 IETF Trust and the persons identified as the
+   document authors.  All rights reserved.
+
+   This document is subject to BCP 78 and the IETF Trust's Legal
+   Provisions Relating to IETF Documents (https://trustee.ietf.org/
+   license-info) in effect on the date of publication of this document.
+   Please review these documents carefully, as they describe your rights
+   and restrictions with respect to this document.  Code Components
+   extracted from this document must include Revised BSD License text as
+   described in Section 4.e of the Trust Legal Provisions and are
+   provided without warranty as described in the Revised BSD License.
+
+Table of Contents
+
+   1.  Introduction  . . . . . . . . . . . . . . . . . . . . . . . .   3
+   2.  Conventions and Terminology . . . . . . . . . . . . . . . . .   5
+   3.  Conformance Levels  . . . . . . . . . . . . . . . . . . . . .   5
+     3.1.  Level 1: Local Identity . . . . . . . . . . . . . . . . .   6
+     3.2.  Level 2: Managed Identity . . . . . . . . . . . . . . . .   6
+     3.3.  Level 3: Federated Identity . . . . . . . . . . . . . . .   6
+   4.  Agent Identity  . . . . . . . . . . . . . . . . . . . . . . .   6
+     4.1.  Cryptographic Identity  . . . . . . . . . . . . . . . . .   6
+     4.2.  Decentralized Identifier (DID)  . . . . . . . . . . . . .   7
+     4.3.  Identity File Format  . . . . . . . . . . . . . . . . . .   7
+     4.4.  Agent Types . . . . . . . . . . . . . . . . . . . . . . .   8
+   5.  Capabilities  . . . . . . . . . . . . . . . . . . . . . . . .   9
+     5.1.  Capability Format . . . . . . . . . . . . . . . . . . . .   9
+     5.2.  Reserved Namespaces . . . . . . . . . . . . . . . . . . .   9
+     5.3.  Capability Negotiation  . . . . . . . . . . . . . . . . .  10
+     5.4.  Capability Violations . . . . . . . . . . . . . . . . . .  10
+   6.  Verification  . . . . . . . . . . . . . . . . . . . . . . . .  10
+     6.1.  Challenge-Response Protocol . . . . . . . . . . . . . . .  10
+     6.2.  Protocol-Specific Verification  . . . . . . . . . . . . .  10
+     6.3.  Verification Events . . . . . . . . . . . . . . . . . . .  11
+     6.4.  Machine-to-Machine Authentication . . . . . . . . . . . .  11
+   7.  Trust Scoring . . . . . . . . . . . . . . . . . . . . . . . .  11
+     7.1.  Multi-Factor Algorithm  . . . . . . . . . . . . . . . . .  12
+     7.2.  Trust Levels  . . . . . . . . . . . . . . . . . . . . . .  13
+     7.3.  Trust Score History . . . . . . . . . . . . . . . . . . .  13
+
+
+
+Fane                     Expires 7 January 2027                 [Page 2]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+     7.4.  Verifiable Credential Expression  . . . . . . . . . . . .  13
+     7.5.  Agent Trust Protocol Integration  . . . . . . . . . . . .  14
+   8.  Portable Credential and Transparency Log  . . . . . . . . . .  14
+     8.1.  Portable Signed ATX Credential  . . . . . . . . . . . . .  15
+     8.2.  Transparency Log  . . . . . . . . . . . . . . . . . . . .  15
+   9.  Governance  . . . . . . . . . . . . . . . . . . . . . . . . .  15
+     9.1.  Policy Format . . . . . . . . . . . . . . . . . . . . . .  15
+     9.2.  Policy Actions  . . . . . . . . . . . . . . . . . . . . .  16
+     9.3.  Relationship to Behavioral Governance . . . . . . . . . .  16
+   10. Lifecycle . . . . . . . . . . . . . . . . . . . . . . . . . .  16
+     10.1.  States . . . . . . . . . . . . . . . . . . . . . . . . .  16
+     10.2.  Key Rotation . . . . . . . . . . . . . . . . . . . . . .  16
+     10.3.  Suspension and Revocation  . . . . . . . . . . . . . . .  17
+     10.4.  Drift Detection  . . . . . . . . . . . . . . . . . . . .  17
+   11. Audit . . . . . . . . . . . . . . . . . . . . . . . . . . . .  17
+     11.1.  Local Audit Log  . . . . . . . . . . . . . . . . . . . .  17
+     11.2.  Server Audit Log . . . . . . . . . . . . . . . . . . . .  17
+   12. Discovery . . . . . . . . . . . . . . . . . . . . . . . . . .  18
+   13. Security Considerations . . . . . . . . . . . . . . . . . . .  18
+     13.1.  Key Storage  . . . . . . . . . . . . . . . . . . . . . .  18
+     13.2.  Replay Attacks . . . . . . . . . . . . . . . . . . . . .  18
+     13.3.  Capability Escalation  . . . . . . . . . . . . . . . . .  19
+     13.4.  Trust Score Manipulation . . . . . . . . . . . . . . . .  19
+     13.5.  Unverified Type and Declared-Purpose Fields  . . . . . .  19
+   14. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  19
+   15. Normative References  . . . . . . . . . . . . . . . . . . . .  19
+   16. Informative References  . . . . . . . . . . . . . . . . . . .  20
+   Appendix A.  Related Work . . . . . . . . . . . . . . . . . . . .  21
+   Appendix B.  Acknowledgments  . . . . . . . . . . . . . . . . . .  22
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  22
+
+1.  Introduction
+
+   AI agents increasingly act autonomously on behalf of users and
+   organizations, connecting to services, invoking tools, and delegating
+   tasks to one another.  This raises a basic operational question for
+   any party that an agent contacts: which agent is this, what is it
+   permitted to do, and should it be trusted?  The OpenA2A Agent
+   Identity Protocol (OpenA2A AIP) provides a standardized answer.
+
+   OpenA2A AIP leads with five elements that together characterize the
+   protocol:
+
+   1.  *Multi-factor behavioral trust score*: a composite score computed
+       from independently verifiable behavioral and provenance signals,
+       with discrete trust levels and a change history (Section 7).  The
+       inputs cannot be self-reported by the agent.
+
+
+
+
+Fane                     Expires 7 January 2027                 [Page 3]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+   2.  *Portable signed credential*: agent identity and trust can be
+       carried in an Agent Trust eXtension (ATX) [ATX], a signed
+       credential that carries a hybrid Ed25519 and ML-DSA-65 [FIPS204]
+       signature for post-quantum readiness (Section 8).
+
+   3.  *Transparency log*: identity registration and credential issuance
+       events are recorded in an append-only, RFC 6962-style [RFC6962]
+       Merkle transparency log maintained by the Registry (Section 8.2).
+
+   4.  *Decentralized identity*: at the federated conformance level,
+       agents are identified by W3C Decentralized Identifiers [DID-CORE]
+       under the unified did:opena2a method (Section 4.2).
+
+   5.  *Structured capability vocabulary*: capabilities are expressed in
+       a namespace-and-action form over a set of reserved namespaces,
+       rather than as opaque tool allowlists (Section 5).
+
+   On top of these elements, OpenA2A AIP specifies challenge-response
+   identity verification (Section 6), behavioral governance policies
+   (Section 9), an identity lifecycle with key rotation, suspension, and
+   revocation (Section 10), an append-only audit log (Section 11), and a
+   discovery document (Section 12).
+
+   OpenA2A AIP is designed to complement, rather than replace, existing
+   protocols.  Its identity fits into the A2A [A2A] agent card so agents
+   can verify one another before task delegation; its capabilities map
+   to Model Context Protocol [MCP] tool permissions and its challenge-
+   response protocol lets a server verify a connecting client; its
+   machine-to-machine tokens relate to OpenID Connect [OIDC]; its key
+   storage can use hardware authenticators via WebAuthn [WEBAUTHN]; and
+   its trust scores can be expressed as W3C Verifiable Credentials
+   [VC-DATA-MODEL] for cross-platform portability.  Authorization
+   concerns, that is, the scoped exercise of a capability and the
+   confinement of credentials away from the agent, are addressed by the
+   companion Agent Authorization Protocol [AAP]; OpenA2A AIP is
+   concerned with identity, capability declaration, verification, and
+   trust.
+
+   The abbreviation "AIP" is shared by other Internet-Drafts.  When
+   OpenA2A AIP is referenced outside this document, the fully qualified
+   name "OpenA2A AIP" is used; the relationship to those other drafts is
+   described in Appendix A.
+
+
+
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                 [Page 4]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+2.  Conventions and Terminology
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", "MAY", and
+   "OPTIONAL" in this document are to be interpreted as described in BCP
+   14 [RFC2119] [RFC8174] when, and only when, they appear in all
+   capitals, as shown here.
+
+   Agent  An AI system that performs actions on behalf of a user or
+      another agent.
+
+   Identity Provider  A server that creates and manages agent
+      identities.
+
+   Relying Party  A system that verifies an agent's identity before
+      granting access.
+
+   Capability  A permission declared in namespace-and-action form (for
+      example, "file:read").
+
+   Trust Score  A value from 0.0 to 1.0 computed from multiple
+      behavioral and provenance signals.
+
+   Governance Policy  Constraints on agent behavior, expressing what an
+      agent may and may not do.
+
+   Audit Log  An append-only record of agent actions and verification
+      events.
+
+   Agent Trust eXtension (ATX)  A signed, portable credential carrying
+      an agent's identity, capabilities, and trust level, as defined in
+      [ATX].
+
+   Registry / Root Authority  A trust authority that issues ATX
+      credentials, maintains a transparency log [RFC6962], and
+      participates in the Agent Trust Protocol [ATP].
+
+   Decentralized Identifier (DID)  A globally unique identifier
+      conforming to W3C DID Core [DID-CORE], used here under the
+      did:opena2a method.
+
+3.  Conformance Levels
+
+   OpenA2A AIP defines three conformance levels describing deployment
+   topology, that is, what infrastructure operates the agent identity.
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                 [Page 5]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+3.1.  Level 1: Local Identity
+
+   Agent identity is created and managed locally by an SDK or CLI, with
+   no server required.  This level is suitable for individual
+   developers.  It requires Ed25519 keypair generation (Section 4.1), a
+   local identity file (Section 4.3), a local audit log (Section 11.1),
+   and capability declaration (Section 5.1).
+
+3.2.  Level 2: Managed Identity
+
+   Agent identity is managed by an identity provider, adding
+   verification, trust scoring, and centralized audit.  This level is
+   suitable for organizations.  It requires all Level 1 features plus
+   challenge-response verification (Section 6), trust scoring
+   (Section 7), a server-side audit log (Section 11.2), API key or JWT
+   authentication (Section 6.4), and drift detection (Section 10.4).
+
+3.3.  Level 3: Federated Identity
+
+   Agent identity is verifiable across organizations, adding DID
+   resolution, verifiable credentials, and cross-platform trust.  This
+   level is suitable for ecosystem-wide deployment.  It requires all
+   Level 2 features plus DID-based agent identifiers (Section 4.2),
+   Verifiable Credential trust assertions (Section 7.4), cross-platform
+   capability negotiation (Section 5.3), and Agent Trust Protocol
+   integration for ecosystem trust (Section 7.5).
+
+4.  Agent Identity
+
+4.1.  Cryptographic Identity
+
+   Every agent MUST have an Ed25519 keypair [RFC8032].  The private key
+   is 64 bytes and the public key is 32 bytes.  The agent identifier is
+   formed from the prefix "aim_" followed by the first eight hexadecimal
+   characters of the SHA-256 digest of the public key, for example
+   "aim_7f3a9c2e".
+
+   Implementations SHOULD also support a hybrid Ed25519 and ML-DSA-65
+   [FIPS204] keypair for post-quantum readiness.  Both keys are
+   generated simultaneously.  The classical component is a 32-byte
+   public key and a 64-byte private key; the post-quantum component is a
+   1,952-byte public key and a 4,032-byte private key.  A hybrid
+   signature concatenates a 64-byte Ed25519 signature with a 3,309-byte
+   ML-DSA-65 signature.  Classical-only verifiers check the Ed25519
+   signature; quantum-aware verifiers check both.
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                 [Page 6]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+4.2.  Decentralized Identifier (DID)
+
+   At Level 3, agents are identified by DIDs conforming to W3C DID Core
+   [DID-CORE].  OpenA2A AIP uses the unified did:opena2a method, shared
+   with the Agent Trust Protocol [ATP] and the Agent Trust eXtension
+   [ATX].  The method syntax is:
+
+   did:opena2a:<type>:<id>
+
+   where the type component is one of the registered type prefixes:
+   "agent", "authority", "publisher", "mcp_server", "a2a_agent",
+   "skill", "ai_tool", or "llm".  For agent identities at Level 3, the
+   type is "agent", for example "did:opena2a:agent:aim_7f3a9c2e".
+
+   The DID Document includes the agent's public keys, capability
+   references, and service endpoints:
+
+   {
+     "@context": [
+       "https://www.w3.org/ns/did/v1",
+       "https://w3id.org/security/suites/ed25519-2020/v1"
+     ],
+     "id": "did:opena2a:agent:aim_7f3a9c2e",
+     "controller": "did:opena2a:authority:org_acme",
+     "verificationMethod": [{
+       "id": "did:opena2a:agent:aim_7f3a9c2e#key-1",
+       "type": "Ed25519VerificationKey2020",
+       "controller": "did:opena2a:agent:aim_7f3a9c2e",
+       "publicKeyMultibase": "z6Mkf5rGMoatrSj1f..."
+     }],
+     "capabilityInvocation": ["#key-1"],
+     "service": [{
+       "id": "#identity-provider",
+       "type": "AgentIdentityProvider",
+       "serviceEndpoint": "https://aim.example.com"
+     }]
+   }
+
+4.3.  Identity File Format
+
+   Local identities are stored under a standard directory structure
+   rooted at "~/.opena2a/aim-core/", containing an "identities/"
+   directory of per-agent JSON files and an append-only "audit.jsonl"
+   log.  An identity file has the following form:
+
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                 [Page 7]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+   {
+     "id": "aim_7f3a9c2e",
+     "name": "my-agent",
+     "type": "claude",
+     "publicKey": "ed25519:x8Kp2mN...4RqW",
+     "encryptedPrivateKey": "aes-256-gcm:...",
+     "capabilities": ["file:read", "api:call"],
+     "declaredPurpose": {
+       "vocabVersion": "1",
+       "category": "customer-support",
+       "taskScopes": ["support:triage"],
+       "capabilityJustification": {
+         "file:read": ["support:triage"],
+         "api:call": ["support:triage"]
+       },
+       "autonomy": "supervised"
+     },
+     "createdAt": "2026-03-22T10:00:00Z",
+     "status": "verified"
+   }
+
+   Private keys MUST be encrypted at rest.  The default encryption is
+   AES-256-GCM with a key derived from the user's system keychain or a
+   passphrase.
+
+   The "declaredPurpose" member is OPTIONAL.  It is a structured
+   declaration of what the agent is for, comprising "category",
+   "taskScopes", "capabilityJustification", "autonomy", and the optional
+   "dataScopes" and "egressScopes".  It is an identity and attestation
+   property and an offline detection signal; it MUST NOT be used as an
+   authorization input, and a verifier MUST NOT reject an identity for
+   lacking it.  When carried in an ATX, declared purpose is covered by
+   the signed payload.  At the DID layer, declared purpose is surfaced
+   only as a service-endpoint pointer, never inline in the DID Document
+   body.
+
+4.4.  Agent Types
+
+   OpenA2A AIP defines a standard vocabulary for agent types, including
+   "claude", "gpt", "gemini", "langchain", "crewai", "autogen",
+   "semantic-kernel", "mcp-server", "a2a-agent", and "custom".  The type
+   is informational.  It MUST NOT be used for security decisions; an
+   agent claiming a given type is not verified as such by the type field
+   alone.
+
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                 [Page 8]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+5.  Capabilities
+
+5.1.  Capability Format
+
+   Capabilities are expressed as "namespace:action" strings.  Examples
+   include "file:read" and "file:write" for filesystem operations,
+   "db:read" and "db:write" for database operations, "api:call" for
+   outbound API calls, "network:listen" for listening on network ports,
+   "system:exec" for executing system commands, "mcp:tool_use" for
+   invoking MCP tools, "data:pii_access" for access to personally
+   identifiable information, and "payment:process" for processing
+   financial transactions.
+
+5.2.  Reserved Namespaces
+
+   The following namespaces are reserved and have standardized meanings.
+   The associated risk level is advisory.
+
+          +===========+===========================+=============+
+          | Namespace | Description               | Risk Level  |
+          +===========+===========================+=============+
+          | file      | Filesystem operations     | Medium-High |
+          +-----------+---------------------------+-------------+
+          | db        | Database operations       | Medium-High |
+          +-----------+---------------------------+-------------+
+          | api       | External API calls        | Medium      |
+          +-----------+---------------------------+-------------+
+          | network   | Network operations        | High        |
+          +-----------+---------------------------+-------------+
+          | system    | System-level operations   | Critical    |
+          +-----------+---------------------------+-------------+
+          | mcp       | MCP protocol operations   | Medium      |
+          +-----------+---------------------------+-------------+
+          | data      | Data access and handling  | High        |
+          +-----------+---------------------------+-------------+
+          | payment   | Financial operations      | Critical    |
+          +-----------+---------------------------+-------------+
+          | user      | User data operations      | High        |
+          +-----------+---------------------------+-------------+
+          | agent     | Agent-to-agent operations | Medium      |
+          +-----------+---------------------------+-------------+
+
+                                  Table 1
+
+   Organizations MAY define custom namespaces prefixed with their
+   domain, for example "acme.com/billing:charge".
+
+
+
+
+
+Fane                     Expires 7 January 2027                 [Page 9]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+5.3.  Capability Negotiation
+
+   When an agent connects to a service, such as an MCP server, an A2A
+   agent, or an API, the service SHOULD request the agent's declared
+   capabilities, compare them against the capabilities required for the
+   requested operation, reject the request if the agent lacks a required
+   capability, and log the capability check result in the audit trail.
+
+5.4.  Capability Violations
+
+   When an agent attempts an action outside its declared capabilities,
+   the identity provider MUST record a capability-violation event in the
+   audit log, apply a trust score penalty proportional to the violation
+   severity, and MAY block the action, which is configurable per policy.
+   Violation severity levels and their indicative trust penalties are:
+   low, an action attempted but not critical, penalty of -2%; medium, a
+   sensitive action attempted, penalty of -5%; high, a dangerous action
+   attempted, penalty of -10%; and critical, a system-level or financial
+   action attempted, penalty of -20%.
+
+6.  Verification
+
+6.1.  Challenge-Response Protocol
+
+   Agent identity verification uses Ed25519 challenge-response.  A
+   relying party requests a challenge from the identity provider, which
+   returns a random 32-byte challenge and an expiry.  The relying party
+   asks the agent to sign the challenge with its private key.  The agent
+   returns an Ed25519 signature and its public key.  The relying party
+   then verifies that the signature is valid for the challenge and
+   public key, that the public key matches the registered agent, that
+   the challenge has not expired within its five-minute window, and that
+   the nonce has not been reused.
+
+6.2.  Protocol-Specific Verification
+
+   OpenA2A AIP defines verification flows for common protocols.  For MCP
+   [MCP], when an MCP client connects to an MCP server, the server
+   requests a challenge, the client signs it with the agent key, the
+   server verifies the signature against the identity provider, the
+   server checks the client's capabilities against the required MCP
+   tools, and the connection is accepted or rejected.  For A2A [A2A],
+   when agent A wishes to delegate a task to agent B, A includes a
+   signed assertion in the A2A message, B verifies A's identity and
+   trust score, B checks that A's capabilities include "agent:delegate",
+   and B accepts or rejects the delegation.
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 10]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+6.3.  Verification Events
+
+   Every verification attempt MUST be logged as a verification event
+   carrying at least an event identifier, the agent identifier, the
+   protocol, the verification type, the status, the signature, a message
+   hash, a nonce, the duration, a drift-detection flag, an initiator
+   descriptor, and a timestamp:
+
+   {
+     "id": "evt_abc123",
+     "agentId": "aim_7f3a9c2e",
+     "protocol": "mcp",
+     "verificationType": "identity",
+     "status": "success",
+     "signature": "base64...",
+     "messageHash": "SHA256:...",
+     "nonce": "base64...",
+     "durationMs": 42,
+     "driftDetected": false,
+     "initiator": {
+       "type": "agent",
+       "name": "orchestrator-agent"
+     },
+     "timestamp": "2026-03-22T14:00:00Z"
+   }
+
+6.4.  Machine-to-Machine Authentication
+
+   For programmatic access, OpenA2A AIP supports API keys, which are
+   SHA-256 hashed, stored server-side, and base64-encoded for transport;
+   JWT bearer tokens [RFC7519], which are HMAC-SHA256 signed with a one-
+   hour time-to-live and contain the agent and organization identifiers;
+   and scoped SDK tokens for SDK operations such as agent registration
+   and verification.  A JWT carries subject, organization, issuer,
+   audience, expiry, issued-at, and scope claims:
+
+   {
+     "sub": "user_123",
+     "org": "org_456",
+     "iss": "aim.example.com",
+     "aud": "aim-api",
+     "exp": 1711137600,
+     "iat": 1711134000,
+     "scope": "agent:read agent:write"
+   }
+
+7.  Trust Scoring
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 11]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+7.1.  Multi-Factor Algorithm
+
+   OpenA2A AIP defines a nine-factor trust scoring algorithm.  Each
+   factor contributes a weighted score.  The composite score ranges from
+   0.0, no trust, to 1.0, full trust.  The weights sum to 100.
+
+        +=====================+========+=========================+
+        | Factor              | Weight | Input                   |
+        +=====================+========+=========================+
+        | Verification status | 25%    | Signature verification  |
+        |                     |        | success rate            |
+        +---------------------+--------+-------------------------+
+        | Uptime and          | 15%    | Health check            |
+        | availability        |        | responsiveness          |
+        +---------------------+--------+-------------------------+
+        | Action success rate | 15%    | Action completion rate  |
+        +---------------------+--------+-------------------------+
+        | Security alerts     | 15%    | Active security alerts, |
+        |                     |        | weighted by severity    |
+        +---------------------+--------+-------------------------+
+        | Compliance          | 10%    | Framework adherence     |
+        +---------------------+--------+-------------------------+
+        | Execution isolation | 10%    | Sandbox or process      |
+        |                     |        | isolation posture       |
+        +---------------------+--------+-------------------------+
+        | Age and history     | 5%     | Operational history     |
+        +---------------------+--------+-------------------------+
+        | Drift detection     | 3%     | Behavioral consistency  |
+        |                     |        | versus baseline         |
+        +---------------------+--------+-------------------------+
+        | User feedback       | 2%     | Explicit trust ratings  |
+        |                     |        | from humans             |
+        +---------------------+--------+-------------------------+
+
+                                 Table 2
+
+   The composite is computed as:
+
+   trust_score = sum over factors of
+                 ( factor_weight * factor_score * confidence )
+
+   where confidence is the data availability for each factor, from 0.0,
+   no data, to 1.0, sufficient data.  Factors with no data are excluded
+   and their weights redistributed proportionally.  All inputs to the
+   trust calculation MUST be independently verifiable and MUST be
+   computed server-side; an agent MUST NOT be able to self-report a
+   trust score (see Section 13.4).
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 12]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+7.2.  Trust Levels
+
+   Trust scores map to discrete levels for policy decisions.  A score
+   from 0.0 to 0.2 is Blocked, indicating an agent that is compromised
+   or malicious.  From 0.2 to 0.4 is Warning, indicating significant
+   trust concerns.  From 0.4 to 0.6 is Limited, indicating restricted
+   access with monitoring required.  From 0.6 to 0.8 is Standard,
+   indicating normal operations.  From 0.8 to 1.0 is Elevated,
+   indicating eligibility for high-trust operations such as financial or
+   PII access.
+
+7.3.  Trust Score History
+
+   Identity providers MUST maintain a trust score history recording, for
+   each change, the previous score, the new score, and the delta; the
+   reason for the change, such as verification, alert, drift, or manual
+   action; a timestamp; and the actor that triggered the change.
+
+7.4.  Verifiable Credential Expression
+
+   At Level 3, trust scores SHOULD be expressible as W3C Verifiable
+   Credentials [VC-DATA-MODEL], allowing a trust assertion to be carried
+   and verified across platforms:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 13]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+   {
+     "@context": [
+       "https://www.w3.org/2018/credentials/v1",
+       "https://opena2a.org/credentials/v1"
+     ],
+     "type": ["VerifiableCredential", "AgentTrustCredential"],
+     "issuer": "did:opena2a:authority:provider_opena2a",
+     "issuanceDate": "2026-03-22T14:00:00Z",
+     "expirationDate": "2026-03-23T14:00:00Z",
+     "credentialSubject": {
+       "id": "did:opena2a:agent:aim_7f3a9c2e",
+       "trustScore": 0.82,
+       "trustLevel": "standard",
+       "capabilities": ["file:read", "api:call"],
+       "verificationCount": 1847,
+       "lastVerified": "2026-03-22T13:55:00Z"
+     },
+     "proof": {
+       "type": "Ed25519Signature2020",
+       "created": "2026-03-22T14:00:00Z",
+       "verificationMethod":
+         "did:opena2a:authority:provider_opena2a#key-1",
+       "proofPurpose": "assertionMethod",
+       "proofValue": "z58DAdFfa9SkqZMVPxAQp..."
+     }
+   }
+
+7.5.  Agent Trust Protocol Integration
+
+   OpenA2A AIP trust scores feed into the Agent Trust Protocol [ATP] for
+   ecosystem-wide trust.  OpenA2A AIP provides behavioral trust, that
+   is, how the agent acts in deployment, while the Agent Trust Protocol
+   provides provenance trust, that is, how the agent's code was built
+   and scanned.  A combined ecosystem score is a weighted combination:
+
+   ecosystem_trust = alpha * aip_behavioral_trust
+                   + beta  * atp_provenance_trust
+
+   where alpha and beta are configurable weights that default to 0.5
+   each.
+
+8.  Portable Credential and Transparency Log
+
+
+
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 14]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+8.1.  Portable Signed ATX Credential
+
+   Beyond the per-provider identity record, an agent's identity,
+   capabilities, and trust level can be carried in an Agent Trust
+   eXtension (ATX) [ATX]: a signed, portable credential that a relying
+   party can verify offline without a network call to the issuing
+   Registry.  An ATX carries a hybrid signature composed of an Ed25519
+   signature and an ML-DSA-65 [FIPS204] signature, so that the
+   credential remains verifiable in both a classical and a post-quantum
+   setting.  A verifier that encounters a credential declaring an ML-
+   DSA-65 signature MUST verify at least one ML-DSA-65 signature in
+   addition to at least one Ed25519 signature.
+
+8.2.  Transparency Log
+
+   A Registry maintains an append-only, RFC 6962-style [RFC6962] Merkle
+   transparency log of identity and credential-issuance events.
+   Recording issuance in a publicly verifiable Merkle log allows any
+   party to obtain an inclusion proof for a credential and to detect
+   divergent or backdated log views, so that the set of credentials an
+   authority has issued is auditable rather than opaque.
+
+9.  Governance
+
+9.1.  Policy Format
+
+   Agent governance policies are expressed in YAML.  Each policy binds a
+   capability to an action, optionally with parameters such as
+   approvers, a rate limit, or a period:
+
+   agent: aim_7f3a9c2e
+   policies:
+     - name: "Require approval for file writes"
+       capability: "file:write"
+       action: "require_approval"
+       approvers: ["user:admin@acme.com"]
+
+     - name: "Block system commands"
+       capability: "system:exec"
+       action: "deny"
+
+     - name: "Rate limit API calls"
+       capability: "api:call"
+       action: "rate_limit"
+       limit: 100
+       period: "1m"
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 15]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+9.2.  Policy Actions
+
+   A policy action is one of: "allow", to permit without restriction;
+   "deny", to block unconditionally; "require_approval", to queue for
+   human approval before execution; "rate_limit", to allow up to a
+   configured number of invocations per period; "audit", to allow but
+   log for review; and "notify", to allow but send a notification to
+   specified parties.
+
+9.3.  Relationship to Behavioral Governance
+
+   OpenA2A AIP governance policies provide technical enforcement, such
+   as capabilities, rate limits, and approvals, enforced by the identity
+   provider.  They complement, and do not replace, behavioral governance
+   enforced at the model runtime, such as injection hardening, data
+   handling, and honesty constraints.  An agent SHOULD have both.
+
+10.  Lifecycle
+
+10.1.  States
+
+   An agent identity moves through a defined set of states: "created",
+   the identity is generated but not yet verified; "pending",
+   verification is in progress; "verified", the identity is
+   cryptographically verified; "active", the agent is operating
+   normally; "suspended", the agent is temporarily disabled, for example
+   due to a policy violation or detected drift; and "revoked", the agent
+   is permanently disabled, for example because it is compromised or
+   decommissioned.  A suspended agent may be reactivated to active; a
+   revoked agent may not.
+
+10.2.  Key Rotation
+
+   Agents SHOULD rotate keys periodically.  To rotate, the agent
+   generates a new keypair and registers the new public key with the
+   identity provider.  A grace period then begins, configurable with a
+   default of seven days, during which both the old and the new keys are
+   valid.  After the grace period, the old key is retired.  During
+   rotation the record carries the current key, the previous key, and
+   the grace-period expiry.
+
+
+
+
+
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 16]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+10.3.  Suspension and Revocation
+
+   An identity provider MUST support suspension, which is temporary and
+   reversible and is triggered by events such as a policy violation,
+   drift detection, or manual action; and revocation, which is permanent
+   and irreversible and is triggered by confirmed compromise or
+   decommissioning.  Both MUST be logged in the audit trail with a
+   reason, an actor, and a timestamp.
+
+10.4.  Drift Detection
+
+   The identity provider SHOULD monitor for configuration drift:
+   capability drift, where an agent uses capabilities not in its
+   registration; MCP drift, where an agent connects to MCP servers not
+   in its declared list; and behavioral drift, where action patterns
+   diverge from the historical baseline.  When drift is detected, the
+   provider logs a drift event, creates a security alert of high
+   severity, applies a trust score penalty of -5% on first occurrence
+   and -10% when repeated, and MAY suspend the agent, which is
+   configurable per policy.
+
+11.  Audit
+
+11.1.  Local Audit Log
+
+   Level 1 implementations MUST maintain a local append-only audit log
+   at "~/.opena2a/aim-core/audit.jsonl", where each line is a JSON
+   event:
+
+   {"type":"identity_created","agentId":"aim_7f3a9c2e",
+    "timestamp":"2026-03-22T10:00:00Z"}
+   {"type":"verification_success","agentId":"aim_7f3a9c2e",
+    "protocol":"mcp","durationMs":42,
+    "timestamp":"2026-03-22T10:01:00Z"}
+   {"type":"capability_violation","agentId":"aim_7f3a9c2e",
+    "capability":"system:exec","severity":"critical",
+    "blocked":true,"timestamp":"2026-03-22T10:02:00Z"}
+
+11.2.  Server Audit Log
+
+   Level 2 and higher implementations MUST maintain a server-side audit
+   log in an append-only data store.  Standard event types include
+   "identity_created", "identity_verified", "identity_suspended",
+   "identity_revoked", "capability_granted", "capability_revoked",
+   "capability_violation", "trust_score_changed", "drift_detected",
+   "key_rotated", "policy_evaluated", "a2a_delegation", and
+   "mcp_connection".
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 17]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+12.  Discovery
+
+   An OpenA2A AIP identity provider MUST serve a discovery document at
+   the well-known URI "/.well-known/aip".  The document advertises the
+   provider DID, the protocol version, the conformance level, the set of
+   endpoint paths, the provider's public key, and the supported agent
+   types, capability namespaces, and protocols:
+
+   {
+     "providerDid": "did:opena2a:authority:provider_opena2a",
+     "version": "1.0",
+     "conformanceLevel": 2,
+     "endpoints": {
+       "agents": "/api/v1/agents",
+       "challenge": "/api/v1/agents/{agentId}/challenge",
+       "verify": "/api/v1/agents/{agentId}/verify",
+       "capabilities": "/api/v1/capabilities",
+       "trustScore": "/api/v1/agents/{agentId}/trust",
+       "audit": "/api/v1/agents/{agentId}/audit",
+       "didResolve": "/api/v1/did/{did}"
+     },
+     "publicKey": {
+       "algorithm": "Ed25519",
+       "publicKeyMultibase": "z6Mkf5rGMoatrSj1f..."
+     },
+     "supportedAgentTypes": ["claude", "gpt", "gemini",
+       "langchain", "crewai", "mcp-server", "a2a-agent"],
+     "supportedCapabilityNamespaces": ["file", "db", "api",
+       "network", "system", "mcp", "data", "payment"],
+     "supportedProtocols": ["mcp", "a2a"]
+   }
+
+13.  Security Considerations
+
+13.1.  Key Storage
+
+   Private keys MUST be encrypted at rest.  Implementations SHOULD
+   support the system keychain, hardware security keys via WebAuthn
+   [WEBAUTHN], and HSM integration for server deployments.  Private keys
+   MUST NEVER be transmitted in plaintext; the identity provider stores
+   only public keys.
+
+13.2.  Replay Attacks
+
+   Challenge-response verification MUST use single-use nonces with a
+   maximum validity of five minutes.  Nonces MUST NOT be reusable.
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 18]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+13.3.  Capability Escalation
+
+   An agent MUST NOT be able to grant itself capabilities it does not
+   have.  Capability changes MUST be authorized by the identity provider
+   or an administrator.
+
+13.4.  Trust Score Manipulation
+
+   Trust scores MUST be computed server-side.  Agents MUST NOT be able
+   to self-report trust scores.  All inputs to the trust calculation,
+   including verification events, uptime checks, and audit logs, MUST be
+   independently verifiable.
+
+13.5.  Unverified Type and Declared-Purpose Fields
+
+   The agent type and the declared-purpose fields are informational
+   attestations, not verified claims.  They MUST NOT be used as
+   authorization inputs, and a verifier MUST NOT reject an identity
+   solely for lacking a declared purpose.
+
+14.  IANA Considerations
+
+   This document anticipates registration of the "did:opena2a" DID
+   method, shared across OpenA2A AIP, the Agent Trust Protocol [ATP],
+   and the Agent Trust eXtension [ATX], with the registered type
+   prefixes "agent", "authority", "publisher", "mcp_server",
+   "a2a_agent", "skill", "ai_tool", and "llm"; registration of the
+   "/.well-known/aip" well-known URI for identity-provider discovery;
+   and a registry of standard capability namespaces ("file", "db",
+   "api", "network", "system", "mcp", "data", "payment", "user", and
+   "agent").  The concrete registration templates will be provided in a
+   future revision of this document.
+
+15.  Normative References
+
+   [DID-CORE] World Wide Web Consortium, "Decentralized Identifiers
+              (DIDs) v1.0", July 2022,
+              <https://www.w3.org/TR/did-core/>.
+
+   [FIPS204]  National Institute of Standards and Technology, "Module-
+              Lattice-Based Digital Signature Standard", FIPS 204,
+              August 2024, <https://doi.org/10.6028/NIST.FIPS.204>.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997,
+              <https://www.rfc-editor.org/info/rfc2119>.
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 19]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+   [RFC6962]  Laurie, B., Langley, A., and E. Kasper, "Certificate
+              Transparency", RFC 6962, June 2013,
+              <https://www.rfc-editor.org/info/rfc6962>.
+
+   [RFC7519]  Jones, M., Bradley, J., and N. Sakimura, "JSON Web Token
+              (JWT)", RFC 7519, May 2015,
+              <https://www.rfc-editor.org/info/rfc7519>.
+
+   [RFC8032]  Josefsson, S. and I. Liusvaara, "Edwards-Curve Digital
+              Signature Algorithm (EdDSA)", RFC 8032, January 2017,
+              <https://www.rfc-editor.org/info/rfc8032>.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, May 2017,
+              <https://www.rfc-editor.org/info/rfc8174>.
+
+   [VC-DATA-MODEL]
+              World Wide Web Consortium, "Verifiable Credentials Data
+              Model v2.0", 2025,
+              <https://www.w3.org/TR/vc-data-model-2.0/>.
+
+16.  Informative References
+
+   [A2A]      A2A Project, "Agent2Agent (A2A) Protocol Specification",
+              2026, <https://a2aproject.github.io/A2A/>.
+
+   [AAP]      Fane, A., "OpenA2A Agent Authorization Protocol (AAP)",
+              2026, <https://datatracker.ietf.org/doc/draft-fane-
+              opena2a-aap/>.
+
+   [ATP]      Fane, A., "Agent Trust Protocol (ATP)", 2026,
+              <https://specs.opena2a.org/atp>.
+
+   [ATX]      Fane, A., "Agent Trust eXtension (ATX) Credential Format",
+              2026, <https://specs.opena2a.org/atx>.
+
+   [MCP]      Model Context Protocol, "Model Context Protocol
+              Specification", 2026, <https://modelcontextprotocol.io/>.
+
+   [NVIDIA-AIP]
+              Cao and Arango, "Agent Identity Protocol", March 2026,
+              <https://datatracker.ietf.org/doc/draft-aip-agent-
+              identity-protocol/>.
+
+   [OIDC]     OpenID Foundation, "OpenID Connect Core 1.0", November
+              2014,
+              <https://openid.net/specs/openid-connect-core-1_0.html>.
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 20]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+   [PRAKASH-AIP]
+              "Agent Identity Protocol (AIP): Verifiable Delegation for
+              AI Agent Systems", 2026,
+              <https://datatracker.ietf.org/doc/draft-prakash-aip/>.
+
+   [SINGLA-AIP]
+              Singla, "Agent Identity Protocol (AIP): Decentralized
+              Identity and Delegation for AI Agents", April 2026,
+              <https://datatracker.ietf.org/doc/draft-singla-agent-
+              identity-protocol/>.
+
+   [WEBAUTHN] World Wide Web Consortium, "Web Authentication: An API for
+              accessing Public Key Credentials Level 3", 2025,
+              <https://www.w3.org/TR/webauthn-3/>.
+
+Appendix A.  Related Work
+
+   The abbreviation "AIP" is shared by several Internet-Drafts titled
+   "Agent Identity Protocol".  One [NVIDIA-AIP] specifies an agent-
+   identity registry and a Layer 2 policy and enforcement proxy; a
+   second [SINGLA-AIP] addresses decentralized identity and delegation
+   and has been revised through several revisions; a third [PRAKASH-AIP]
+   addresses verifiable delegation across the Model Context Protocol and
+   A2A.  The qualified name "OpenA2A AIP" is used throughout this
+   document precisely because the bare acronym is contested.  OpenA2A
+   AIP shares a common spine with the first of these, a Layer 1 agent-
+   identity registry and a Layer 2 policy and enforcement surface, and
+   differs in what it builds above that spine.
+
+   OpenA2A AIP has earlier provenance: its identity registry has been
+   implemented since 2026-02-11, predating the -00 revisions of the
+   drafts cited above.  OpenA2A AIP differentiates on elements that
+   those drafts do not define: agent identifiers expressed as W3C
+   Decentralized Identifiers [DID-CORE] under the did:opena2a method
+   rather than as host-prefixed UUIDs; signing keys with an ML-DSA-65
+   [FIPS204] hybrid component carried in the portable ATX credential
+   [ATX] rather than Ed25519 alone; a structured capability vocabulary
+   with reserved namespaces rather than tool allowlists only
+   (Section 5); a multi-factor behavioral trust score with discrete
+   levels and a change history (Section 7); and an append-only, RFC
+   6962-style [RFC6962] Merkle transparency log of identity and
+   credential issuance (Section 8.2).  These documents are author-
+   namespaced and are intended to coexist on the Internet-Drafts record;
+   the comparison here is offered for disambiguation, not as a claim
+   against any author or vendor.
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 21]
+
+Internet-Draft                 OpenA2A AIP                     July 2026
+
+
+   Authorization concerns that are out of scope for OpenA2A AIP, namely
+   the scoped exercise of a capability and the confinement of
+   credentials away from an agent's reasoning context, are addressed by
+   the companion Agent Authorization Protocol [AAP].
+
+Appendix B.  Acknowledgments
+
+   This specification was authored in the open and benefits from review
+   of its identity, capability, and trust-scoring model by the OpenA2A
+   community.
+
+Author's Address
+
+   Abdel Fane
+   OpenA2A
+   Email: info@opena2a.org
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Fane                     Expires 7 January 2027                [Page 22]
