@@ -676,16 +676,14 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 7.2.  Trust Levels
 
-   Trust scores map to five discrete levels, numbered 0 through 4, for
-   policy decisions.  A score below 0.25 is Level 0 (Blocked),
-   indicating an agent that is compromised or malicious.  From 0.25 to
-   0.50 is Level 1 (Warning), indicating significant trust concerns.
-   From 0.50 to 0.75 is Level 2 (Limited), indicating restricted access
-   with monitoring required.  From 0.75 to 0.90 is Level 3 (Standard),
-   indicating normal operations.  From 0.90 to 1.00 is Level 4
-   (Elevated), indicating eligibility for high-trust operations such as
-   financial or PII access.  The trustLevel field of a credential
-   carries this integer.
+   Trust scores map to discrete levels for policy decisions.  A score
+   from 0.0 to 0.2 is Blocked, indicating an agent that is compromised
+   or malicious.  From 0.2 to 0.4 is Warning, indicating significant
+   trust concerns.  From 0.4 to 0.6 is Limited, indicating restricted
+   access with monitoring required.  From 0.6 to 0.8 is Standard,
+   indicating normal operations.  From 0.8 to 1.0 is Elevated,
+   indicating eligibility for high-trust operations such as financial or
+   PII access.
 
 7.3.  Trust Score History
 
@@ -699,6 +697,8 @@ Internet-Draft                 OpenA2A AIP                     July 2026
    At Level 3, trust scores SHOULD be expressible as W3C Verifiable
    Credentials [VC-DATA-MODEL], allowing a trust assertion to be carried
    and verified across platforms:
+
+
 
 
 
@@ -742,7 +742,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
      "credentialSubject": {
        "id": "did:opena2a:agent:aim_7f3a9c2e",
        "trustScore": 0.82,
-       "trustLevel": 3,
+       "trustLevel": "standard",
        "capabilities": ["file:read", "api:call"],
        "verificationCount": 1847,
        "lastVerified": "2026-03-22T13:55:00Z"
