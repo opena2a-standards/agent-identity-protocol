@@ -540,15 +540,15 @@ Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 
 
 ### 6.2 Trust Levels
 
-Trust scores map to discrete levels for policy decisions:
+Trust scores map to five discrete levels (0-4) for policy decisions. The `trustLevel` field of a credential carries this integer:
 
-| Score Range | Level | Meaning |
-|-------------|-------|---------|
-| 0.0 - 0.2 | Blocked | Agent is compromised or malicious |
-| 0.2 - 0.4 | Warning | Significant trust concerns |
-| 0.4 - 0.6 | Limited | Restricted access, monitoring required |
-| 0.6 - 0.8 | Standard | Normal operations |
-| 0.8 - 1.0 | Elevated | High-trust operations (financial, PII) |
+| Score range | Level | Name | Meaning |
+|-------------|-------|------|---------|
+| 0.00 - 0.25 | 0 | Blocked | Agent is compromised or malicious |
+| 0.25 - 0.50 | 1 | Warning | Significant trust concerns |
+| 0.50 - 0.75 | 2 | Limited | Restricted access, monitoring required |
+| 0.75 - 0.90 | 3 | Standard | Normal operations |
+| 0.90 - 1.00 | 4 | Elevated | High-trust operations (financial, PII) |
 
 ### 6.3 Trust Score History
 
@@ -577,7 +577,7 @@ At Level 3, trust scores SHOULD be expressible as W3C Verifiable Credentials:
   "credentialSubject": {
     "id": "did:opena2a:agent:aim_7f3a9c2e",
     "trustScore": 0.82,
-    "trustLevel": "standard",
+    "trustLevel": 3,
     "capabilities": ["file:read", "api:call"],
     "verificationCount": 1847,
     "lastVerified": "2026-03-22T13:55:00Z"
