@@ -48,7 +48,7 @@
       computed from independently verifiable signals; a portable signed
       credential, the Agent Trust eXtension, carrying a hybrid Ed25519 and
       ML-DSA-65 signature for post-quantum readiness; an append-only,
-      RFC 6962-style Merkle transparency log for identity and credential
+      RFC 9162-style Merkle transparency log for identity and credential
       issuance; agent identifiers expressed as W3C Decentralized Identifiers
       under the did:opena2a method; and a structured capability vocabulary with
       reserved namespaces. On top of these, the protocol specifies
@@ -91,7 +91,7 @@
         readiness (<xref target="portable"/>).</t></li>
         <li><t><strong>Transparency log</strong>: identity registration and
         credential issuance events are recorded in an append-only,
-        RFC 6962-style <xref target="RFC6962"/> Merkle transparency log
+        RFC 9162-style <xref target="RFC9162"/> Merkle transparency log
         maintained by the Registry (<xref target="translog"/>).</t></li>
         <li><t><strong>Decentralized identity</strong>: at the federated
         conformance level, agents are identified by W3C Decentralized
@@ -172,7 +172,7 @@
 
         <dt>Registry / Root Authority</dt>
         <dd>A trust authority that issues ATX credentials, maintains a
-        transparency log <xref target="RFC6962"/>, and participates in the Agent
+        transparency log <xref target="RFC9162"/>, and participates in the Agent
         Trust Protocol <xref target="ATP"/>.</dd>
 
         <dt>Decentralized Identifier (DID)</dt>
@@ -624,8 +624,8 @@ ecosystem_trust = alpha * aip_behavioral_trust
 
       <section anchor="translog">
         <name>Transparency Log</name>
-        <t>A Registry maintains an append-only, RFC 6962-style
-        <xref target="RFC6962"/> Merkle transparency log of identity and
+        <t>A Registry maintains an append-only, RFC 9162-style
+        <xref target="RFC9162"/> Merkle transparency log of identity and
         credential-issuance events. Recording issuance in a publicly verifiable
         Merkle log allows any party to obtain an inclusion proof for a credential
         and to detect divergent or backdated log views, so that the set of
@@ -900,15 +900,15 @@ policies:
         <seriesInfo name="RFC" value="7519"/>
       </reference>
 
-      <reference anchor="RFC6962" target="https://www.rfc-editor.org/info/rfc6962">
+      <reference anchor="RFC9162" target="https://www.rfc-editor.org/info/rfc9162">
         <front>
-          <title>Certificate Transparency</title>
+          <title>Certificate Transparency Version 2.0</title>
           <author initials="B." surname="Laurie" fullname="B. Laurie"/>
-          <author initials="A." surname="Langley" fullname="A. Langley"/>
-          <author initials="E." surname="Kasper" fullname="E. Kasper"/>
-          <date year="2013" month="June"/>
+          <author initials="E." surname="Messeri" fullname="E. Messeri"/>
+          <author initials="R." surname="Stradling" fullname="R. Stradling"/>
+          <date year="2021" month="December"/>
         </front>
-        <seriesInfo name="RFC" value="6962"/>
+        <seriesInfo name="RFC" value="9162"/>
       </reference>
 
       <reference anchor="FIPS204" target="https://doi.org/10.6028/NIST.FIPS.204">
@@ -1069,7 +1069,7 @@ policies:
       capability vocabulary with reserved namespaces rather than tool allowlists
       only (<xref target="capabilities"/>); a multi-factor behavioral trust score
       with discrete levels and a change history (<xref target="trust"/>); and an
-      append-only, RFC 6962-style <xref target="RFC6962"/> Merkle transparency
+      append-only, RFC 9162-style <xref target="RFC9162"/> Merkle transparency
       log of identity and credential issuance (<xref target="translog"/>). These
       documents are author-namespaced and are intended to coexist on the
       Internet-Drafts record; the comparison here is offered for

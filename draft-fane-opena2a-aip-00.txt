@@ -26,7 +26,7 @@ Abstract
    computed from independently verifiable signals; a portable signed
    credential, the Agent Trust eXtension, carrying a hybrid Ed25519 and
    ML-DSA-65 signature for post-quantum readiness; an append-only, RFC
-   6962-style Merkle transparency log for identity and credential
+   9162-style Merkle transparency log for identity and credential
    issuance; agent identifiers expressed as W3C Decentralized
    Identifiers under the did:opena2a method; and a structured capability
    vocabulary with reserved namespaces.  On top of these, the protocol
@@ -176,7 +176,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
        signature for post-quantum readiness (Section 8).
 
    3.  *Transparency log*: identity registration and credential issuance
-       events are recorded in an append-only, RFC 6962-style [RFC6962]
+       events are recorded in an append-only, RFC 9162-style [RFC9162]
        Merkle transparency log maintained by the Registry (Section 8.2).
 
    4.  *Decentralized identity*: at the federated conformance level,
@@ -260,7 +260,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
       [ATX].
 
    Registry / Root Authority  A trust authority that issues ATX
-      credentials, maintains a transparency log [RFC6962], and
+      credentials, maintains a transparency log [RFC9162], and
       participates in the Agent Trust Protocol [ATP].
 
    Decentralized Identifier (DID)  A globally unique identifier
@@ -801,7 +801,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 8.2.  Transparency Log
 
-   A Registry maintains an append-only, RFC 6962-style [RFC6962] Merkle
+   A Registry maintains an append-only, RFC 9162-style [RFC9162] Merkle
    transparency log of identity and credential-issuance events.
    Recording issuance in a publicly verifiable Merkle log allows any
    party to obtain an inclusion proof for a credential and to detect
@@ -1066,10 +1066,6 @@ Fane                     Expires 7 January 2027                [Page 19]
 Internet-Draft                 OpenA2A AIP                     July 2026
 
 
-   [RFC6962]  Laurie, B., Langley, A., and E. Kasper, "Certificate
-              Transparency", RFC 6962, June 2013,
-              <https://www.rfc-editor.org/info/rfc6962>.
-
    [RFC7519]  Jones, M., Bradley, J., and N. Sakimura, "JSON Web Token
               (JWT)", RFC 7519, May 2015,
               <https://www.rfc-editor.org/info/rfc7519>.
@@ -1081,6 +1077,10 @@ Internet-Draft                 OpenA2A AIP                     July 2026
    [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
               2119 Key Words", BCP 14, RFC 8174, May 2017,
               <https://www.rfc-editor.org/info/rfc8174>.
+
+   [RFC9162]  Laurie, B., Messeri, E., and R. Stradling, "Certificate
+              Transparency Version 2.0", RFC 9162, December 2021,
+              <https://www.rfc-editor.org/info/rfc9162>.
 
    [VC-DATA-MODEL]
               World Wide Web Consortium, "Verifiable Credentials Data
@@ -1162,7 +1162,7 @@ Appendix A.  Related Work
    with reserved namespaces rather than tool allowlists only
    (Section 5); a multi-factor behavioral trust score with discrete
    levels and a change history (Section 7); and an append-only, RFC
-   6962-style [RFC6962] Merkle transparency log of identity and
+   9162-style [RFC9162] Merkle transparency log of identity and
    credential issuance (Section 8.2).  These documents are author-
    namespaced and are intended to coexist on the Internet-Drafts record;
    the comparison here is offered for disambiguation, not as a claim
