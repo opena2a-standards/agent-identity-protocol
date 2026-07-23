@@ -4,8 +4,8 @@
 
 Individual Submission                                            A. Fane
 Internet-Draft                                                   OpenA2A
-Intended status: Standards Track                            16 July 2026
-Expires: 17 January 2027
+Intended status: Standards Track                            22 July 2026
+Expires: 23 January 2027
 
 
                  OpenA2A Agent Identity Protocol (AIP)
@@ -53,7 +53,7 @@ Status of This Memo
 
 
 
-Fane                     Expires 17 January 2027                [Page 1]
+Fane                     Expires 23 January 2027                [Page 1]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -63,7 +63,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 17 January 2027.
+   This Internet-Draft will expire on 23 January 2027.
 
 Copyright Notice
 
@@ -109,7 +109,7 @@ Table of Contents
 
 
 
-Fane                     Expires 17 January 2027                [Page 2]
+Fane                     Expires 23 January 2027                [Page 2]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -165,7 +165,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027                [Page 3]
+Fane                     Expires 23 January 2027                [Page 3]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -221,7 +221,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027                [Page 4]
+Fane                     Expires 23 January 2027                [Page 4]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -277,7 +277,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027                [Page 5]
+Fane                     Expires 23 January 2027                [Page 5]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -333,7 +333,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027                [Page 6]
+Fane                     Expires 23 January 2027                [Page 6]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -389,7 +389,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027                [Page 7]
+Fane                     Expires 23 January 2027                [Page 7]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -445,7 +445,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027                [Page 8]
+Fane                     Expires 23 January 2027                [Page 8]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -501,7 +501,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027                [Page 9]
+Fane                     Expires 23 January 2027                [Page 9]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -557,7 +557,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 10]
+Fane                     Expires 23 January 2027               [Page 10]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -613,7 +613,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 11]
+Fane                     Expires 23 January 2027               [Page 11]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -669,7 +669,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 12]
+Fane                     Expires 23 January 2027               [Page 12]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -725,7 +725,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 13]
+Fane                     Expires 23 January 2027               [Page 13]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -781,7 +781,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 14]
+Fane                     Expires 23 January 2027               [Page 14]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -837,7 +837,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 15]
+Fane                     Expires 23 January 2027               [Page 15]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -893,7 +893,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 16]
+Fane                     Expires 23 January 2027               [Page 16]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -949,7 +949,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 17]
+Fane                     Expires 23 January 2027               [Page 17]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -1005,7 +1005,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 18]
+Fane                     Expires 23 January 2027               [Page 18]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -1061,7 +1061,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 19]
+Fane                     Expires 23 January 2027               [Page 19]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -1117,7 +1117,7 @@ Internet-Draft                 OpenA2A AIP                     July 2026
 
 
 
-Fane                     Expires 17 January 2027               [Page 20]
+Fane                     Expires 23 January 2027               [Page 20]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -1173,7 +1173,7 @@ Appendix A.  Related Work
 
 
 
-Fane                     Expires 17 January 2027               [Page 21]
+Fane                     Expires 23 January 2027               [Page 21]
 
 Internet-Draft                 OpenA2A AIP                     July 2026
 
@@ -1229,4 +1229,4 @@ Author's Address
 
 
 
-Fane                     Expires 17 January 2027               [Page 22]
+Fane                     Expires 23 January 2027               [Page 22]
