@@ -8,6 +8,20 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Added
 
+- `draft-fane-opena2a-aip-02.{xml,txt}`: Internet-Draft revision carrying the
+  §5.1 wire format ratified in 1.0.1-draft. `-01` was a date-only resubmission
+  of `-00`, so the datatracker copy described challenge-response in one prose
+  paragraph while this repository had five normative subsections; the reject
+  categories (`SIGNATURE_INVALID`, `UNTRUSTED_KEY`, `CHALLENGE_EXPIRED`,
+  `NONCE_REPLAY`) appeared zero times in the draft and the two documents
+  disagreed. `-02` adds the challenge body, the response body with the
+  unsigned-fields warning, the five-field canonical signing form with UTC
+  normalization, the ordered verification rules with their reject categories,
+  and the conformance-fixture pointer, plus normative references to RFC 3339,
+  RFC 4648, RFC 8785 and RFC 8792. No other technical change. The example
+  transcript is the suite's `challenge-response-valid` fixture and its Ed25519
+  signature was verified against the documented canonical form before commit.
+
 - `schemas/challenge-body-v1.schema.json` and
   `schemas/response-body-v1.schema.json`: machine-readable JSON Schemas
   (draft 2020-12) for the §5.1.1/§5.1.2 wire bodies, fixture-ground-truth
