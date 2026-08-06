@@ -36,12 +36,12 @@ curl https://aim.opena2a.org/.well-known/aip
 ## Interoperability
 
 AIP is designed to complement:
-- [Google A2A Protocol](https://github.com/google/A2A) — AIP identity in agent cards
+- [Google A2A Protocol](https://github.com/a2aproject/A2A) — AIP identity in agent cards
 - [Anthropic MCP](https://modelcontextprotocol.io) — capability-based tool access control
 - [OpenID Connect](https://openid.net/connect/) — JWT tokens for machine-to-machine auth
 - [WebAuthn/FIDO2](https://www.w3.org/TR/webauthn-3/) — hardware key storage for browsers
 - [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) — trust scores as VCs
-- [ATP (Agent Trust Protocol)](https://github.com/opena2a-org/agent-trust-protocol) — ecosystem trust
+- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust
 
 ## How AIP and ATP Work Together
 
@@ -59,7 +59,7 @@ The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-managem
 
 ## Related Standards
 
-- [ATP (Agent Trust Protocol)](https://github.com/opena2a-org/agent-trust-protocol) — ecosystem trust
+- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust
 - [OASB (Open Agent Security Benchmark)](https://github.com/opena2a-org/oasb) — security controls
 
 ## Naming and prior art
