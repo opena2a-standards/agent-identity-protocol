@@ -8,6 +8,10 @@ OpenA2A AIP answers "Who is this agent, what can it do, and should I trust it?" 
 
 > **Naming note.** Multiple independent specifications use the abbreviation "AIP" for "Agent Identity Protocol" (see [Naming and prior art](#naming-and-prior-art) below). When referenced outside this repository, please use the fully qualified name **"OpenA2A AIP"** to disambiguate. The bare "AIP" is retained inside this repository where context is unambiguous.
 
+## Contributing
+
+This specification is early and authored in the open. We are looking for co-authors, an independent second implementation, and security review before it goes to an external standards body. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
 ## Quick Start
 
 ```bash
