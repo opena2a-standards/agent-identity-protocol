@@ -18,12 +18,17 @@ This specification is early and authored in the open. We are looking for co-auth
 # Create an agent identity
 npx opena2a-cli identity create --name my-agent
 
-# Verify an agent
-curl "https://aim.opena2a.org/api/v1/did/did:aip:aim_7f3a9c2e"
-
 # Discover an identity provider
 curl https://aim.opena2a.org/.well-known/aip
+
+# Resolve an agent's DID document. This answers only for an agent registered with
+# this provider; without opena2a login, the identity created above is stored locally
+# and is not registered. <agent-uuid> is a placeholder: as printed the request returns
+# 400 invalid_agent_id, and a UUID the provider has not issued returns 404 did_not_found.
+curl "https://aim.opena2a.org/api/v1/did/did:aip:aim_<agent-uuid>"
 ```
+
+On 2026-09-02 both `https://aim.opena2a.org/.well-known/aip` and `https://api.aim.opena2a.org/.well-known/aip` answered HTTP 200 with the provider's discovery document; that is a dated measurement, and the discovery command above is how to check the current state.
 
 ## Specification
 

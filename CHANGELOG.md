@@ -35,6 +35,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   fixture bytes (a transcript that actually verifies) instead of placeholder
   annotations; the annotations moved into the surrounding prose.
 
+### Fixed
+
+- README Quick Start: discovery is listed before DID resolution; the resolve example carries the placeholder `did:aip:aim_<agent-uuid>` and states that resolution answers only for an agent registered with the provider. The previous sample `did:aip:aim_7f3a9c2e` is not a UUID and the reference deployment answered it with 400 `invalid_agent_id`.
+
 ## [1.0.1-draft] - 2026-07-03
 
 ### Added
