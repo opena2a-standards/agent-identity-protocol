@@ -1,0 +1,21 @@
+name: spec-drift
+
+# Spec-versus-verifier drift gate for the opena2a-standards family. The
+# reusable workflow checks out every family repository at main and this one
+# at the commit under test, then fails only on checks whose home this
+# repository owns or whose findings sit in this repository's files. Family
+# drift elsewhere is reported in the job summary. Check data lives in
+# opena2a-standards/.github (HARNESS.md there); it is referenced at main on
+# purpose so a check-data change reaches every repository on its next run.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  spec-drift:
+    uses: opena2a-standards/.github/.github/workflows/spec-drift.yml@main
