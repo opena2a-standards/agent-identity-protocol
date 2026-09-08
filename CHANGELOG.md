@@ -8,6 +8,16 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Added
 
+- One home per shared definition, marked for the family drift gate: Section 4.1 is the
+  home of the capability grammar (reserved or domain-prefixed namespace, colon, action; no
+  wildcard) with a machine-readable block; Section 4.2 is the shared capability-namespace
+  registry, now including `secrets` (Critical), and `registries/capability-namespaces.json`
+  is generated from its table by `scripts/gen_registries.py`, checked in CI.
+
+### Changed
+
+- Section 5.1 step 3 (freshness) cites the family clock-skew bound in ATP Section 10.2.
+
 - `draft-fane-opena2a-aip-02.{xml,txt}`: Internet-Draft revision carrying the
   §5.1 wire format ratified in 1.0.1-draft. `-01` was a date-only resubmission
   of `-00`, so the datatracker copy described challenge-response in one prose

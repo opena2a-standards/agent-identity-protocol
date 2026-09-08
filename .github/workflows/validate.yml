@@ -24,3 +24,6 @@ jobs:
 
       - name: Validate schemas and mapped spec examples
         run: python3 scripts/validate_examples.py
+
+      - name: Generated registries match the marked definition tables
+        run: python3 scripts/gen_registries.py --check
