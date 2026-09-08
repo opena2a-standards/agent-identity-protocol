@@ -126,7 +126,7 @@ and a Layer 2 policy/enforcement proxy — and differ on what is built above it.
 
 | Dimension | draft-aip-agent-identity-protocol-00 | OpenA2A AIP |
 |---|---|---|
-| Agent identifier | host-prefixed UUIDv4 (`host/uuid`) | DID (`did:opena2a`; W3C did-extensions PR #717) |
+| Agent identifier | host-prefixed UUIDv4 (`host/uuid`) | DID: provider-scoped `did:aip` at the AIP layer (AIP-SPEC §3.2); the ecosystem-scoped `did:opena2a` method (W3C did-extensions #717, merged 2026-07-04) names Registry-listed resources at the ATP/ATX layer |
 | Signing keys | Ed25519 | Ed25519, with ML-DSA-65 hybrid in the ATX credential |
 | Identity registry | HTTP registry, agent record | Managed / federated identity (Conformance Levels 2–3) |
 | Per-call attestation | per-call signed AIP token (argumentsHash + nonce) | challenge-response verification (Section 5) |
