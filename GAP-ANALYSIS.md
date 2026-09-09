@@ -11,7 +11,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 | Ed25519 keypair generation | Complete | `apps/backend/internal/crypto/keygen.go` |
 | ML-DSA-65 hybrid signing | Complete | `apps/backend/internal/crypto/pqc/hybrid.go` |
 | Agent ID format (aim_XXXXXXXX) | Complete | `apps/backend/internal/domain/agent.go` |
-| DID resolution (did:aip:) | Complete (*updated 2026-07*) — `did:aip:aim_<uuid>` resolver; other methods rejected | `handlers/aip_handler.go` (ResolveDID), `domain/agent_did.go` |
+| DID resolution | Partial (*updated 2026-09*): the resolver answers the deprecated pre-1.1 alias form only; the `did:web` form and its `did.json` route (AIP-SPEC §3.2, 1.1.0-draft) are not implemented | `handlers/aip_handler.go` (ResolveDID), `domain/agent_did.go` |
 | DID Document generation | Complete (*updated 2026-07*) — W3C DID Document served by the resolver | `handlers/aip_handler.go` |
 | Local identity file format | Partial — SDK creates files but format not standardized | `sdk/typescript/` |
 | Key rotation with grace period | Complete | `agent.go` (KeyRotationGraceUntil, PreviousPublicKey) |
@@ -126,7 +126,7 @@ and a Layer 2 policy/enforcement proxy — and differ on what is built above it.
 
 | Dimension | draft-aip-agent-identity-protocol-00 | OpenA2A AIP |
 |---|---|---|
-| Agent identifier | host-prefixed UUIDv4 (`host/uuid`) | DID (`did:opena2a`; W3C did-extensions PR #717) |
+| Agent identifier | host-prefixed UUIDv4 (`host/uuid`) | DID: provider-scoped `did:web` profile at the AIP layer (`did:web:<provider-host>:agents:<id>`, AIP-SPEC §3.2); the ecosystem-scoped `did:opena2a` method (W3C did-extensions #717, merged 2026-07-04) names Registry-listed resources at the ATP/ATX layer |
 | Signing keys | Ed25519 | Ed25519, with ML-DSA-65 hybrid in the ATX credential |
 | Identity registry | HTTP registry, agent record | Managed / federated identity (Conformance Levels 2–3) |
 | Per-call attestation | per-call signed AIP token (argumentsHash + nonce) | challenge-response verification (Section 5) |
