@@ -565,7 +565,7 @@ Trust scores map to five behavioral tiers (0-4) for policy decisions. The `behav
 | 0.75 - 0.90 | 3 | Standard | Normal operations |
 | 0.90 - 1.00 | 4 | Elevated | High-trust operations (financial, PII) |
 
-A behavioral tier is not a trust level. The identity provider computes the tier from the §6.1 score, and the five names above are tier names. `trustLevel`, wherever it appears in AIP or in any family credential, means the ATP-SPEC §4.1 trust level; AIP does not restate that table.
+A behavioral tier is not a trust level. The identity provider computes the tier from the §6.1 score. The five names above are tier names. `trustLevel` means the ATP-SPEC §4.1 trust level wherever it appears, in AIP and in any credential defined by another OpenA2A specification. AIP does not restate the ATP-SPEC §4.1 table.
 
 ### 6.3 Trust Score History
 
