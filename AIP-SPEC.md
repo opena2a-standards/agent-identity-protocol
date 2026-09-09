@@ -2,7 +2,7 @@
 
 ## An Open Standard for AI Agent Identity, Capabilities, and Trust
 
-**Version:** 1.0.2-draft
+**Version:** 1.1.0-draft
 **Authors:** OpenA2A
 **Date:** September 2026 (first published March 2026)
 
@@ -124,20 +124,22 @@ Both keys are generated simultaneously. Classical-only verifiers check the Ed255
 
 ### 3.2 Decentralized Identifier (DID)
 
-At Level 3, agents are identified by DIDs conforming to W3C DID Core. Two DID methods with distinct scopes participate in the stack; AIP identities use the first.
+At Level 3, agents are identified by DIDs conforming to W3C DID Core. Two DID methods with distinct scopes participate in the stack; AIP identities use the first. AIP defines no DID method of its own.
 
-**Provider-scoped: `did:aip` (the AIP-layer method).** An AIP identity provider issues its agents DIDs of the form:
+**Provider-scoped: a `did:web` profile (the AIP layer).** An AIP identity provider issues its agents identifiers under the `did:web` method, with the provider's own host inside the identifier:
 
 ```
-did:aip:<namespace>_<id>
+did:web:<provider-host>[:<path>]:agents:<id>
 ```
 
-where `<namespace>` identifies the issuing provider's namespace and `<id>` is the provider-assigned identifier. Resolution is provider-anchored: the DID is resolved against the issuing provider's `didResolve` endpoint discovered via `/.well-known/aip` (§10.1). The reference implementation (AIM) issues `did:aip:aim_<uuid>` and identifies itself as `did:aip:provider_opena2a`. A provider MUST reject resolution requests for DID methods it does not serve.
+where `<provider-host>` is the DNS name of the issuing provider, `<path>` is zero or more colon-separated path segments under which the provider publishes DID Documents, and `<id>` is the provider-assigned identifier. The provider identifies itself as `did:web:<provider-host>`. Resolution follows the `did:web` method: the DID Document is fetched over HTTPS from the host the identifier names, at `https://<provider-host>/<path>/agents/<id>/did.json` for an agent and `https://<provider-host>/.well-known/did.json` for the provider, so the identifier needs no method registration of its own and any resolver that speaks `did:web` resolves it. The provider's `didResolve` endpoint, advertised in `/.well-known/aip` (§10.1), serves the same document under the provider's API path. The reference implementation (AIM) issues `did:web:aim.opena2a.org:agents:<uuid>` and identifies itself as `did:web:aim.opena2a.org`. A provider MUST reject resolution requests for identifiers it did not issue.
 
 Example:
 ```
-did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6
+did:web:aim.opena2a.org:agents:7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6
 ```
+
+**Deprecated alias.** Revisions before 1.1 of this section described a provider-scoped method under a name of AIP's own, and the reference implementation issued identifiers in that form (method name registration, below). A provider that issued identifiers in the pre-1.1 form keeps resolving them for a migration window and lists the alias under `alsoKnownAs` in the agent's DID Document, so a verifier holding either form reaches the same document. Identifiers are opaque to verification (below), so credentials issued against an alias keep verifying.
 
 **Ecosystem-scoped: `did:opena2a` (the trust-fabric method, informative here).** The unified `did:opena2a:<type>:<id>` method — with registered type prefixes `agent`, `authority`, `publisher`, `mcp_server`, `a2a_agent`, `skill`, `ai_tool`, `llm` — is shared by ATP (Agent Trust Protocol) and ATX (Agent Trust eXtension) and is anchored at the OpenA2A Registry, which operates its public resolver. It names cross-provider trust-fabric participants (issuing authorities, publishers, Registry-listed agents). An AIP identity provider does not serve `did:opena2a`; an agent acquires an ecosystem identifier when it is registered in the Registry, and a provider MAY record that binding in the agent's DID Document via `alsoKnownAs`. The method is normatively specified in [`did-method-opena2a`](https://github.com/opena2a-standards/did-method-opena2a).
 
@@ -151,28 +153,28 @@ The DID Document includes the agent's public keys, capabilities, and service end
     "https://www.w3.org/ns/did/v1",
     "https://w3id.org/security/suites/ed25519-2020/v1"
   ],
-  "id": "did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
-  "controller": "did:aip:provider_opena2a",
+  "id": "did:web:aim.opena2a.org:agents:7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
+  "controller": "did:web:aim.opena2a.org",
   "verificationMethod": [{
-    "id": "did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6#key-1",
+    "id": "did:web:aim.opena2a.org:agents:7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6#key-1",
     "type": "Ed25519VerificationKey2020",
-    "controller": "did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
+    "controller": "did:web:aim.opena2a.org:agents:7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
     "publicKeyMultibase": "z6Mkf5rGMoatrSj1f..."
   }],
   "capabilityInvocation": ["#key-1"],
   "service": [{
     "id": "#identity-provider",
     "type": "AgentIdentityProvider",
-    "serviceEndpoint": "https://aim.example.com"
+    "serviceEndpoint": "https://aim.opena2a.org"
   }]
 }
 ```
 
-> **Method-scoping note (2026-07).** Earlier drafts of this section said AIP itself uses the unified `did:opena2a` method. That never matched the reference implementation, which has always issued `did:aip:` identifiers and hard-rejects other methods at its resolver, and it conflated two trust domains: a self-hosted identity provider must not mint identifiers inside the ecosystem-shared namespace that the Registry anchors. The scoping above — `did:aip` provider-scoped at the AIP layer, `did:opena2a` ecosystem-scoped at the ATP/ATX layer — is the ratified resolution of that conflict.
+> **Method-scoping note (2026-07, restated 2026-09).** Earlier drafts of this section said AIP itself uses the unified `did:opena2a` method. That never matched the reference implementation, which issues provider-scoped identifiers and rejects other methods at its resolver, and it conflated two trust domains: a self-hosted identity provider must not mint identifiers inside the ecosystem-shared namespace that the Registry anchors. The two-domain scoping stands: provider-scoped identifiers at the AIP layer, `did:opena2a` ecosystem-scoped at the ATP/ATX layer. Revision 1.1.0-draft changes only the form of the provider-scoped identifier, from a method name of AIP's own to the `did:web` profile above.
 
-> **Reference implementation status (2026-09).** The reference resolver serves `did:aip` only and rejects every other method (`handlers/aip_handler.go:68`, constant at `domain/agent_did.go:13`); the DID Document it serves carries the agent's own Ed25519 and ML-DSA-65 public keys (`aip_handler.go:112,122`). No code path in the reference implementation resolves `did:opena2a`. This revision records that state; it does not change it.
+> **Reference implementation status (2026-09-08, public repository `opena2a-org/agent-identity-management`).** The reference resolver serves the deprecated alias form only: `GET /api/v1/did/{did}` answers `did:aip:aim_<uuid>` and rejects every other prefix (`handlers/aip_handler.go:68`, constant at `domain/agent_did.go:13`); the DID Document it serves carries the agent's own Ed25519 and ML-DSA-65 public keys (`aip_handler.go:112,122`). The `did.json` route of the `did:web` form is not implemented, and no code path resolves `did:opena2a`. This revision specifies the target; it does not change the resolver.
 
-> **Method name registration.** DID method names are registered in the W3C DID Extensions registry. `opena2a` is registered there (w3c/did-extensions#717, merged 2026-07-04). The name `aip` is also listed in that registry, registered on 2026-05-31 by a party unrelated to OpenA2A (`methods/aip.json`, specification at `github.com/dr-wilson-empty/aip-beta`). The provider-scoped `did:aip` identifiers described above are not resolvable under that registration and the two uses of the name are distinct. Whether the provider-scoped method keeps this name is under review; identifiers already issued are unaffected by the outcome because AIP verification treats them as opaque (see below).
+> **Method name registration.** DID method names are registered in the W3C DID Extensions registry. `opena2a` is registered there (w3c/did-extensions#717, merged 2026-07-04), and `web` is listed there as well. The name `aip` is also listed, registered on 2026-05-31 by a party unrelated to OpenA2A (`methods/aip.json`, specification at `github.com/dr-wilson-empty/aip-beta`). AIP defines no DID method; provider-scoped identifiers use did:web; pre-1.1 `did:aip:aim_` identifiers are deprecated aliases. Identifiers already issued are unaffected because AIP verification treats them as opaque (see below).
 
 ### 3.3 Identity File Format
 
@@ -358,7 +360,7 @@ shape is [`schemas/challenge-body-v1.schema.json`](./schemas/challenge-body-v1.s
 
 The identifiers in this transcript (`agentDid`, `issuerDid`, and `keyId` in
 §5.1.2) are ecosystem-scoped `did:opena2a` strings because the suite's test
-subject is a Registry-listed agent. A provider-scoped `did:aip` identifier
+subject is a Registry-listed agent. A provider-scoped `did:web` identifier
 (§3.2) is carried in the same fields in the same way. The bytes above are the
 pinned fixture and are unchanged by the §3.2 scoping: verification treats the
 identifier as opaque and binds it to a key through the verifier's registration
@@ -431,8 +433,8 @@ category (the property the conformance fixtures pin):
    proves it is the right key.
 2. **Bound key** — the presented `publicKey` matches the key bound to
    `agentDid` in the verifier's registration state or resolved DID document
-   (for a `did:aip` identifier, the document served by the issuing provider's
-   `didResolve` endpoint, §3.2; reject category `UNTRUSTED_KEY`). A transcript MUST NOT be accepted on
+   (for a provider-scoped `did:web` identifier, the document the issuing
+   provider serves, §3.2; reject category `UNTRUSTED_KEY`). A transcript MUST NOT be accepted on
    step 1 alone.
 3. **Freshness** — the verifier's clock is before `expiresAt` (the window is
    5 minutes from issuance; reject category `CHALLENGE_EXPIRED`).
@@ -563,6 +565,8 @@ Trust scores map to five discrete levels (0-4) for policy decisions. The `trustL
 | 0.75 - 0.90 | 3 | Standard | Normal operations |
 | 0.90 - 1.00 | 4 | Elevated | High-trust operations (financial, PII) |
 
+AIP's trust level is a behavioral tier computed by the identity provider (§6.1) and is distinct from the ATP provenance scale (ATP-SPEC §4.1), which shares the integer range 0-4 but not the level names or their meaning.
+
 ### 6.3 Trust Score History
 
 Identity providers MUST maintain a trust score history with:
@@ -589,11 +593,11 @@ Registry-listed agent is the ATP trust proof (§6.5), issued under
     "https://opena2a.org/credentials/v1"
   ],
   "type": ["VerifiableCredential", "AgentTrustCredential"],
-  "issuer": "did:aip:provider_opena2a",
+  "issuer": "did:web:aim.opena2a.org",
   "issuanceDate": "2026-03-22T14:00:00Z",
   "expirationDate": "2026-03-23T14:00:00Z",
   "credentialSubject": {
-    "id": "did:aip:aim_7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
+    "id": "did:web:aim.opena2a.org:agents:7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
     "trustScore": 0.82,
     "trustLevel": 3,
     "capabilities": ["file:read", "api:call"],
@@ -603,7 +607,7 @@ Registry-listed agent is the ATP trust proof (§6.5), issued under
   "proof": {
     "type": "Ed25519Signature2020",
     "created": "2026-03-22T14:00:00Z",
-    "verificationMethod": "did:aip:provider_opena2a#key-1",
+    "verificationMethod": "did:web:aim.opena2a.org#key-1",
     "proofPurpose": "assertionMethod",
     "proofValue": "z58DAdFfa9SkqZMVPxAQp..."
   }
@@ -792,7 +796,7 @@ GET /.well-known/aip
 
 ```json
 {
-  "providerDid": "did:aip:provider_opena2a",
+  "providerDid": "did:web:aim.opena2a.org",
   "version": "1.0",
   "conformanceLevel": 2,
   "endpoints": {
@@ -813,6 +817,8 @@ GET /.well-known/aip
   "supportedProtocols": ["mcp", "a2a"]
 }
 ```
+
+`providerDid` is the provider's `did:web` self-identifier (§3.2). The `didResolve` endpoint answers for the identifiers the provider issued, including deprecated aliases during their migration window; the same DID Document is also published at the `did:web` path derived from the identifier.
 
 ---
 
@@ -901,7 +907,7 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 
 ## 13. IANA Considerations
 
-- **DID methods (no IANA action):** DID method names are registered in the W3C DID Extensions registry, not with IANA. `did:opena2a`, the ecosystem-scoped method anchored at the OpenA2A Registry and shared with ATP and ATX, is registered (w3c/did-extensions#717, merged 2026-07-04) and specified in [`did-method-opena2a`](https://github.com/opena2a-standards/did-method-opena2a), whose §3.2 is the registry of resource-type prefixes. The provider-scoped `did:aip` method (§3.2) is not registered by OpenA2A; the name `aip` in that registry belongs to an unrelated registration (§3.2, method name registration).
+- **DID methods (no IANA action):** DID method names are registered in the W3C DID Extensions registry, not with IANA. AIP defines no DID method; provider-scoped identifiers use did:web; pre-1.1 `did:aip:aim_` identifiers are deprecated aliases (§3.2). `did:opena2a`, the ecosystem-scoped method anchored at the OpenA2A Registry and shared with ATP and ATX, is registered (w3c/did-extensions#717, merged 2026-07-04) and specified in [`did-method-opena2a`](https://github.com/opena2a-standards/did-method-opena2a), whose §3.2 is the registry of resource-type prefixes. `did:web` is specified by the W3C Credentials Community Group and listed in the same registry.
 - **Well-Known URI:** `/.well-known/aip`. Identity provider discovery.
 - **Capability Namespace Registry:** Standard capability namespaces (file, db, api, network, system, mcp, data, payment, user, agent).
 
@@ -914,6 +920,7 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 - RFC 7519 — JSON Web Token (JWT)
 - W3C DID Core — Decentralized Identifiers v1.0
 - W3C DID Extensions registry: `did:opena2a` method entry (w3c/did-extensions#717, merged 2026-07-04)
+- W3C CCG did:web Method Specification: the `did:web` method under which provider-scoped AIP identifiers are issued (§3.2)
 - W3C Verifiable Credentials — Verifiable Credentials Data Model v2.0
 - WebAuthn Level 3 — Web Authentication API
 - FIPS 204 — Module-Lattice-Based Digital Signature Standard (ML-DSA)
@@ -946,7 +953,7 @@ The reference implementation's coverage is uneven and the gaps are tracked publi
 
 | AIP / AIP-adjacent section | AIM status | Notes |
 |---|---|---|
-| §3 Agent Identity (Ed25519 keypair, agent ID, DID) | Shipped | `crypto/keygen.go`, `domain/agent.go`. Server-side key generation; agent receives Ed25519 public key registered on its record. DID resolution serves `did:aip` only and rejects other methods (`handlers/aip_handler.go:68`). |
+| §3 Agent Identity (Ed25519 keypair, agent ID, DID) | Shipped | `crypto/keygen.go`, `domain/agent.go`. Server-side key generation; agent receives Ed25519 public key registered on its record. DID resolution serves the deprecated alias form only and rejects other prefixes (`handlers/aip_handler.go:68`); the `did:web` route of §3.2 is not implemented as of 2026-09-08. |
 | §3 Hybrid PQC signing (Ed25519 + ML-DSA-65) | Shipped end to end on the registry path | Registry-side code paths below are in a private repository; the publicly checkable evidence for this row is the hybrid fixture in [`atx-conformance`](https://github.com/opena2a-standards/atx-conformance) (`fixtures/baseline-valid-hybrid.json`), which the Go reference verifier accepts on both algorithms. Registry-side `ATCService.IssueATC()` at `opena2a-registry/internal/application/atc_service.go` emits hybrid signatures in production: threshold Ed25519 plus one ML-DSA-65 signature from the hybrid keypair wired in at `cmd/server/main.go:682-685` (startup log: "ATC post-quantum hybrid signing enabled (Ed25519 + ML-DSA-65)"). The ML-DSA-65 signature `Value` is the raw 3309-byte `mldsa65.SignatureSize` blob as of opena2a-registry PR #215 (prior credentials carried a legacy combined Ed25519+ML-DSA blob; ATC TTL is 7 days, so the rollover is naturally complete one week after PR #215 ships). The standalone offline-verify package `opena2a-registry/pkg/atcverify` enforces the hybrid signing mandate as of opena2a-registry PR #214: when a credential declares an ML-DSA-65 signature, at least one ML-DSA-65 signature must verify in addition to at least one Ed25519 signature. A parallel AIM-side CBOR issuer (`agent-identity-management/apps/backend/internal/infrastructure/atc/atc_issuer.go` `RealATCIssuer`) signs Ed25519 only and has no active production callers today. |
 | §4 Capabilities | Shipped | `application/capability_service.go`, FGA engine at `application/fga_engine.go` with 5-step blocking enforcement (capability, attribute, context, chain, intent). |
 | §4 JIT capability grants with TTL | Partial | TTL exists for PAM (Privileged Access Management) emergency-escalation grants. Routine capability grants are static. |

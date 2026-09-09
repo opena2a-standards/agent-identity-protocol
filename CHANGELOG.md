@@ -6,39 +6,51 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ## [Unreleased]
 
-## [1.0.2-draft] - 2026-09-08
+## [1.1.0-draft] - 2026-09-08
 
-Draft pairing: `draft-fane-opena2a-aip-03` pairs with 1.0.2-draft. `-02`
-(2026-08-06) carried the §5.1 wire format of 1.0.1-draft but not the §3.2 DID
-method scoping ratified in that same version; `-03` closes that gap. `-00`
-(2026-07-06) and `-01` (2026-07-22, date-only) carried the pre-scoping text.
+Draft pairing: `draft-fane-opena2a-aip-03` pairs with 1.1.0-draft. Minor
+bump: what a provider MUST issue changes (provider-scoped identifiers are a
+`did:web` profile; the pre-1.1 form is a deprecated alias); the §5.1 wire
+format does not. `-02` (2026-08-06) carried the §5.1 wire format of
+1.0.1-draft but not the §3.2 DID method scoping ratified in that same version;
+`-03` carries the scoping in its 1.1 form. `-00` (2026-07-06) and `-01`
+(2026-07-22, date-only) carried the pre-scoping text.
 
 ### Added
 
 - `draft-fane-opena2a-aip-03.{xml,txt}`: Internet-Draft revision carrying the
-  §3.2 DID method scoping as a method-scoping decision. `-02` said OpenA2A AIP
-  uses the unified `did:opena2a` method and showed `did:opena2a` strings in the
-  DID Document, discovery, and Verifiable Credential examples; `-03` states
-  that an identity provider issues and resolves provider-scoped `did:aip`
-  identifiers (what the reference implementation does and has always done),
-  that `did:opena2a` is the ecosystem-scoped method an identity provider does
-  not serve, and that verification treats identifiers as opaque. The
-  challenge-response transcript is unchanged (it is the pinned fixture) and
-  is annotated as ecosystem-scoped. The IANA section no longer anticipates a
-  DID method registration: method names are a W3C registry, `did:opena2a`
-  is registered there, and the name `aip` is held by an unrelated
-  registration. An informative reference to `did-method-opena2a` and a
-  "Changes from -02" section are added. Built with xml2rfc; idnits was not
+  §3.2 DID method scoping. `-02` said OpenA2A AIP uses the unified
+  `did:opena2a` method and showed `did:opena2a` strings in the DID Document,
+  discovery, and Verifiable Credential examples; `-03` states that AIP
+  defines no DID method, that an identity provider issues and resolves
+  provider-scoped identifiers as a `did:web` profile
+  (`did:web:<provider-host>[:<path>]:agents:<id>`, provider self-identifier
+  `did:web:<provider-host>`), that `did:opena2a` is the ecosystem-scoped
+  method an identity provider does not serve, and that verification treats
+  identifiers as opaque. The challenge-response transcript is unchanged (it
+  is the pinned fixture) and is annotated as ecosystem-scoped. The IANA
+  section requests no DID method action: method names are a W3C registry,
+  `did:opena2a` is registered there, and the name `aip` is held by an
+  unrelated registration. Informative references to `did-method-opena2a`,
+  the W3C DID Extensions registry and the did:web method specification and
+  a "Changes from -02" section are added. Built with xml2rfc; idnits was not
   available at build time and no idnits pass is claimed.
-- §3.2 reference implementation status paragraph (resolver serves `did:aip`
-  only, rejects other methods, serves the agent's own keys) and a method name
-  registration paragraph disclosing the third-party `aip` entry in the W3C
-  DID Extensions registry (registered 2026-05-31). Whether the provider-scoped
-  method keeps the name is under review.
+- §3.2 `did:web` profile for provider-scoped identifiers, with the reference
+  form `did:web:aim.opena2a.org:agents:<uuid>`, a deprecated-alias paragraph
+  (the pre-1.1 form is served for a migration window and linked by
+  `alsoKnownAs`), a reference implementation status paragraph (the resolver
+  answers the pre-1.1 alias form only, the `did.json` route is not
+  implemented, source read 2026-09-08) and a method name registration
+  paragraph disclosing the third-party `aip` entry in the W3C DID Extensions
+  registry (registered 2026-05-31) and stating that AIP registers nothing.
 - §5.1.1 note stating that the fixture identifiers are ecosystem-scoped
-  `did:opena2a` strings, that `did:aip` identifiers are carried the same way,
-  and that the fixture bytes do not change with §3.2.
-- §14: reference to the `did:opena2a` W3C DID Extensions registry entry.
+  `did:opena2a` strings, that provider-scoped `did:web` identifiers are
+  carried the same way, and that the fixture bytes do not change with §3.2.
+- §6.2: one informative sentence that AIP's trust level is a behavioral tier
+  distinct from the ATP provenance scale (ATP-SPEC §4.1). The field and the
+  level names are unchanged in this revision.
+- §14: references to the `did:opena2a` W3C DID Extensions registry entry and
+  to the W3C CCG did:web method specification.
 - `draft-fane-opena2a-aip-02.{xml,txt}`: Internet-Draft revision carrying the
   §5.1 wire format ratified in 1.0.1-draft. `-01` was a date-only resubmission
   of `-00`, so the datatracker copy described challenge-response in one prose
@@ -62,29 +74,38 @@ method scoping ratified in that same version; `-03` closes that gap. `-00`
 
 ### Changed
 
+- §3.2 DID Document example and §10.1 discovery document carry the `did:web`
+  form (`providerDid` is the provider's `did:web` self-identifier); a
+  paragraph after the discovery document says the `didResolve` endpoint
+  answers for issued identifiers including deprecated aliases and that the
+  same document is published at the `did:web` path.
 - §6.4 Verifiable Credential example is now an AIP-layer sample: issuer
-  `did:aip:provider_opena2a`, subject `did:aip:aim_<uuid>` (the §3.2 example),
-  proof key `did:aip:provider_opena2a#key-1`. 1.0.1-draft had set the issuer to
-  the ecosystem authority `did:opena2a:authority:opena2a.org` with the subject
+  `did:web:aim.opena2a.org`, subject
+  `did:web:aim.opena2a.org:agents:<uuid>` (the §3.2 example), proof key
+  `did:web:aim.opena2a.org#key-1`. 1.0.1-draft had set the issuer to the
+  ecosystem authority `did:opena2a:authority:opena2a.org` with the subject
   `did:opena2a:agent:aim_7f3a9c2e`, a provider identifier inside the ecosystem
   namespace, which is the conflation §3.2 rules out. The prose now says that an
   ecosystem-scoped trust assertion is the ATP trust proof (§6.5).
-- §5.1.4 rule 2 names the document that resolves a `did:aip` identifier (the
-  issuing provider's `didResolve` endpoint).
+- §5.1.4 rule 2 names the document that resolves a provider-scoped `did:web`
+  identifier (the document the issuing provider serves).
 - §13 rewritten: DID method registration is a W3C matter, not an IANA action;
-  the resource-type prefix list now defers to `did-method-opena2a` §3.2.
-- Appendix A.1 §3 row records that resolution serves `did:aip` only.
-- GAP-ANALYSIS comparison table: the agent identifier row said `did:opena2a`;
-  it now says provider-scoped `did:aip` at the AIP layer with `did:opena2a`
-  at the ATP/ATX layer.
-- README prior-art paragraph: the Singla draft's `did:aip` method shares its
-  name with the reference implementation's provider-scoped identifiers; the
-  previous wording (`did:aip` vs `did:opena2a`) presented the two as disjoint.
-- Not changed in this revision, reserved for an architecture ruling: the trust
-  level names and scale (§6.2), the `transparencyLogIndex` field (lives in
-  atx-spec), identifier length (§3.1), relying-party-minted challenges and the
-  audience field (§5.1.3), and the post-quantum verification method in the DID
-  Document example.
+  AIP defines no DID method; the resource-type prefix list now defers to
+  `did-method-opena2a` §3.2.
+- Appendix A.1 §3 row records that resolution serves the deprecated alias
+  form only and that the `did:web` route is not implemented.
+- GAP-ANALYSIS: the DID resolution row is Partial (alias form only, `did:web`
+  route not implemented); the agent identifier row says provider-scoped
+  `did:web` profile at the AIP layer with `did:opena2a` at the ATP/ATX layer.
+- README prior-art paragraph: the Singla draft introduces a `did:aip` method;
+  OpenA2A AIP defines no DID method and the reference implementation's
+  pre-1.1 identifiers are deprecated aliases. README resolve example says the
+  printed identifier is the alias form the resolver answers today.
+- Not changed in this revision: the trust level field and names (§6.2; the
+  rename to a behavioral tier field is the next wire revision), the
+  `transparencyLogIndex` field (lives in atx-spec), identifier length (§3.1),
+  relying-party-minted challenges and the audience field (§5.1.3), and the
+  post-quantum verification method in the DID Document example.
 - §5.1.1/§5.1.2 example blocks now carry the suite's `challenge-response-valid`
   fixture bytes (a transcript that actually verifies) instead of placeholder
   annotations; the annotations moved into the surrounding prose.
