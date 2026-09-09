@@ -51,6 +51,11 @@ format does not. `-02` (2026-08-06) carried the §5.1 wire format of
   level names are unchanged in this revision.
 - §14: references to the `did:opena2a` W3C DID Extensions registry entry and
   to the W3C CCG did:web method specification.
+- One home per shared definition, marked for the family drift gate: Section 4.1 is the
+  home of the capability grammar (reserved or domain-prefixed namespace, colon, action; no
+  wildcard) with a machine-readable block; Section 4.2 is the shared capability-namespace
+  registry, now including `secrets` (Critical), and `registries/capability-namespaces.json`
+  is generated from its table by `scripts/gen_registries.py`, checked in CI.
 - `draft-fane-opena2a-aip-02.{xml,txt}`: Internet-Draft revision carrying the
   §5.1 wire format ratified in 1.0.1-draft. `-01` was a date-only resubmission
   of `-00`, so the datatracker copy described challenge-response in one prose
@@ -73,6 +78,8 @@ format does not. `-02` (2026-08-06) carried the §5.1 wire format of
   schemas metaschema-checked and both §5.1 examples validated on every push/PR.
 
 ### Changed
+
+- Section 5.1 step 3 (freshness) cites the family clock-skew bound in ATP Section 10.2.
 
 - §3.2 DID Document example and §10.1 discovery document carry the `did:web`
   form (`providerDid` is the provider's `did:web` self-identifier); a

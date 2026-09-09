@@ -1,0 +1,70 @@
+{
+  "id": "capability-namespaces",
+  "source": {
+    "file": "AIP-SPEC.md",
+    "marker": "<!-- opena2a-definition: capability-namespaces -->"
+  },
+  "columns": [
+    "Namespace",
+    "Description",
+    "Risk Level"
+  ],
+  "key": "Namespace",
+  "rows": [
+    {
+      "Namespace": "file",
+      "Description": "Filesystem operations",
+      "Risk Level": "Medium-High"
+    },
+    {
+      "Namespace": "db",
+      "Description": "Database operations",
+      "Risk Level": "Medium-High"
+    },
+    {
+      "Namespace": "api",
+      "Description": "External API calls",
+      "Risk Level": "Medium"
+    },
+    {
+      "Namespace": "network",
+      "Description": "Network operations",
+      "Risk Level": "High"
+    },
+    {
+      "Namespace": "system",
+      "Description": "System-level operations",
+      "Risk Level": "Critical"
+    },
+    {
+      "Namespace": "mcp",
+      "Description": "MCP protocol operations",
+      "Risk Level": "Medium"
+    },
+    {
+      "Namespace": "data",
+      "Description": "Data access and handling",
+      "Risk Level": "High"
+    },
+    {
+      "Namespace": "payment",
+      "Description": "Financial operations",
+      "Risk Level": "Critical"
+    },
+    {
+      "Namespace": "user",
+      "Description": "User data operations",
+      "Risk Level": "High"
+    },
+    {
+      "Namespace": "agent",
+      "Description": "Agent-to-agent operations",
+      "Risk Level": "Medium"
+    },
+    {
+      "Namespace": "secrets",
+      "Description": "Secret material: reading, writing or rotating credentials and keys",
+      "Risk Level": "Critical"
+    }
+  ]
+}
