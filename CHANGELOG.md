@@ -10,7 +10,8 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft and is built once this change
 set closes. Until then `draft-fane-opena2a-aip-03` is the latest render and carries the 1.1.0-draft
-text.
+text. `draft-fane-opena2a-aip-03` is not submitted to the datatracker; `-02` (2026-08-06) remains
+the current revision there and predates both the §3.2 DID method scoping and this tier rename.
 
 ### Changed
 
