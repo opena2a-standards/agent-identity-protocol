@@ -30,8 +30,8 @@ format does not. `-02` (2026-08-06) carried the §5.1 wire format of
   identifiers as opaque. The challenge-response transcript is unchanged (it
   is the pinned fixture) and is annotated as ecosystem-scoped. The IANA
   section requests no DID method action: method names are a W3C registry,
-  `did:opena2a` is registered there, and the name `aip` is held by an
-  unrelated registration. Informative references to `did-method-opena2a`,
+  `did:opena2a` is registered there, and the name `aip` is held by a
+  registration that is not OpenA2A's. Informative references to `did-method-opena2a`,
   the W3C DID Extensions registry and the did:web method specification and
   a "Changes from -02" section are added. Built with xml2rfc; idnits was not
   available at build time and no idnits pass is claimed.

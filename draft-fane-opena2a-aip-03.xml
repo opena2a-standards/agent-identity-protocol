@@ -368,9 +368,9 @@ did:web:<provider-host>[:<path>]:agents:<id>
         <t>Method name registration. DID method names are registered in the
         W3C DID Extensions registry <xref target="DID-EXTENSIONS"/>. The name
         "opena2a" is registered there, and "web" is listed there as well. The
-        name "aip" is also listed, registered on 2026-05-31 by a party
-        unrelated to OpenA2A. OpenA2A AIP defines no DID method;
-        provider-scoped identifiers use did:web; pre-1.1 "did:aip:aim_"
+        name "aip" is also listed; that entry (methods/aip.json, added
+        2026-05-31) is not OpenA2A's. OpenA2A AIP defines no DID method;
+        provider-scoped identifiers use "did:web"; pre-1.1 "did:aip:aim_"
         identifiers are deprecated aliases. Identifiers already issued are
         unaffected because verification treats them as opaque.</t>
       </section>
@@ -1083,7 +1083,7 @@ policies:
       <t>This document requests no IANA action for DID methods. DID method
       names are registered in the W3C DID Extensions registry
       <xref target="DID-EXTENSIONS"/>, not with IANA. OpenA2A AIP defines no
-      DID method; provider-scoped identifiers use did:web; pre-1.1
+      DID method; provider-scoped identifiers use "did:web"; pre-1.1
       "did:aip:aim_" identifiers are deprecated aliases
       (<xref target="did"/>). The ecosystem-scoped did:opena2a method, shared
       across OpenA2A AIP, the Agent Trust Protocol <xref target="ATP"/>, and
@@ -1368,12 +1368,13 @@ policies:
       "Agent Identity Protocol". One <xref target="NVIDIA-AIP"/> specifies an
       agent-identity registry and a Layer 2 policy and enforcement proxy; a
       second <xref target="SINGLA-AIP"/> addresses decentralized identity and
-      delegation, has been revised through several revisions, and introduces a
-      DID method of its own; OpenA2A AIP defines no DID method
-      (<xref target="did"/>) and the two are unrelated; a third
+      delegation, is at revision -03 (2026-06-10), and introduces a DID
+      method of its own; OpenA2A AIP defines no DID method
+      (<xref target="did"/>) and the two documents are independent of each
+      other; a third
       <xref target="PRAKASH-AIP"/> addresses verifiable delegation across the
       Model Context Protocol and A2A. The qualified name "OpenA2A AIP" is used
-      throughout this document precisely because the bare acronym is contested.
+      throughout this document precisely because the bare acronym is shared.
       OpenA2A AIP shares a common spine with the first of these, a Layer 1
       agent-identity registry and a Layer 2 policy and enforcement surface, and
       differs in what it builds above that spine.</t>
@@ -1411,7 +1412,7 @@ policies:
       wire format.</t>
       <ul spacing="normal">
         <li>The DID section now states that OpenA2A AIP defines no DID
-        method; provider-scoped identifiers use did:web; pre-1.1
+        method; provider-scoped identifiers use "did:web"; pre-1.1
         "did:aip:aim_" identifiers are deprecated aliases. An identity
         provider issues and resolves identifiers of the form
         "did:web:&lt;provider-host&gt;[:&lt;path&gt;]:agents:&lt;id&gt;"
@@ -1430,8 +1431,8 @@ policies:
         scale. The field and the level names are unchanged.</li>
         <li>The IANA section requests no DID method action: method names are
         a W3C registry, did:opena2a is registered there, did:web is specified
-        by its own community group, and the name "aip" is held by an
-        unrelated registration.</li>
+        by its own community group, and the name "aip" is held by a
+        registration that is not OpenA2A's.</li>
         <li>Informative references to the did:opena2a method specification,
         the W3C DID Extensions registry and the did:web method specification
         are added.</li>

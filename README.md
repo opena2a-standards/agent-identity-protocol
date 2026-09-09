@@ -24,7 +24,7 @@ curl https://aim.opena2a.org/.well-known/aip
 # Resolve an agent's DID document. The identifier printed is the deprecated pre-1.1
 # alias form, the one the reference resolver answers as of 2026-09-08; the specified
 # form is did:web:aim.opena2a.org:agents:<agent-uuid> (AIP-SPEC 3.2) and its did.json
-# route is not yet served. This answers only for an agent registered with this
+# route is not served. This answers only for an agent registered with this
 # provider; without opena2a login, the identity created above is stored locally and
 # is not registered. <agent-uuid> is a placeholder: as printed the request returns
 # 400 invalid_agent_id, and a UUID the provider has not issued returns 404 did_not_found.
@@ -82,11 +82,11 @@ The abbreviation "AIP" for "Agent Identity Protocol" appears in at least three i
 | ---------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **OpenA2A AIP** (this repository)                                                                    | OpenA2A                                | March 2026        | Identity, capabilities, verification, trust scoring, governance, lifecycle, audit. Reference implementation in [AIM](https://github.com/opena2a-org/agent-identity-management). |
 | **[draft-aip-agent-identity-protocol-00](https://datatracker.ietf.org/doc/draft-aip-agent-identity-protocol/)** | James Cao, Carlos Eduardo Arango Gutierrez (NVIDIA) | March 16, 2026    | Two-layer model: unique agent identity with cryptographic signing + policy enforcement through an interposing proxy.                                |
-| **[draft-singla-agent-identity-protocol-00](https://datatracker.ietf.org/doc/draft-singla-agent-identity-protocol/00/)** | Paras Singla (Independent)             | April 17, 2026    | Decentralized identity + delegation; introduces the `did:aip` DID method, capability-based authorization, cryptographic delegation chains.          |
+| **[draft-singla-agent-identity-protocol-00](https://datatracker.ietf.org/doc/draft-singla-agent-identity-protocol/00/)** | Paras Singla (Independent)             | April 16, 2026    | Decentralized identity + delegation; introduces the `did:aip` DID method, capability-based authorization, cryptographic delegation chains.          |
 
-The three specs are independent of one another. OpenA2A AIP has the broadest surface (identity through audit), the Cao/Arango draft is closest to OpenA2A AIP's capability + enforcement scope, and the Singla draft introduces a `did:aip` DID method. OpenA2A AIP defines no DID method; provider-scoped identifiers use did:web; pre-1.1 `did:aip:aim_` identifiers issued by the reference implementation are deprecated aliases (AIP-SPEC §3.2). OpenA2A's registered W3C method is [`did:opena2a`](https://github.com/opena2a-standards/did-method-opena2a), used at the ATP/ATX layer.
+The three specs are independent of one another. OpenA2A AIP has the broadest surface (identity through audit), the Cao/Arango draft is closest to OpenA2A AIP's capability + enforcement scope, and the Singla draft introduces a `did:aip` DID method. AIP defines no DID method; provider-scoped identifiers use `did:web`; pre-1.1 `did:aip:aim_` identifiers are deprecated aliases. The reference implementation issued identifiers in that form (AIP-SPEC §3.2). OpenA2A's registered W3C method is [`did:opena2a`](https://github.com/opena2a-standards/did-method-opena2a), used at the ATP/ATX layer.
 
-OpenA2A's position is that the three specs solve adjacent but distinct problems and that coordination on shared vocabulary is preferable to a name fight. Outreach to the IETF draft authors is tracked separately. In the meantime, the "OpenA2A AIP" branding in this repository is the unilateral disambiguation step.
+OpenA2A's position is that the three specs solve adjacent but distinct problems. The qualified name "OpenA2A AIP" is this repository's disambiguation.
 
 ## License
 
