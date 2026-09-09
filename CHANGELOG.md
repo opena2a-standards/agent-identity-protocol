@@ -6,6 +6,18 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ## [Unreleased]
 
+## [1.2.0-draft] - unreleased
+
+Pairs with `draft-fane-opena2a-aip-04`, built once when the 1.2.0-draft change set closes;
+until then `draft-fane-opena2a-aip-03` is the latest render and carries the 1.1.0-draft text.
+
+### Changed
+
+- §6.2 becomes the behavioral tier table: the field is `behaviorTier` (was `trustLevel`), the
+  column is `Tier`, and the five names (Blocked, Warning, Limited, Standard, Elevated) are tier
+  names. `trustLevel` in AIP and in any family credential means the ATP-SPEC §4.1 trust level;
+  AIP no longer restates that table. The §6.4 sample carries `behaviorTier`.
+
 ## [1.1.0-draft] - 2026-09-08
 
 Draft pairing: `draft-fane-opena2a-aip-03` pairs with 1.1.0-draft. Minor

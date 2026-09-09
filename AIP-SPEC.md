@@ -2,7 +2,7 @@
 
 ## An Open Standard for AI Agent Identity, Capabilities, and Trust
 
-**Version:** 1.1.0-draft
+**Version:** 1.2.0-draft
 **Authors:** OpenA2A
 **Date:** September 2026 (first published March 2026)
 
@@ -553,19 +553,19 @@ Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 
 
 **Per-factor implementation status (reference implementation, 2026-07).** Six of the nine factors are measured today: verification status, uptime, action success rate, security alerts, execution isolation, and age. Three are **Proposed — stubbed in the reference implementation**: **compliance**, **drift detection**, and **user feedback** currently report no data, so they are excluded and their weights redistributed under the exclusion-and-cap rules above. A composite from the reference implementation therefore reflects the six measured factors capped by neutral imputation of the stubs. Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them.
 
-### 6.2 Trust Levels
+### 6.2 Behavioral Tiers
 
-Trust scores map to five discrete levels (0-4) for policy decisions. The `trustLevel` field of a credential carries this integer:
+Trust scores map to five behavioral tiers (0-4) for policy decisions. The `behaviorTier` field of an AIP-layer credential (§6.4) carries this integer:
 
-| Score range | Level | Name | Meaning |
-|-------------|-------|------|---------|
+| Score range | Tier | Name | Meaning |
+|-------------|------|------|---------|
 | 0.00 - 0.25 | 0 | Blocked | Agent is compromised or malicious |
 | 0.25 - 0.50 | 1 | Warning | Significant trust concerns |
 | 0.50 - 0.75 | 2 | Limited | Restricted access, monitoring required |
 | 0.75 - 0.90 | 3 | Standard | Normal operations |
 | 0.90 - 1.00 | 4 | Elevated | High-trust operations (financial, PII) |
 
-AIP's trust level is a behavioral tier computed by the identity provider (§6.1) and is distinct from the ATP provenance scale (ATP-SPEC §4.1), which shares the integer range 0-4 but not the level names or their meaning.
+A behavioral tier is not a trust level. The identity provider computes the tier from the §6.1 score, and the five names above are tier names. `trustLevel`, wherever it appears in AIP or in any family credential, means the ATP-SPEC §4.1 trust level; AIP does not restate that table.
 
 ### 6.3 Trust Score History
 
@@ -599,7 +599,7 @@ Registry-listed agent is the ATP trust proof (§6.5), issued under
   "credentialSubject": {
     "id": "did:web:aim.opena2a.org:agents:7f3a9c2e-1b2d-4c3e-9f10-a1b2c3d4e5f6",
     "trustScore": 0.82,
-    "trustLevel": 3,
+    "behaviorTier": 3,
     "capabilities": ["file:read", "api:call"],
     "verificationCount": 1847,
     "lastVerified": "2026-03-22T13:55:00Z"
