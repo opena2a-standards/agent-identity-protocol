@@ -19,6 +19,12 @@ text.
   Elevated) are tier names. `trustLevel` in AIP and in any credential defined by another OpenA2A
   specification means the ATP-SPEC §4.1 trust level. AIP no longer restates the ATP-SPEC §4.1
   table. The §6.4 sample carries `behaviorTier`.
+- One home per shared definition, marked for the family drift gate: Section 4.1 is the
+  home of the capability grammar (reserved or domain-prefixed namespace, colon, action; no
+  wildcard) with a machine-readable block; Section 4.2 is the shared capability-namespace
+  registry, now including `secrets` (Critical), and `registries/capability-namespaces.json`
+  is generated from its table by `scripts/gen_registries.py`, checked in CI.
+- Section 5.1 step 3 (freshness) cites the family clock-skew bound in ATP Section 10.2.
 
 ## [1.1.0-draft] - 2026-09-08
 
@@ -87,6 +93,7 @@ format does not. `-02` (2026-08-06) carried the §5.1 wire format of
   schemas metaschema-checked and both §5.1 examples validated on every push/PR.
 
 ### Changed
+
 
 - §3.2 DID Document example and §10.1 discovery document carry the `did:web`
   form (`providerDid` is the provider's `did:web` self-identifier); a

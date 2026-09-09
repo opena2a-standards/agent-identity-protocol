@@ -241,7 +241,16 @@ The type is informational. It MUST NOT be used for security decisions — an age
 
 ### 4.1 Capability Format
 
-Capabilities are expressed as `namespace:action` strings:
+<!-- opena2a-definition: capability-grammar -->
+Capabilities are expressed as `namespace:action` strings. This section is the one home of
+the capability grammar for the OpenA2A specification family: a capability is a reserved
+namespace from Section 4.2, or a namespace prefixed with the defining organization's
+domain, a colon, and an action; there is no wildcard action. Other specifications and
+every conformance fixture cite this grammar rather than restate it.
+
+```json
+{"grammar": "^(?:[a-z0-9-]+(?:\\.[a-z0-9-]+)+/)?[a-z][a-z0-9_]*:[a-z][a-z0-9_]*$"}
+```
 
 ```
 file:read          Read files from the filesystem
@@ -258,8 +267,12 @@ payment:process    Process financial transactions
 
 ### 4.2 Reserved Namespaces
 
-The following namespaces are reserved and have standardized meanings:
+The following namespaces are reserved and have standardized meanings. This table is the
+shared capability-namespace registry of the specification family;
+[`registries/capability-namespaces.json`](./registries/capability-namespaces.json) is
+generated from it, and additions are made by pull request against this repository.
 
+<!-- opena2a-definition: capability-namespaces -->
 | Namespace | Description | Risk Level |
 |-----------|-----------|------------|
 | `file` | Filesystem operations | Medium-High |
@@ -272,6 +285,7 @@ The following namespaces are reserved and have standardized meanings:
 | `payment` | Financial operations | Critical |
 | `user` | User data operations | High |
 | `agent` | Agent-to-agent operations | Medium |
+| `secrets` | Secret material: reading, writing or rotating credentials and keys | Critical |
 
 Organizations MAY define custom namespaces prefixed with their domain:
 
@@ -437,7 +451,9 @@ category (the property the conformance fixtures pin):
    provider serves, §3.2; reject category `UNTRUSTED_KEY`). A transcript MUST NOT be accepted on
    step 1 alone.
 3. **Freshness** — the verifier's clock is before `expiresAt` (the window is
-   5 minutes from issuance; reject category `CHALLENGE_EXPIRED`).
+   5 minutes from issuance, evaluated within the family clock-skew bound of
+   ATP Section 10.2, which never extends the window; reject category
+   `CHALLENGE_EXPIRED`).
 4. **Nonce single-use** — the nonce has not been consumed by a prior
    verification. Verifiers MUST record consumed nonces at least until the
    corresponding challenge's `expiresAt` (reject category `NONCE_REPLAY`).
