@@ -575,7 +575,7 @@ Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 
 
 ```json
 {
-  "agentId": "did:opena2a:example:agent-1",
+  "agentId": "did:opena2a:agent:agent_unscored_example_001",
   "algorithmVersion": 2,
   "scoreStatus": "unscored",
   "score": null,
