@@ -565,6 +565,29 @@ Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 
 
 **Anti-gaming ceiling.** Redistribution alone rewards data withholding: an excluded factor effectively inherits the agent's included average, so an operator could raise a well-behaved agent's score by never supplying compliance or feedback data (no data would outscore a measured 0.9). Implementations MUST therefore cap the published composite at the value obtained by scoring every excluded factor at its neutral default (0.5, or the factor's documented no-data baseline): a factor with no data can never contribute more than a neutral measurement would. Agents whose renormalized composite is below the neutral-imputed value keep the renormalized (lower) score — exclusion never props a poorly-scoring agent up toward neutral. Implementations SHOULD report which factors were excluded alongside the score.
 
+**Unscored state and algorithm version.** The exclusion rule above says what happens to a factor with no data; it does not say what happens when most of the weight has no data. Redistribution over a small remainder publishes a composite that reads like a measurement of the whole agent while measuring a fraction of it. This paragraph is the one home of the unscored rule, the wire fields that carry it, and the algorithm version; implementations and their API documentation cite it rather than restate the threshold.
+
+- *Included weight.* `includedWeight` is the sum of the weights of the factors that have data (confidence above 0.0), divided by 100, so it lies in 0.0-1.0. It is computed before redistribution.
+- *Unscored rule.* When `includedWeight` is below 0.50, the agent is **unscored**. An implementation MUST NOT publish a composite for an unscored agent: `score` MUST be `null` (not 0, not a default, not the neutral-imputed ceiling), `scoreStatus` MUST be `"unscored"`, and `unscoredReason` MUST be present. The reason vocabulary is `insufficient_data`; an implementation MAY add reasons and MUST document each one. Unscored is a state, not an error: the response is an ordinary success. A trust credential (§6.4), and any credential another OpenA2A specification derives from the trust score, MUST NOT be issued from an unscored state.
+- *Measured state.* When `includedWeight` is 0.50 or more, `scoreStatus` is `"measured"` and `score` is the composite computed under the exclusion, redistribution and anti-gaming rules above, in 0.0-1.0.
+- *Algorithm version.* Every trust score an implementation publishes carries `algorithmVersion`, an integer. Version 1 is the composition rule without the unscored state; version 2 is this section as amended. A consumer that reads a score with no `algorithmVersion` MUST treat it as version 1. A change to the factor set, the weights, the composition rule, the threshold or the ceiling increments the version.
+- *Reporting.* `includedWeight` MUST be reported beside the score in both states, and `unscoredReason` only in the unscored state. Factor identifiers on the wire (in `excludedFactors` and in any per-factor breakdown) are, in the table's order: `verification`, `uptime`, `successRate`, `securityAlerts`, `compliance`, `executionIsolation`, `age`, `driftDetection`, `userFeedback`.
+
+```json
+{
+  "agentId": "did:opena2a:example:agent-1",
+  "algorithmVersion": 2,
+  "scoreStatus": "unscored",
+  "score": null,
+  "unscoredReason": "insufficient_data",
+  "includedWeight": 0.30,
+  "excludedFactors": ["verification", "uptime", "successRate", "compliance", "driftDetection", "userFeedback"],
+  "calculatedAt": "2026-09-22T21:00:00Z"
+}
+```
+
+An agent with no verification events has no data for verification status, uptime and action success (weights 25, 15 and 15); with the three proposed factors also unmeasured (weights 10, 3 and 2), its `includedWeight` is 0.30 and it is unscored. The same agent scored under version 1 published a composite drawn from security alerts, execution isolation and age alone, capped by neutral imputation of the other six.
+
 **Reference implementation.** The 9-factor algorithm above is implemented in the AIM (Agent Identity Management) reference implementation as the `TrustCalculator` service. AIP §6.1 specifies the factor set, weights, and composition rule; AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged. The AIM `TrustCalculator` is the named reference implementation for AIP §6.1 in OpenA2A's ecosystem.
 
 **Per-factor implementation status (reference implementation, 2026-07).** Six of the nine factors are measured today: verification status, uptime, action success rate, security alerts, execution isolation, and age. Three are **Proposed — stubbed in the reference implementation**: **compliance**, **drift detection**, and **user feedback** currently report no data, so they are excluded and their weights redistributed under the exclusion-and-cap rules above. A composite from the reference implementation therefore reflects the six measured factors capped by neutral imputation of the stubs. Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them.
