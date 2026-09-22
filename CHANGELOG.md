@@ -13,6 +13,14 @@ set closes. Until then `draft-fane-opena2a-aip-03` is the latest render and carr
 text. `draft-fane-opena2a-aip-03` is not submitted to the datatracker; `-02` (2026-08-06) remains
 the current revision there and predates both the §3.2 DID method scoping and this tier rename.
 
+### Added
+
+- §6.1 gains the unscored state and the algorithm version: `includedWeight` (the weight
+  with data, before redistribution) below 0.50 makes the agent unscored, with `score` null,
+  `scoreStatus` `"unscored"` and `unscoredReason` present, and no §6.4 credential issued from
+  that state; every published score carries `algorithmVersion` (1 = the rule without the
+  unscored state, 2 = this text); the nine factor identifiers on the wire are named. The threshold and the field names have one home, this section.
+
 ### Changed
 
 - §6.2 becomes the behavioral tier table: the field is `behaviorTier` (was `trustLevel`), the
