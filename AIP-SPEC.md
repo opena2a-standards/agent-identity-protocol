@@ -6,7 +6,7 @@
 **Authors:** OpenA2A
 **Date:** September 2026 (first published March 2026)
 
-> **Naming note.** The abbreviation "AIP" is used by at least two other Internet-Drafts as of mid-2026 (Cao and Arango at NVIDIA, March 16, 2026; Singla, April 17, 2026). When referenced outside this document, please use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
+> **Naming note.** As of 2026-09-30, at least three other Internet-Drafts use the abbreviation "AIP" for an agent identity protocol: draft-aip-agent-identity-protocol-00 (Cao and Arango at NVIDIA, first published 2026-03-16, expired 2026-09-17), draft-singla-agent-identity-protocol (Singla, first published 2026-04-16, active) and draft-prakash-aip (revision 01, 2026-08-19, active). When referenced outside this document, use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
 
 ---
 
