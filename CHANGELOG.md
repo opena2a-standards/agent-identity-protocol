@@ -9,9 +9,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 ## [1.2.0-draft] - unreleased
 
 Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft and is built once this change
-set closes. Until then `draft-fane-opena2a-aip-03` is the latest render and carries the 1.1.0-draft
-text. `draft-fane-opena2a-aip-03` is not submitted to the datatracker; `-02` (2026-08-06) remains
-the current revision there and predates both the §3.2 DID method scoping and this tier rename.
+set closes. `draft-fane-opena2a-aip-03` (submitted 2026-10-02) is the current datatracker
+revision; it carries the 1.1.0-draft text and none of the changes listed under this heading.
+`-02` (2026-08-06) is the prior revision there and predates both the §3.2 DID method scoping and
+this tier rename.
 
 ### Added
 
@@ -37,13 +38,13 @@ the current revision there and predates both the §3.2 DID method scoping and th
 
 ## [1.1.0-draft] - 2026-09-08
 
-Draft pairing: `draft-fane-opena2a-aip-03` pairs with 1.1.0-draft. Minor
-bump: what a provider MUST issue changes (provider-scoped identifiers are a
-`did:web` profile; the pre-1.1 form is a deprecated alias); the §5.1 wire
-format does not. `-02` (2026-08-06) carried the §5.1 wire format of
-1.0.1-draft but not the §3.2 DID method scoping ratified in that same version;
-`-03` carries the scoping in its 1.1 form. `-00` (2026-07-06) and `-01`
-(2026-07-22, date-only) carried the pre-scoping text.
+Draft pairing: `draft-fane-opena2a-aip-03` pairs with 1.1.0-draft and was submitted to the
+datatracker on 2026-10-02 as the current revision, with its document date set to 2026-09-30 and
+its text otherwise the 2026-09-08 render. Minor bump: what a provider MUST issue changes
+(provider-scoped identifiers are a `did:web` profile; the pre-1.1 form is a deprecated alias);
+the §5.1 wire format does not. `-02` (2026-08-06) carried the §5.1 wire format of 1.0.1-draft but
+not the §3.2 DID method scoping ratified in that same version; `-03` carries the scoping in its
+1.1 form. `-00` (2026-07-06) and `-01` (2026-07-22, date-only) carried the pre-scoping text.
 
 ### Added
 
@@ -62,8 +63,9 @@ format does not. `-02` (2026-08-06) carried the §5.1 wire format of
   `did:opena2a` is registered there, and the name `aip` is held by a
   registration that is not OpenA2A's. Informative references to `did-method-opena2a`,
   the W3C DID Extensions registry and the did:web method specification and
-  a "Changes from -02" section are added. Built with xml2rfc; idnits was not
-  available at build time and no idnits pass is claimed.
+  a "Changes from -02" section are added. Rebuilt with xml2rfc on 2026-09-30
+  with the document date set to that day; `npx @ietf-tools/idnits@3.1.0` on the txt:
+  1 error, 4 warnings, dispositioned in pull request #33.
 - §3.2 `did:web` profile for provider-scoped identifiers, with the reference
   form `did:web:aim.opena2a.org:agents:<uuid>`, a deprecated-alias paragraph
   (the pre-1.1 form is served for a migration window and linked by
