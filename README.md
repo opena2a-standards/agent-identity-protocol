@@ -1,4 +1,4 @@
-> **OpenA2A specs** · [did:opena2a](https://github.com/opena2a-standards/did-method-opena2a) · **AIP** · [ATX](https://github.com/opena2a-standards/atx-spec) · [ATP](https://github.com/opena2a-standards/agent-trust-protocol) · [AAP](https://github.com/opena2a-standards/agent-authorization-protocol) · [AIM](https://github.com/opena2a-org/agent-identity-management) · [all specs ↗](https://specs.opena2a.org)
+> **OpenA2A specs** · [did:opena2a](https://github.com/opena2a-standards/did-method-opena2a) · **AIP** · [ATX](https://github.com/opena2a-standards/atx-spec) · [ATP](https://github.com/opena2a-standards/agent-trust-protocol) · [AAP](https://github.com/opena2a-standards/agent-authorization-protocol) · [OpenA2A AIM (Agent Identity Management)](https://github.com/opena2a-org/agent-identity-management) · [all specs ↗](https://specs.opena2a.org)
 
 # OpenA2A Agent Identity Protocol (OpenA2A AIP)
 
@@ -36,6 +36,8 @@ On 2026-09-02 both `https://aim.opena2a.org/.well-known/aip` and `https://api.ai
 ## Specification
 
 [AIP-SPEC.md](AIP-SPEC.md) — the full protocol specification.
+
+**Internet-Draft.** This specification is also published as the individual Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/), and the datatracker copy is behind this repository. The current datatracker revision, `draft-fane-opena2a-aip-03` (submitted 2026-10-02), carries the 1.1.0-draft text. This repository's specification is 1.2.0-draft: `draft-fane-opena2a-aip-04`, in this repository, carries it and is not submitted yet. The 1.2.0-draft entry in [CHANGELOG.md](CHANGELOG.md) lists what changed.
 
 ## Conformance Levels
 

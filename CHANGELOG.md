@@ -31,6 +31,12 @@ SHA-256 and submits nothing. `-02` (2026-08-06) is the prior revision there and 
   (the §5.1 reject categories, the tier and unscored-state fields, the clock-skew citation, the
   §4.1 grammar, every §4.2 namespace) and the expanded first use of the AIM name. An unreleased
   version may name a draft that is not built yet; a dated one may not.
+- README.md gains an Internet-Draft paragraph under Specification: the datatracker copy is
+  behind this repository, `draft-fane-opena2a-aip-03` (submitted 2026-10-02) is the current
+  revision there and carries 1.1.0-draft, and `draft-fane-opena2a-aip-04` carries 1.2.0-draft and
+  is not submitted yet. `scripts/check_draft_sync.py` fails when that paragraph does not name the
+  paired draft and version, the current revision the pairing paragraph above records, and the
+  submission state it states.
 - `scripts/stage_draft_upload.py`: runs that check on the paired draft, rebuilds it when xml2rfc
   is available, and prints the txt file to upload with its SHA-256. It makes no network call and
   submits nothing.
@@ -57,7 +63,8 @@ SHA-256 and submits nothing. `-02` (2026-08-06) is the prior revision there and 
 - Editorial: the first use of the reference implementation's name reads "OpenA2A AIM (Agent
   Identity Management)". `scripts/check_first_use.py`, run in CI by
   `scripts/validate_examples.py`, fails when the first line of the specification containing AIM
-  does not carry that phrase.
+  does not carry that phrase. The same check now covers README.md, CONTRIBUTING.md,
+  CHANGELOG.md and GAP-ANALYSIS.md, whose first uses are expanded the same way.
 - The §6.1 unscored example identifies its agent as
   `did:web:idp.example:agents:agent_unscored_example_001` (was a `did:opena2a` identifier): a
   score an identity provider publishes is about a provider-scoped identifier (§3.2), and an AIP

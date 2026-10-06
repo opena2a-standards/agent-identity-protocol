@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Check that the first use of the name AIM in the specification is expanded.
+"""Check that the first use of the name AIM in each reader-facing file is expanded.
 
 The first line of a checked file that contains the whole word AIM must also
 contain the exact phrase "OpenA2A AIM (Agent Identity Management)", so a
 reader meets the full name before the bare acronym. Later lines may use AIM
-alone. A file without the word passes.
+alone. A file without the word passes. FILES lists the specification and the
+documents a reader reaches from it or from the repository page.
 
 Run in CI by scripts/validate_examples.py. Also runs on its own:
     python3 scripts/check_first_use.py [FILE ...]
@@ -18,7 +19,16 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-FILES = [ROOT / "AIP-SPEC.md"]
+FILES = [
+    ROOT / name
+    for name in (
+        "AIP-SPEC.md",
+        "README.md",
+        "CONTRIBUTING.md",
+        "CHANGELOG.md",
+        "GAP-ANALYSIS.md",
+    )
+]
 PHRASE = "OpenA2A AIM (Agent Identity Management)"
 WORD = re.compile(r"\bAIM\b")
 
