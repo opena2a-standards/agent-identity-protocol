@@ -6,15 +6,34 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ## [Unreleased]
 
-## [1.2.0-draft] - unreleased
+## [1.2.0-draft] - 2026-10-06
 
-Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft and is built once this change
-set closes. `draft-fane-opena2a-aip-03` (submitted 2026-10-02) is the current datatracker
-revision; it carries the 1.1.0-draft text and none of the changes listed under this heading.
-`-02` (2026-08-06) is the prior revision there and predates both the §3.2 DID method scoping and
-this tier rename.
+Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft. It was rendered on 2026-10-06
+with xml2rfc 3.34.0 and carries every change listed under this heading; `npx
+@ietf-tools/idnits@3.1.0` on the txt reports 0 errors and 6 warnings. It is not submitted yet:
+`draft-fane-opena2a-aip-03` (submitted 2026-10-02) remains the current datatracker revision and
+carries the 1.1.0-draft text. `scripts/stage_draft_upload.py` prints the file to upload and its
+SHA-256 and submits nothing. `-02` (2026-08-06) is the prior revision there and predates both the
+§3.2 DID method scoping and this tier rename.
 
 ### Added
+
+- `draft-fane-opena2a-aip-04.{xml,txt}`: Internet-Draft revision carrying this version: the §6.2
+  tier rename and the §6.4 sample, the §6.1 unscored state and algorithm version together with
+  the §6.1 anti-gaming ceiling they build on (in this specification since 1.0.0-draft, absent
+  from `-00` through `-03`), the §4.1 capability grammar and the §4.2 registry with `secrets`,
+  the §5.1 step 3 clock-skew citation, and the first use of the reference implementation's name
+  as "OpenA2A AIM (Agent Identity Management)". The two reference lists are grouped under one
+  References section, which clears the `MULTIPLE_REFERENCES_SECTION_TITLES` error idnits
+  reported on `-03`. A "Changes from -03" appendix lists the changes.
+- `scripts/check_draft_sync.py`, run in CI by `scripts/validate_examples.py`: the draft that the
+  changelog pairs with the specification's version must carry the specification's wire terms
+  (the §5.1 reject categories, the tier and unscored-state fields, the clock-skew citation, the
+  §4.1 grammar, every §4.2 namespace) and the expanded first use of the AIM name. An unreleased
+  version may name a draft that is not built yet; a dated one may not.
+- `scripts/stage_draft_upload.py`: runs that check on the paired draft, rebuilds it when xml2rfc
+  is available, and prints the txt file to upload with its SHA-256. It makes no network call and
+  submits nothing.
 
 - §6.1 gains the unscored state and the algorithm version: `includedWeight` (the weight
   with data, before redistribution) below 0.50 makes the agent unscored, with `score` null,
@@ -39,6 +58,13 @@ this tier rename.
   Identity Management)". `scripts/check_first_use.py`, run in CI by
   `scripts/validate_examples.py`, fails when the first line of the specification containing AIM
   does not carry that phrase.
+- The §6.1 unscored example identifies its agent as
+  `did:web:idp.example:agents:agent_unscored_example_001` (was a `did:opena2a` identifier): a
+  score an identity provider publishes is about a provider-scoped identifier (§3.2), and an AIP
+  identity provider does not serve `did:opena2a`. Identifiers are opaque to verification, so no
+  rule changes.
+- §13: the capability namespace registry line cites the §4.2 table instead of listing ten of its
+  eleven namespaces.
 
 ## [1.1.0-draft] - 2026-09-08
 

@@ -9,7 +9,9 @@ Reads schemas/examples-map.json, a list of entries:
 For each entry: find the heading line in the file, take the first fenced
 ```json block after it, parse it, and validate it against the schema.
 Also metaschema-checks every schemas/*.schema.json, and runs
-scripts/check_first_use.py (the first use of AIM in the spec is expanded).
+scripts/check_first_use.py (the first use of AIM in the spec is expanded) and
+scripts/check_draft_sync.py (the draft paired with the spec version carries
+its wire terms).
 
 Formats (date-time, uuid) are treated as annotations, not assertions, matching
 library defaults across implementations; structural keywords (type, enum,
@@ -22,6 +24,7 @@ import json
 import pathlib
 import sys
 
+import check_draft_sync
 import check_first_use
 
 try:
@@ -95,6 +98,7 @@ def main() -> int:
             print(f"example OK     {entry['file']} @ {entry['heading']!r}")
 
     failures += check_first_use.check(check_first_use.FILES)
+    failures += check_draft_sync.check()
 
     if failures:
         print(f"\n{failures} failure(s)")
