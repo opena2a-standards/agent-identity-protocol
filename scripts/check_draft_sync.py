@@ -17,6 +17,13 @@ draft-fane-opena2a-aip-NN.{xml,txt}:
 - the draft carries the phrase "OpenA2A AIM (Agent Identity Management)" when
   the spec does, and the first use of AIM in the draft text is that phrase.
 
+README.md must disclose the same pairing in one paragraph that starts with
+"**Internet-Draft.**": it names the paired draft and the spec version; when
+the pairing paragraph says the paired draft is not submitted, it says so too
+and names the revision the CHANGELOG records as current on the datatracker,
+with its submission date and the version it carries; once the pairing no
+longer says "not submitted", neither may the README.
+
 A version whose CHANGELOG heading still reads "unreleased" may name a draft that
 is not built yet: that is the disclosed pending state and passes. A dated
 version must have its paired draft. A version with no pairing line fails.
@@ -24,7 +31,8 @@ version must have its paired draft. A version with no pairing line fails.
 Run in CI by scripts/validate_examples.py. Also runs on its own:
     python3 scripts/check_draft_sync.py [--draft draft-fane-opena2a-aip-NN]
 --draft checks the named revision against the current spec instead of the
-paired one. python3 standard library only. Exit code 0 = in sync or pending.
+paired one, and skips the README check. python3 standard library only. Exit
+code 0 = in sync or pending.
 """
 from __future__ import annotations
 
@@ -39,6 +47,12 @@ import check_first_use
 ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "AIP-SPEC.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
+README = ROOT / "README.md"
+README_MARKER = "**Internet-Draft.**"
+CURRENT = re.compile(
+    r"`(draft-fane-opena2a-aip-\d\d)` \(submitted (\d{4}-\d{2}-\d{2})\) remains the current"
+    r" datatracker revision and carries the (\S+) text"
+)
 NAMESPACES = ROOT / "registries" / "capability-namespaces.json"
 GRAMMAR_MARKER = "<!-- opena2a-definition: capability-grammar -->"
 
@@ -68,15 +82,20 @@ def spec_version(text: str) -> str:
     return match.group(1)
 
 
-def pairing(changelog: str, version: str) -> tuple[str | None, bool]:
-    """Return (paired draft name or None, whether the version heading is dated)."""
+def version_section(changelog: str, version: str) -> tuple[str, bool]:
+    """Return (the text under the version's heading, whether the heading is dated)."""
     heading = re.compile(r"^## \[" + re.escape(version) + r"\] - (.+)$", re.MULTILINE)
     match = heading.search(changelog)
     if not match:
         raise SystemExit(f"error: no '## [{version}]' heading in {CHANGELOG.name}")
     dated = re.fullmatch(r"\d{4}-\d{2}-\d{2}", match.group(1).strip()) is not None
     end = changelog.find("\n## ", match.end())
-    section = changelog[match.end(): end if end != -1 else len(changelog)]
+    return changelog[match.end(): end if end != -1 else len(changelog)], dated
+
+
+def pairing(changelog: str, version: str) -> tuple[str | None, bool]:
+    """Return (paired draft name or None, whether the version heading is dated)."""
+    section, dated = version_section(changelog, version)
     paired = re.search(
         r"Draft pairing: `(draft-fane-opena2a-aip-\d\d)` pairs with\s+" + re.escape(version),
         section,
@@ -148,23 +167,62 @@ def check_draft(name: str, spec: str) -> list[str]:
     return problems
 
 
+def disclosure_problems(readme: str, changelog: str, version: str, draft: str) -> list[str]:
+    """What the README's Internet-Draft paragraph misstates against the CHANGELOG pairing."""
+    paragraphs = [p for p in re.split(r"\n\s*\n", readme) if p.strip().startswith(README_MARKER)]
+    if len(paragraphs) != 1:
+        return [f"expected one paragraph starting {README_MARKER!r}, found {len(paragraphs)}"]
+    text = re.sub(r"\s+", " ", paragraphs[0])
+    section, _ = version_section(changelog, version)
+    pairing_text = re.sub(r"\s+", " ", section.split("\n### ", 1)[0])
+    pending = "not submitted" in pairing_text
+    expected = [draft, version]
+    problems = []
+    if pending:
+        current = CURRENT.search(pairing_text)
+        if current:
+            expected += list(current.groups())
+        else:
+            problems.append(f"{CHANGELOG.name} says {draft} is not submitted and names no current revision")
+    for term in expected:
+        if term not in text:
+            problems.append(f"Internet-Draft paragraph lacks {term!r}, which {CHANGELOG.name} records")
+    if pending and "not submitted" not in text:
+        problems.append(f"Internet-Draft paragraph does not say {draft} is not submitted")
+    if not pending and "not submitted" in text:
+        problems.append(f"Internet-Draft paragraph says 'not submitted'; {CHANGELOG.name} no longer does")
+    return problems
+
+
+def check_disclosure(changelog: str, version: str, draft: str) -> int:
+    problems = disclosure_problems(README.read_text(encoding="utf-8"), changelog, version, draft)
+    for problem in problems:
+        print(f"draft sync FAIL {README.name}: {problem}")
+    if not problems:
+        print(f"draft sync OK   {README.name} discloses the {draft} pairing with {version}")
+    return 1 if problems else 0
+
+
 def check(draft: str | None = None) -> int:
     spec = SPEC.read_text(encoding="utf-8")
     version = spec_version(spec)
+    disclosure = 0
     if draft is None:
-        draft, dated = pairing(CHANGELOG.read_text(encoding="utf-8"), version)
+        changelog = CHANGELOG.read_text(encoding="utf-8")
+        draft, dated = pairing(changelog, version)
         if draft is None:
             print(f"draft sync FAIL {version}: no 'Draft pairing' line under its {CHANGELOG.name} heading")
             return 1
+        disclosure = check_disclosure(changelog, version, draft)
         if not dated and not (ROOT / f"{draft}.txt").exists():
             print(f"draft sync PENDING {version}: {draft} not built; the version is unreleased")
-            return 0
+            return disclosure
     problems = check_draft(draft, spec)
     for problem in problems:
         print(f"draft sync FAIL {draft} vs {version}: {problem}")
     if not problems:
         print(f"draft sync OK   {draft} carries the {version} wire terms")
-    return 1 if problems else 0
+    return 1 if problems or disclosure else 0
 
 
 def main(argv: list[str]) -> int:
