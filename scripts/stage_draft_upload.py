@@ -26,6 +26,12 @@ import sys
 import tempfile
 from pathlib import Path
 
+# Imported by module name; an isolated run (python3 -I or -P) leaves this
+# directory off the path, so add it as a plain run does.
+SCRIPTS = str(Path(__file__).resolve().parent)
+if SCRIPTS not in sys.path:
+    sys.path.insert(0, SCRIPTS)
+
 import check_draft_sync
 
 ROOT = check_draft_sync.ROOT

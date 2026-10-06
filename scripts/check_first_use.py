@@ -4,8 +4,9 @@
 The first line of a checked file that contains the whole word AIM must also
 contain the exact phrase "OpenA2A AIM (Agent Identity Management)", so a
 reader meets the full name before the bare acronym. Later lines may use AIM
-alone. A file without the word passes. FILES lists the specification and the
-documents a reader reaches from it or from the repository page.
+alone. A file without the word passes; a file that cannot be read, such as a
+FILE argument that does not exist, fails. FILES lists the specification and
+the documents a reader reaches from it or from the repository page.
 
 Run in CI by scripts/validate_examples.py. Also runs on its own:
     python3 scripts/check_first_use.py [FILE ...]
@@ -35,7 +36,10 @@ WORD = re.compile(r"\bAIM\b")
 
 def first_use_error(path: Path) -> str | None:
     """Return why the first use fails, or None when it is expanded or absent."""
-    lines = path.read_text(encoding="utf-8").splitlines()
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except OSError as exc:
+        return f"cannot read the file: {exc.strerror or exc}"
     for number, line in enumerate(lines, start=1):
         if WORD.search(line):
             if PHRASE in line:

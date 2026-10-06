@@ -6,6 +6,20 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ## [Unreleased]
 
+### Fixed
+
+- `scripts/check_draft_sync.py` matches each tracked term as a whole word, so a field renamed
+  in the specification or in the draft (`behaviorTier` to `behaviorTierX`) is reported instead
+  of passing as a substring.
+- `scripts/check_first_use.py` reports a FILE argument that does not exist, or cannot be read,
+  as one "first use FAIL" line and counts it, instead of ending in a traceback.
+- `scripts/validate_examples.py`, `scripts/check_draft_sync.py` and
+  `scripts/stage_draft_upload.py` put their own directory on the import path, so an isolated
+  run (`python3 -I` or `-P`) finds the sibling check scripts as a plain run does.
+- `.gitignore` ignores secret-shaped files (`secrets.json`, `secrets.*.json`, `*.secrets.json`,
+  `credentials.json`, `secrets/`, `credentials/`).
+- `tests/test_check_scripts.py` covers the four cases above: `python3 -m unittest discover -s tests`.
+
 ## [1.2.0-draft] - 2026-10-06
 
 Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft. It was rendered on 2026-10-06

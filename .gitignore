@@ -10,4 +10,10 @@ venv/
 *.key
 *.p12
 *.pfx
+secrets.json
+secrets.*.json
+*.secrets.json
+credentials.json
+secrets/
+credentials/
 node_modules/

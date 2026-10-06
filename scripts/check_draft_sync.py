@@ -10,7 +10,8 @@ draft-fane-opena2a-aip-NN.{xml,txt}:
 - every tracked term is present in the draft text exactly when it is present
   in the specification (reject categories, the behavioral tier and unscored
   state fields, the clock-skew citation, the "trustLevel" JSON key that the
-  tier rename removed);
+  tier rename removed), matched as a whole word so a renamed field such as
+  "behaviorTierX" does not count as "behaviorTier";
 - the capability grammar of Section 4.1 appears verbatim, and every namespace
   in registries/capability-namespaces.json is a row of the draft's namespace
   table;
@@ -41,6 +42,12 @@ import json
 import re
 import sys
 from pathlib import Path
+
+# Imported by module name; an isolated run (python3 -I or -P) leaves this
+# directory off the path, so add it as a plain run does.
+SCRIPTS = str(Path(__file__).resolve().parent)
+if SCRIPTS not in sys.path:
+    sys.path.insert(0, SCRIPTS)
 
 import check_first_use
 
@@ -125,6 +132,17 @@ def table_first_cells(txt: str) -> set[str]:
     return {m.group(1) for m in re.finditer(r"^\s*\|\s*([a-z][a-z0-9_.-]*)\s+\|", txt, re.MULTILINE)}
 
 
+def carries(text: str, term: str) -> bool:
+    """Whether text carries term as a whole word: a word character at either end
+    of the term may not run on into a longer name."""
+    pattern = re.escape(term)
+    if re.match(r"\w", term):
+        pattern = r"\b" + pattern
+    if re.search(r"\w$", term):
+        pattern += r"\b"
+    return re.search(pattern, text) is not None
+
+
 def first_use_error(text: str) -> str | None:
     match = check_first_use.WORD.search(text)
     if not match:
@@ -147,7 +165,7 @@ def check_draft(name: str, spec: str) -> list[str]:
     text = draft_text(raw)
     flat_spec = re.sub(r"\s+", " ", spec)
     for term in TRACKED:
-        in_spec, in_draft = term in flat_spec, term in text
+        in_spec, in_draft = carries(flat_spec, term), carries(text, term)
         if in_spec and not in_draft:
             problems.append(f"{txt_path.name}: lacks {term!r}, which the spec carries")
         elif in_draft and not in_spec:
