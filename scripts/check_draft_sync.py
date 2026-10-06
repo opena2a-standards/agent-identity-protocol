@@ -18,12 +18,19 @@ draft-fane-opena2a-aip-NN.{xml,txt}:
 - the draft carries the phrase "OpenA2A AIM (Agent Identity Management)" when
   the spec does, and the first use of AIM in the draft text is that phrase.
 
+The pairing paragraph is the text from that line to the next blank line,
+heading or list item, wherever it sits under the version's heading.
+
 README.md must disclose the same pairing in one paragraph that starts with
 "**Internet-Draft.**": it names the paired draft and the spec version; when
-the pairing paragraph says the paired draft is not submitted, it says so too
-and names the revision the CHANGELOG records as current on the datatracker,
-with its submission date and the version it carries; once the pairing no
-longer says "not submitted", neither may the README.
+the pairing paragraph says the paired draft is not submitted, it says so too,
+says the datatracker copy "is behind this repository", and names the revision
+the CHANGELOG records as current on the datatracker, with its submission date
+and the version it carries; once the pairing no longer says "not submitted",
+the README may say neither. The pairing paragraph names that revision in one
+sentence shape only (line breaks allowed):
+    `draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) remains the current
+    datatracker revision and carries the <version> text
 
 A version whose CHANGELOG heading still reads "unreleased" may name a draft that
 is not built yet: that is the disclosed pending state and passes. A dated
@@ -56,6 +63,11 @@ SPEC = ROOT / "AIP-SPEC.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
 README = ROOT / "README.md"
 README_MARKER = "**Internet-Draft.**"
+README_BEHIND = "is behind this repository"
+CURRENT_SHAPE = (
+    "`draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) remains the current"
+    " datatracker revision and carries the <version> text"
+)
 CURRENT = re.compile(
     r"`(draft-fane-opena2a-aip-\d\d)` \(submitted (\d{4}-\d{2}-\d{2})\) remains the current"
     r" datatracker revision and carries the (\S+) text"
@@ -79,6 +91,9 @@ TRACKED = [
     "clock-skew bound",
 ]
 
+# A blank line, a heading or a list item ends the pairing paragraph.
+PARAGRAPH_END = re.compile(r"\n[ \t]*(?:\n|#|[-*+] )")
+
 PAGE_LINE = re.compile(r"^(Fane\s+Expires\b.*\[Page \d+\]|Internet-Draft\s+OpenA2A AIP\s+.*)$")
 
 
@@ -100,14 +115,23 @@ def version_section(changelog: str, version: str) -> tuple[str, bool]:
     return changelog[match.end(): end if end != -1 else len(changelog)], dated
 
 
-def pairing(changelog: str, version: str) -> tuple[str | None, bool]:
-    """Return (paired draft name or None, whether the version heading is dated)."""
-    section, dated = version_section(changelog, version)
+def pairing_paragraph(section: str, version: str) -> tuple[str | None, str]:
+    """Return (paired draft name or None, the pairing paragraph with whitespace collapsed)."""
     paired = re.search(
         r"Draft pairing: `(draft-fane-opena2a-aip-\d\d)` pairs with\s+" + re.escape(version),
         section,
     )
-    return (paired.group(1) if paired else None), dated
+    if not paired:
+        return None, ""
+    end = PARAGRAPH_END.search(section, paired.end())
+    text = section[paired.start(): end.start() if end else len(section)]
+    return paired.group(1), re.sub(r"\s+", " ", text).strip()
+
+
+def pairing(changelog: str, version: str) -> tuple[str | None, bool]:
+    """Return (paired draft name or None, whether the version heading is dated)."""
+    section, dated = version_section(changelog, version)
+    return pairing_paragraph(section, version)[0], dated
 
 
 def draft_text(txt: str) -> str:
@@ -192,7 +216,7 @@ def disclosure_problems(readme: str, changelog: str, version: str, draft: str) -
         return [f"expected one paragraph starting {README_MARKER!r}, found {len(paragraphs)}"]
     text = re.sub(r"\s+", " ", paragraphs[0])
     section, _ = version_section(changelog, version)
-    pairing_text = re.sub(r"\s+", " ", section.split("\n### ", 1)[0])
+    _, pairing_text = pairing_paragraph(section, version)
     pending = "not submitted" in pairing_text
     expected = [draft, version]
     problems = []
@@ -201,7 +225,10 @@ def disclosure_problems(readme: str, changelog: str, version: str, draft: str) -
         if current:
             expected += list(current.groups())
         else:
-            problems.append(f"{CHANGELOG.name} says {draft} is not submitted and names no current revision")
+            problems.append(
+                f"{CHANGELOG.name} says {draft} is not submitted and names no current revision"
+                f" in the form: {CURRENT_SHAPE}"
+            )
     for term in expected:
         if term not in text:
             problems.append(f"Internet-Draft paragraph lacks {term!r}, which {CHANGELOG.name} records")
@@ -209,6 +236,13 @@ def disclosure_problems(readme: str, changelog: str, version: str, draft: str) -
         problems.append(f"Internet-Draft paragraph does not say {draft} is not submitted")
     if not pending and "not submitted" in text:
         problems.append(f"Internet-Draft paragraph says 'not submitted'; {CHANGELOG.name} no longer does")
+    if pending and README_BEHIND not in text:
+        problems.append(f"Internet-Draft paragraph does not say the datatracker copy {README_BEHIND!r}")
+    if not pending and README_BEHIND in text:
+        problems.append(
+            f"Internet-Draft paragraph says the datatracker copy {README_BEHIND!r};"
+            f" {CHANGELOG.name} no longer says {draft} is not submitted"
+        )
     return problems
 
 
