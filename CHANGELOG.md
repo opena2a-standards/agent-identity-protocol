@@ -87,6 +87,18 @@ SHA-256 and submits nothing. `-02` (2026-08-06) is the prior revision there and 
 - §13: the capability namespace registry line cites the §4.2 table instead of listing ten of its
   eleven namespaces.
 
+### Fixed
+
+- `scripts/check_draft_sync.py` reads the "Draft pairing" paragraph wherever it sits under the
+  version's heading, the same way it finds the paired draft, instead of the text before the
+  first `###` heading. It also fails when the README Internet-Draft paragraph says the
+  datatracker copy is behind this repository once the pairing no longer says "not submitted",
+  or leaves that out while the pairing still says it. When the pairing paragraph names no
+  current datatracker revision, the failure message and the script docstring give the one
+  sentence shape the check accepts. `scripts/test_checks.py` covers these cases.
+- README.md lists the ATP link once, under Interoperability; the copy under Related Standards
+  is removed.
+
 ## [1.1.0-draft] - 2026-09-08
 
 Draft pairing: `draft-fane-opena2a-aip-03` pairs with 1.1.0-draft and was submitted to the

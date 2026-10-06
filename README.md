@@ -73,7 +73,6 @@ The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-managem
 
 ## Related Standards
 
-- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust
 - [OASB (Open Agent Security Benchmark)](https://github.com/opena2a-org/oasb) — security controls
 
 ## Naming and prior art
