@@ -4,7 +4,7 @@
 
 **Version:** 1.2.0-draft
 **Authors:** OpenA2A
-**Date:** September 2026 (first published March 2026)
+**Date:** October 2026 (first published March 2026)
 
 > **Naming note.** As of 2026-09-30, at least three other Internet-Drafts use the abbreviation "AIP" for an agent identity protocol: draft-aip-agent-identity-protocol-00 (Cao and Arango at NVIDIA, first published 2026-03-16, expired 2026-09-17), draft-singla-agent-identity-protocol (Singla, first published 2026-04-16, active) and draft-prakash-aip (revision 01, 2026-08-19, active). When referenced outside this document, use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
 
@@ -33,7 +33,7 @@ AIP is designed to complement existing protocols and standards:
 - **W3C Verifiable Credentials** — AIP trust scores expressed as VCs for cross-platform portability.
 - **ATP (Agent Trust Protocol)** — AIP provides identity; ATP provides ecosystem-wide trust verification. They're complementary layers.
 
-This specification defines the protocol. The OpenA2A AIM platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation.
+This specification defines the protocol. The OpenA2A AIM (Agent Identity Management) platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation.
 
 ---
 
@@ -575,7 +575,7 @@ Where `confidence` is the data availability for each factor (0.0 = no data, 1.0 
 
 ```json
 {
-  "agentId": "did:opena2a:agent:agent_unscored_example_001",
+  "agentId": "did:web:idp.example:agents:agent_unscored_example_001",
   "algorithmVersion": 2,
   "scoreStatus": "unscored",
   "score": null,
@@ -948,7 +948,7 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 
 - **DID methods (no IANA action):** DID method names are registered in the W3C DID Extensions registry, not with IANA. AIP defines no DID method; provider-scoped identifiers use `did:web`; pre-1.1 `did:aip:aim_` identifiers are deprecated aliases (§3.2). `did:opena2a`, the ecosystem-scoped method anchored at the OpenA2A Registry and shared with ATP and ATX, is registered (w3c/did-extensions#717, merged 2026-07-04) and specified in [`did-method-opena2a`](https://github.com/opena2a-standards/did-method-opena2a), whose §3.2 is the registry of resource-type prefixes. `did:web` is specified by the W3C Credentials Community Group and listed in the same registry.
 - **Well-Known URI:** `/.well-known/aip`. Identity provider discovery.
-- **Capability Namespace Registry:** Standard capability namespaces (file, db, api, network, system, mcp, data, payment, user, agent).
+- **Capability Namespace Registry:** Standard capability namespaces, initially populated from the §4.2 table.
 
 ---
 
