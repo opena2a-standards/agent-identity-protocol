@@ -35,6 +35,10 @@ this tier rename.
   registry, now including `secrets` (Critical), and `registries/capability-namespaces.json`
   is generated from its table by `scripts/gen_registries.py`, checked in CI.
 - Section 5.1 step 3 (freshness) cites the family clock-skew bound in ATP Section 10.2.
+- Editorial: the first use of the reference implementation's name reads "OpenA2A AIM (Agent
+  Identity Management)". `scripts/check_first_use.py`, run in CI by
+  `scripts/validate_examples.py`, fails when the first line of the specification containing AIM
+  does not carry that phrase.
 
 ## [1.1.0-draft] - 2026-09-08
 

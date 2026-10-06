@@ -33,7 +33,7 @@ AIP is designed to complement existing protocols and standards:
 - **W3C Verifiable Credentials** — AIP trust scores expressed as VCs for cross-platform portability.
 - **ATP (Agent Trust Protocol)** — AIP provides identity; ATP provides ecosystem-wide trust verification. They're complementary layers.
 
-This specification defines the protocol. The OpenA2A AIM platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation.
+This specification defines the protocol. The OpenA2A AIM (Agent Identity Management) platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation.
 
 ---
 
