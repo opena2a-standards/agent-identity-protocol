@@ -1,4 +1,4 @@
-# AIM → AIP: Gap Analysis
+# OpenA2A AIM (Agent Identity Management) → AIP: Gap Analysis
 
 ## What Exists vs What the Spec Requires
 

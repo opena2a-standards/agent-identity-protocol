@@ -57,7 +57,8 @@ SHA-256 and submits nothing. `-02` (2026-08-06) is the prior revision there and 
 - Editorial: the first use of the reference implementation's name reads "OpenA2A AIM (Agent
   Identity Management)". `scripts/check_first_use.py`, run in CI by
   `scripts/validate_examples.py`, fails when the first line of the specification containing AIM
-  does not carry that phrase.
+  does not carry that phrase. The same check now covers README.md, CONTRIBUTING.md,
+  CHANGELOG.md and GAP-ANALYSIS.md, whose first uses are expanded the same way.
 - The §6.1 unscored example identifies its agent as
   `did:web:idp.example:agents:agent_unscored_example_001` (was a `did:opena2a` identifier): a
   score an identity provider publishes is about a provider-scoped identifier (§3.2), and an AIP

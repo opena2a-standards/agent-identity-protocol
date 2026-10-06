@@ -1,6 +1,6 @@
 # Contributing to OpenA2A AIP
 
-The OpenA2A Agent Identity Protocol is authored in the open and published with a working reference implementation (AIM). It is early, and we are looking for co-authors and contributors to help shape it before it goes to an external standards body. Your review, critique, and independent implementation work all carry weight on the spec.
+The OpenA2A Agent Identity Protocol is authored in the open and published with a working reference implementation, OpenA2A AIM (Agent Identity Management). It is early, and we are looking for co-authors and contributors to help shape it before it goes to an external standards body. Your review, critique, and independent implementation work all carry weight on the spec.
 
 ## What we are looking for
 
