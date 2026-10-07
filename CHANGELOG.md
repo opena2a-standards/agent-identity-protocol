@@ -23,7 +23,7 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   @ietf-tools/idnits@3.1.0` on the xml reported the attribute as a `SUBMISSION_TYPE_UNEXPECTED`
   error. xml2rfc 3.34.0 renders the same txt without it, so `draft-fane-opena2a-aip-04.txt` is
   unchanged. `scripts/check_draft_sync.py` now fails when the paired draft's `rfc` element sets
-  `submissionType`.
+  `submissionType` to `IETF`, `IAB` or `IRTF`.
 - `draft-fane-opena2a-aip-04.xml` wraps each of its 71 BCP 14 keywords in `<bcp14>`. On the xml,
   `npx @ietf-tools/idnits@3.1.0` counts a reference to BCP 14 only through an external entity or
   a tagged keyword, so it reported a `MISSING_REQLEVEL_REF` error and 60 `MISSING_BCP14_TAGS`
