@@ -7,6 +7,9 @@ version in AIP-SPEC.md this script finds that line and checks the paired
 draft-fane-opena2a-aip-NN.{xml,txt}:
 
 - the xml docName is the paired name;
+- the xml rfc element sets no submissionType: an individual draft has no
+  stream on the datatracker, so a stream named there (xml2rfc's default is
+  "IETF") makes idnits report SUBMISSION_TYPE_UNEXPECTED;
 - every tracked term is present in the draft text exactly when it is present
   in the specification (reject categories, the behavioral tier and unscored
   state fields, the clock-skew citation, the "trustLevel" JSON key that the
@@ -94,6 +97,8 @@ TRACKED = [
 # A blank line, a heading or a list item ends the pairing paragraph.
 PARAGRAPH_END = re.compile(r"\n[ \t]*(?:\n|#|[-*+] )")
 
+RFC_TAG = re.compile(r"<rfc\b[^>]*>")
+
 PAGE_LINE = re.compile(r"^(Fane\s+Expires\b.*\[Page \d+\]|Internet-Draft\s+OpenA2A AIP\s+.*)$")
 
 
@@ -167,6 +172,12 @@ def carries(text: str, term: str) -> bool:
     return re.search(pattern, text) is not None
 
 
+def names_stream(xml: str) -> bool:
+    """Whether the rfc start tag sets a submissionType attribute."""
+    tag = RFC_TAG.search(xml)
+    return tag is not None and re.search(r"\bsubmissionType\s*=", tag.group(0)) is not None
+
+
 def first_use_error(text: str) -> str | None:
     match = check_first_use.WORD.search(text)
     if not match:
@@ -183,8 +194,14 @@ def check_draft(name: str, spec: str) -> list[str]:
     problems = [f"{p.name} missing" for p in (xml_path, txt_path) if not p.exists()]
     if problems:
         return problems
-    if f'docName="{name}"' not in xml_path.read_text(encoding="utf-8"):
+    xml = xml_path.read_text(encoding="utf-8")
+    if f'docName="{name}"' not in xml:
         problems.append(f'{xml_path.name}: docName is not "{name}"')
+    if names_stream(xml):
+        problems.append(
+            f"{xml_path.name}: the rfc element sets submissionType; an individual draft has no"
+            " datatracker stream, so idnits reports SUBMISSION_TYPE_UNEXPECTED. Remove the attribute."
+        )
     raw = txt_path.read_text(encoding="utf-8")
     text = draft_text(raw)
     flat_spec = re.sub(r"\s+", " ", spec)

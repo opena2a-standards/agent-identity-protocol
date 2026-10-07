@@ -18,7 +18,13 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   run (`python3 -I` or `-P`) finds the sibling check scripts as a plain run does.
 - `.gitignore` ignores secret-shaped files (`secrets.json`, `secrets.*.json`, `*.secrets.json`,
   `credentials.json`, `secrets/`, `credentials/`).
-- `tests/test_check_scripts.py` covers the four cases above: `python3 -m unittest discover -s tests`.
+- `draft-fane-opena2a-aip-04.xml` no longer sets `submissionType="IETF"` on its `rfc` element.
+  The draft is an individual submission with no stream on the datatracker, so `npx
+  @ietf-tools/idnits@3.1.0` on the xml reported the attribute as a `SUBMISSION_TYPE_UNEXPECTED`
+  error. xml2rfc 3.34.0 renders the same txt without it, so `draft-fane-opena2a-aip-04.txt` is
+  unchanged. `scripts/check_draft_sync.py` now fails when the paired draft's `rfc` element sets
+  `submissionType`.
+- `tests/test_check_scripts.py` covers the five cases above: `python3 -m unittest discover -s tests`.
 
 ## [1.2.0-draft] - 2026-10-06
 
