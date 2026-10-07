@@ -83,8 +83,8 @@ class DraftSyncWholeWord(unittest.TestCase):
         self.assertTrue(any("lacks 'behaviorTier'" in p for p in problems), problems)
 
     def test_paired_draft_names_no_stream(self) -> None:
-        root = ET.fromstring((ROOT / f"{self.name}.xml").read_text(encoding="utf-8"))
-        self.assertIsNone(check_draft_sync.flagged_stream(root), f"{self.name}.xml names a stream")
+        xml = (ROOT / f"{self.name}.xml").read_text(encoding="utf-8")
+        self.assertIsNone(check_draft_sync.flagged_stream(xml), f"{self.name}.xml names a stream")
 
     def test_stream_in_draft_is_reported(self) -> None:
         problems = self.problems_in_copy(".xml", 'ipr="trust200902"', 'ipr="trust200902"\n     submissionType="IETF"')
@@ -103,9 +103,32 @@ class DraftSyncWholeWord(unittest.TestCase):
         self.assertTrue(any("'Independant'" in p and "SUBMISSION_TYPE_INVALID" in p for p in problems), problems)
         self.assertFalse(any("SUBMISSION_TYPE_UNEXPECTED" in p for p in problems), problems)
 
+    def test_stream_written_as_a_reference_is_reported(self) -> None:
+        problems = self.problems_in_copy(
+            ".xml", 'ipr="trust200902"', 'ipr="trust200902"\n     submissionType="&#32;independent"'
+        )
+        self.assertTrue(any("'&#32;independent'" in p and "SUBMISSION_TYPE_INVALID" in p for p in problems), problems)
+
+    def test_stream_is_trimmed_before_references_as_idnits_does(self) -> None:
+        def streams(value: str) -> tuple[str | None, str | None]:
+            xml = f'<rfc submissionType="{value}"/>'
+            return check_draft_sync.flagged_stream(xml), check_draft_sync.invalid_stream(xml)
+
+        # idnits 3.1.0 trims the attribute text as written with JavaScript's trim() and then leaves
+        # these references undecoded, so it reports SUBMISSION_TYPE_INVALID for each value.
+        for invalid in ("&#32;independent", "&#9;independent", "&#160;independent", "&#10;", "IETF&#32;"):
+            self.assertEqual(streams(invalid), (None, invalid), invalid)
+        # trim() keeps U+0085, which str.strip() removes, and removes U+FEFF, which str.strip() keeps.
+        self.assertEqual(streams("\u0085independent"), (None, "\u0085independent"))
+        self.assertEqual(streams("\ufeffindependent"), (None, None))
+        self.assertEqual(streams("\ufeffIETF\u3000"), ("\ufeffIETF\u3000", None))
+        # A space written as a literal character, or "&amp;#32;" text, reads as before.
+        self.assertEqual(streams("\tindependent\n"), (None, None))
+        self.assertEqual(streams("&amp;#32;IETF"), (None, "&#32;IETF"))
+
     def test_invalid_stream_compares_in_lower_case(self) -> None:
         def stream(xml: str) -> str | None:
-            return check_draft_sync.invalid_stream(ET.fromstring(xml))
+            return check_draft_sync.invalid_stream(xml)
 
         self.assertEqual(stream('<rfc submissionType="Independant"/>'), "Independant")
         self.assertEqual(stream('<rfc submissionType="ISE"/>'), "ISE")
@@ -119,7 +142,7 @@ class DraftSyncWholeWord(unittest.TestCase):
 
     def test_flagged_stream_reads_the_parsed_rfc_element(self) -> None:
         def stream(xml: str) -> str | None:
-            return check_draft_sync.flagged_stream(ET.fromstring(xml))
+            return check_draft_sync.flagged_stream(xml)
 
         self.assertEqual(stream('<rfc docName="d" submissionType="IETF"/>'), "IETF")
         self.assertEqual(stream('<rfc docName="d"\n     submissionType = "iab"/>'), "iab")
@@ -147,7 +170,7 @@ class DraftSyncWholeWord(unittest.TestCase):
     def test_untagged_draft_counts_keywords_idnits_checks(self) -> None:
         xml = (ROOT / f"{self.name}.xml").read_text(encoding="utf-8")
         problems = self.problems_in_edited_copy(".xml", lambda text: re.sub(r"</?bcp14>", "", text))
-        counts = [re.search(r"(\d+) BCP 14 keyword\(s\).* the (\d+) outside the BCP 14 boilerplate", p) for p in problems]
+        counts = [re.search(r"(\d+) BCP 14 keyword\(s\).*; (\d+) of them, in <t> or <li> text", p) for p in problems]
         counts = [(int(m.group(1)), int(m.group(2))) for m in counts if m]
         self.assertEqual(len(counts), 1, problems)
         total, checked = counts[0]
@@ -163,11 +186,11 @@ class DraftSyncWholeWord(unittest.TestCase):
             "<t>Plain para OPTIONAL here <em>emph MUST NOT</em> tail RECOMMENDED.</t></section>"
         )
         problems = self.problems_in_copy(".xml", "<middle>", "<middle>" + probe)
-        counts = [re.search(r"(\d+) BCP 14 keyword\(s\).* the (\d+) outside the BCP 14 boilerplate", p) for p in problems]
+        counts = [re.search(r"(\d+) BCP 14 keyword\(s\).*; (\d+) of them, in <t> or <li> text", p) for p in problems]
         counts = [(int(m.group(1)), int(m.group(2))) for m in counts if m]
         # idnits 3.1.0 reports 4 MISSING_BCP14_TAGS on this probe: none for <name>, <dd>, <td> or <em>.
         self.assertEqual(counts, [(8, 4)], problems)
-        reported = [u.keyword for u in check_draft_sync.untagged_keywords(ET.fromstring(probe)) if u.idnits_reports]
+        reported = [u.keyword for u in check_draft_sync.untagged_keywords(ET.fromstring(probe)) if u.counted]
         self.assertEqual(reported, ["MUST", "SHOULD", "OPTIONAL", "RECOMMENDED"])
 
     def test_untagged_keywords_skips_tagged_and_verbatim_text(self) -> None:
@@ -201,20 +224,53 @@ class DraftSyncWholeWord(unittest.TestCase):
         found = [(u.keyword, u.boilerplate) for u in check_draft_sync.untagged_keywords(ET.fromstring(xml))]
         self.assertEqual(found, [("MUST", True), ("MAY", True), ("SHOULD", False)])
 
-    def test_boilerplate_paragraph_reads_text_after_a_child_element(self) -> None:
-        def found(xml: str) -> list[tuple[str, bool]]:
-            return [(u.keyword, u.boilerplate) for u in check_draft_sync.untagged_keywords(ET.fromstring(xml))]
+    def test_text_split_by_a_child_element_is_joined_as_idnits_joins_it(self) -> None:
+        def found(xml: str) -> list[tuple[str, bool, bool]]:
+            return [
+                (u.keyword, u.boilerplate, u.counted) for u in check_draft_sync.untagged_keywords(ET.fromstring(xml))
+            ]
 
+        # idnits 3.1.0 trims each text segment of a <t> and joins the segments with no separator, so
+        # this reads '"MAY"in this document', no boilerplate: it reports 2 MISSING_BCP14_TAGS.
         scope_after_child = (
             '<rfc><t>The key words "MUST" and "MAY" <xref target="BCP14"/> in this document are to be'
-            " interpreted as described.</t><t>It SHOULD hold.</t></rfc>"
+            " interpreted as described.</t></rfc>"
         )
-        self.assertEqual(found(scope_after_child), [("MUST", True), ("MAY", True), ("SHOULD", False)])
+        self.assertEqual(found(scope_after_child), [("MUST", False, True), ("MAY", False, True)])
         keywords_after_child = (
             '<rfc><t>The key words <xref target="BCP14"/> "MUST" and "MAY" in this document are to be'
-            " interpreted as described.</t><t>It SHOULD hold.</t></rfc>"
+            " interpreted as described.</t></rfc>"
         )
-        self.assertEqual(found(keywords_after_child), [("MUST", True), ("MAY", True), ("SHOULD", False)])
+        self.assertEqual(found(keywords_after_child), [("MUST", False, True), ("MAY", False, True)])
+        # This reads "BeforeMUST after", which holds no keyword: idnits reports none.
+        self.assertEqual(
+            found('<rfc><t>Before <xref target="RFC2119"/> MUST after</t></rfc>'), [("MUST", False, False)]
+        )
+        self.assertEqual(
+            found('<rfc><t>It MUST <xref target="RFC2119"/> hold; <em>x</em>: it MAY too</t></rfc>'),
+            [("MUST", False, False), ("MAY", False, True)],
+        )
+        # Children after its " in this document ", as in the RFC 8174 boilerplate, leave the paragraph whole.
+        boilerplate = (
+            '<rfc><t>The key words "MUST" and "MAY" in this document are to be interpreted as described in'
+            ' BCP 14 <xref target="RFC2119"/> <xref target="RFC8174"/> when they appear in all capitals.</t></rfc>'
+        )
+        self.assertEqual(found(boilerplate), [("MUST", True, False), ("MAY", True, False)])
+
+    def test_text_split_by_a_child_element_is_counted_in_a_draft(self) -> None:
+        def counts(paragraph: str) -> list[tuple[int, int]]:
+            problems = self.problems_in_copy(".xml", "<middle>", f"<middle><section><name>P</name>{paragraph}</section>")
+            found = [re.search(r"(\d+) BCP 14 keyword\(s\).*; (\d+) of them, in <t> or <li> text", p) for p in problems]
+            return [(int(m.group(1)), int(m.group(2))) for m in found if m]
+
+        self.assertEqual(
+            counts(
+                '<t>The key words "MUST" and "MAY" <xref target="BCP14"/> in this document are to be'
+                " interpreted as described.</t>"
+            ),
+            [(2, 2)],
+        )
+        self.assertEqual(counts('<t>Before <xref target="RFC2119"/> MUST after</t>'), [(1, 0)])
 
     def test_boilerplate_search_matches_the_idnits_pattern(self) -> None:
         idnits = re.compile(r"The key\s?words .+? in this document .+?.", re.IGNORECASE | re.DOTALL)
