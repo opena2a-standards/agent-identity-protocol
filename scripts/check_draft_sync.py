@@ -7,14 +7,17 @@ version in AIP-SPEC.md this script finds that line and checks the paired
 draft-fane-opena2a-aip-NN.{xml,txt}:
 
 - the xml docName is the paired name;
-- the parsed rfc element's submissionType, with surrounding whitespace
-  removed and compared in lower case as idnits 3.1.0 does, is independent,
-  editorial or empty, or absent: an individual draft has no stream on the
-  datatracker, idnits reports SUBMISSION_TYPE_UNEXPECTED for IETF, IAB and
-  IRTF, SUBMISSION_TYPE_INVALID for a non-empty value other than those five,
-  and nothing for an empty one. Without the attribute xml2rfc 3.34.0 warns
-  "Expected a valid submissionType (stream) setting" and uses 'IETF' to
-  render; that warning is expected;
+- the parsed rfc element's submissionType is independent, editorial or
+  empty, or absent: an individual draft has no stream on the datatracker,
+  idnits 3.1.0 reports SUBMISSION_TYPE_UNEXPECTED for IETF, IAB and IRTF,
+  SUBMISSION_TYPE_INVALID for a non-empty value other than those five, and
+  nothing for an empty one. The value is read as idnits reads it: the
+  attribute text as written, with the whitespace JavaScript's trim() removes
+  taken off each end before any character reference is decoded, compared in
+  lower case. So "&#32;independent" is invalid and a leading U+FEFF is
+  removed. Without the attribute xml2rfc 3.34.0 warns "Expected a valid
+  submissionType (stream) setting" and uses 'IETF' to render; that warning
+  is expected;
 - every BCP 14 keyword in the xml text sits in a <bcp14> element (text in
   <artwork> and <sourcecode>, and in any element nested in those or in
   <bcp14>, is verbatim or tagged and exempt): idnits skips the BCP 14
@@ -23,9 +26,18 @@ draft-fane-opena2a-aip-NN.{xml,txt}:
   MISSING_BCP14_TAGS, and, since it counts a reference to BCP 14 on the xml
   only through an external entity or a tagged keyword, reports
   MISSING_REQLEVEL_REF when none is tagged. The failure line also counts the
-  untagged keywords in <t> or <li> text outside that paragraph; that count
-  equals the MISSING_BCP14_TAGS that idnits 3.1.0 reports on -00 to -03 and
-  on the -04 xml without its tags, and can differ on other xml, because
+  untagged keywords in <t> or <li> text outside that paragraph. Both the
+  paragraph test and that count trim each text segment (the element's text
+  and the tail of each child) and join the segments with no separator, as
+  idnits does with text that a child element splits when the whitespace at
+  the split is written literally, so "Before <xref/> MUST" reads as
+  "BeforeMUST" and holds no keyword. Whitespace that JavaScript's trim()
+  removes, written as a character reference at a split, as in
+  "MUST&#160;<xref/>", is removed here and kept by idnits, which trims the
+  text as written, and a processing instruction or CDATA section splits the
+  text for idnits only. The count is an estimate of idnits'
+  MISSING_BCP14_TAGS: it equals the count idnits 3.1.0 reports on -00 to -03
+  and on the -04 xml without its tags, and can differ on other xml, because
   idnits selects the text it checks by a different rule;
 - every tracked term is present in the draft text exactly when it is present
   in the specification (reject categories, the behavioral tier and unscored
@@ -125,12 +137,21 @@ TRACKED = [
 PARAGRAPH_END = re.compile(r"\n[ \t]*(?:\n|#|[-*+] )")
 
 # idnits 3.1.0 reports SUBMISSION_TYPE_UNEXPECTED for these submissionType
-# values, compared in lower case with surrounding whitespace removed, when the
-# datatracker has no stream for the draft.
+# values, read as stream_value reads them, when the datatracker has no stream
+# for the draft.
 FLAGGED_STREAMS = {"ietf", "iab", "irtf"}
 # idnits 3.1.0 reports SUBMISSION_TYPE_INVALID for any non-empty submissionType
-# value outside these, compared the same way.
+# value outside these, read the same way.
 VALID_STREAMS = FLAGGED_STREAMS | {"independent", "editorial"}
+# The characters JavaScript's String.prototype.trim() removes, with which idnits
+# 3.1.0 trims attribute values and text segments: tab, line feed, vertical tab,
+# form feed, carriage return, U+2028, U+2029, U+FEFF and every Zs space.
+# Python's str.strip() differs: it also removes U+0085 and U+001C to U+001F,
+# and keeps U+FEFF.
+JS_WHITESPACE = (
+    "\t\n\v\f\r\u2028\u2029\ufeff"
+    " \xa0\u1680\u2000\u2001\u2002\u2003\u2004\u2005\u2006\u2007\u2008\u2009\u200a\u202f\u205f\u3000"
+)
 
 BCP14_KEYWORD = re.compile(
     r"\b(?:MUST\s+NOT|SHALL\s+NOT|SHOULD\s+NOT|NOT\s+RECOMMENDED"
@@ -145,25 +166,21 @@ TAGGED_OR_VERBATIM = {"bcp14", "artwork", "sourcecode"}
 BCP14_KEY_WORDS = re.compile(r"The key\s?words ", re.IGNORECASE)
 BCP14_IN_DOCUMENT = re.compile(r" in this document ..", re.IGNORECASE | re.DOTALL)
 # The failure line's second count takes keywords only from the text of these
-# elements, tails of their children included. It equals the MISSING_BCP14_TAGS
-# that idnits 3.1.0 reports on -00 to -03 and on the -04 xml without its tags;
-# idnits selects the text it checks by a different rule, so on other xml the
-# two can differ.
-IDNITS_TEXT = {"t", "li"}
+# elements, tails of their children included. It is an estimate of idnits'
+# MISSING_BCP14_TAGS: it equals the count idnits 3.1.0 reports on -00 to -03
+# and on the -04 xml without its tags; idnits selects the text it checks by a
+# different rule, so on other xml the two can differ.
+COUNTED_TEXT = {"t", "li"}
 
 
 class Untagged(NamedTuple):
     keyword: str
     context: str
     boilerplate: bool  # in the BCP 14 boilerplate paragraph, which idnits skips
-    element: str  # the element whose text, or child's tail, holds the keyword
-
-    @property
-    def idnits_reports(self) -> bool:
-        """Whether the failure line's second count includes this keyword: it is
-        outside the BCP 14 boilerplate paragraph, in the text of an IDNITS_TEXT
-        element."""
-        return not self.boilerplate and self.element in IDNITS_TEXT
+    # In the failure line's second count: outside the boilerplate paragraph, in
+    # the text of a COUNTED_TEXT element, and still a keyword once that element's
+    # text segments are trimmed and joined.
+    counted: bool
 
 PAGE_LINE = re.compile(r"^(Fane\s+Expires\b.*\[Page \d+\]|Internet-Draft\s+OpenA2A AIP\s+.*)$")
 
@@ -238,18 +255,34 @@ def carries(text: str, term: str) -> bool:
     return re.search(pattern, text) is not None
 
 
-def flagged_stream(root: ET.Element) -> str | None:
+def submission_type(xml: str) -> str | None:
+    """The rfc element's submissionType as written, character references not
+    decoded, or None when it has none. Each "&#" is escaped before parsing, so
+    the parser decodes "&amp;#32;" to "&#32;" and leaves the reference as idnits
+    reads it."""
+    return ET.fromstring(xml.replace("&#", "&amp;#")).get("submissionType")
+
+
+def stream_value(stream: str) -> str:
+    """A submissionType as idnits 3.1.0 compares it: the text as written,
+    trimmed as JavaScript's trim() trims, in lower case. idnits trims before it
+    handles character references and leaves most numeric ones undecoded, so a
+    value that still holds a reference is no stream name here."""
+    return stream.strip(JS_WHITESPACE).lower()
+
+
+def flagged_stream(xml: str) -> str | None:
     """The rfc element's submissionType when idnits flags it on a draft that has
     no datatracker stream, else None."""
-    stream = root.get("submissionType")
-    return stream if stream is not None and stream.strip().lower() in FLAGGED_STREAMS else None
+    stream = submission_type(xml)
+    return stream if stream is not None and stream_value(stream) in FLAGGED_STREAMS else None
 
 
-def invalid_stream(root: ET.Element) -> str | None:
+def invalid_stream(xml: str) -> str | None:
     """The rfc element's submissionType when idnits reports it as SUBMISSION_TYPE_INVALID, else None.
-    idnits reads the value with surrounding whitespace removed and skips an empty value."""
-    stream = root.get("submissionType")
-    value = (stream or "").strip().lower()
+    idnits skips a value that is empty once trimmed."""
+    stream = submission_type(xml)
+    value = stream_value(stream or "")
     return stream if value and value not in VALID_STREAMS else None
 
 
@@ -264,18 +297,30 @@ def bcp14_boilerplate(text: str) -> bool:
 
 def untagged_keywords(root: ET.Element) -> list[Untagged]:
     """Each BCP 14 keyword in the xml text that no <bcp14>, <artwork> or
-    <sourcecode> element encloses, in document order. The walk keeps its own
-    stack, so no nesting depth raises RecursionError."""
+    <sourcecode> element encloses, in document order. An element's text is
+    read in segments (the element's text and each child's tail), each
+    trimmed as JavaScript's trim() trims and its whitespace collapsed, and
+    the segments are joined with no separator. That joins text that a child
+    element splits as idnits 3.1.0 joins it when the whitespace at each split
+    is written literally. The parser decodes character references before
+    the trim, so trim() whitespace written as a reference at a split is
+    removed here, while idnits trims the text as written and keeps the
+    reference; and the parser drops processing instructions and merges CDATA
+    sections into the text, while idnits splits the text at each. The
+    boilerplate test and the second count read the joined text; each keyword
+    is found in its own segment. The walk keeps its own stack, so no nesting
+    depth raises RecursionError."""
     found: list[Untagged] = []
 
-    def scan(text: str | None, boilerplate: bool, element: str) -> None:
-        flat = re.sub(r"\s+", " ", text or "")
-        for match in BCP14_KEYWORD.finditer(flat):
-            context = flat[max(0, match.start() - 30): match.end() + 30].strip()
-            found.append(Untagged(match.group(0), context, boilerplate, element))
+    def scan(segment: str, start: int, boilerplate: bool, counted: set[tuple[int, int]]) -> None:
+        for match in BCP14_KEYWORD.finditer(segment):
+            context = segment[max(0, match.start() - 30): match.end() + 30].strip()
+            span = (start + match.start(), start + match.end())
+            found.append(Untagged(match.group(0), context, boilerplate, span in counted))
 
-    # An element still to visit, or a tail text to scan with its parent's boilerplate flag and tag.
-    stack: list[ET.Element | tuple[str | None, bool, str]] = [root]
+    # An element still to visit, or a child's tail to scan with its offset in
+    # the parent's joined text, the parent's boilerplate flag and counted spans.
+    stack: list[ET.Element | tuple[str, int, bool, set[tuple[int, int]]]] = [root]
     while stack:
         item = stack.pop()
         if isinstance(item, tuple):
@@ -283,11 +328,19 @@ def untagged_keywords(root: ET.Element) -> list[Untagged]:
             continue
         if item.tag in TAGGED_OR_VERBATIM:
             continue
-        own = (item.text or "") + "".join(child.tail or "" for child in item)
-        boilerplate = bcp14_boilerplate(re.sub(r"\s+", " ", own))
-        scan(item.text, boilerplate, item.tag)
-        for child in reversed(item):
-            stack.append((child.tail, boilerplate, item.tag))
+        texts = [item.text, *(child.tail for child in item)]
+        segments = [re.sub(r"\s+", " ", (text or "").strip(JS_WHITESPACE)) for text in texts]
+        starts = [0]
+        for segment in segments:
+            starts.append(starts[-1] + len(segment))
+        joined = "".join(segments)
+        boilerplate = bcp14_boilerplate(joined)
+        counted: set[tuple[int, int]] = set()
+        if item.tag in COUNTED_TEXT and not boilerplate:
+            counted = {match.span() for match in BCP14_KEYWORD.finditer(joined)}
+        scan(segments[0], 0, boilerplate, counted)
+        for child, segment, start in reversed(list(zip(item, segments[1:], starts[1:]))):
+            stack.append((segment, start, boilerplate, counted))
             stack.append(child)
     return found
 
@@ -316,13 +369,13 @@ def check_draft(name: str, spec: str) -> list[str]:
     except ET.ParseError as error:
         problems.append(f"{xml_path.name}: not well-formed xml: {error}")
     else:
-        stream = flagged_stream(root)
+        stream = flagged_stream(xml)
         if stream is not None:
             problems.append(
                 f"{xml_path.name}: the rfc element sets submissionType={stream!r}; an individual draft has"
                 " no datatracker stream, so idnits reports SUBMISSION_TYPE_UNEXPECTED. Remove the attribute."
             )
-        stream = invalid_stream(root)
+        stream = invalid_stream(xml)
         if stream is not None:
             problems.append(
                 f"{xml_path.name}: the rfc element sets submissionType={stream!r}, which is not IETF, IAB,"
@@ -331,11 +384,11 @@ def check_draft(name: str, spec: str) -> list[str]:
         untagged = untagged_keywords(root)
         if untagged:
             first = untagged[0]
-            checked = sum(u.idnits_reports for u in untagged)
+            counted = sum(u.counted for u in untagged)
             problems.append(
                 f"{xml_path.name}: {len(untagged)} BCP 14 keyword(s) outside <bcp14>, first {first.keyword!r}"
-                f" in '...{first.context}...'; of those, the {checked} outside the BCP 14 boilerplate"
-                " paragraph that sit in <t> or <li> text estimate idnits' MISSING_BCP14_TAGS count, and"
+                f" in '...{first.context}...'; {counted} of them, in <t> or <li> text outside the BCP 14"
+                " boilerplate paragraph, are an estimate of idnits' MISSING_BCP14_TAGS count, and"
                 " idnits reports MISSING_REQLEVEL_REF when none is tagged. Wrap each in <bcp14>."
             )
     raw = txt_path.read_text(encoding="utf-8")

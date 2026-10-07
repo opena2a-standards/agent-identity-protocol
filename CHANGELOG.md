@@ -42,15 +42,31 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   misleads it, and input with many `<rfc` and no `>` no longer takes quadratic time.
 - `scripts/check_draft_sync.py` also fails when `submissionType` is a non-empty value other than
   `IETF`, `IAB`, `IRTF`, `independent` or `editorial`, compared in lower case, such as
-  `Independant`, for which idnits 3.1.0 reports `SUBMISSION_TYPE_INVALID`. As idnits does, both
-  `submissionType` checks remove whitespace around the value and pass an empty value: `""`,
-  `" independent"` and `"independent "` pass, and `" IETF"` fails as `IETF` does.
+  `Independant`, for which idnits 3.1.0 reports `SUBMISSION_TYPE_INVALID`. Both `submissionType`
+  checks read the value as idnits does: the attribute text as written, with the whitespace that
+  JavaScript's `trim()` removes taken off each end before any character reference is decoded, and
+  pass an empty value. `""`, `" independent"` and `"independent "` pass, and `" IETF"` fails as
+  `IETF` does. A value that holds a character reference, such as `"&#32;independent"`,
+  `"&#160;independent"` or `"&#10;"`, fails as `SUBMISSION_TYPE_INVALID`, as does `"IETF&#32;"`,
+  which no longer fails as `SUBMISSION_TYPE_UNEXPECTED`. A leading U+0085, which `trim()` keeps,
+  fails as invalid, and a leading U+FEFF, which `trim()` removes, passes.
 - The BCP 14 failure line of `scripts/check_draft_sync.py` gives the number of untagged keywords
-  and the number of those in `<t>` or `<li>` text outside the BCP 14 boilerplate paragraph, as an
-  estimate of the `MISSING_BCP14_TAGS` count of idnits 3.1.0. On the -04 xml without its tags the
+  and says how many of them, in `<t>` or `<li>` text outside the BCP 14 boilerplate paragraph, are
+  an estimate of the `MISSING_BCP14_TAGS` count of idnits 3.1.0. On the -04 xml without its tags the
   line gives 71 and 60, and on -00 to -03 the second number is 39, 39, 47 and 49, the counts
   idnits reports. idnits selects the text it checks by a different rule, so on other xml the two
-  can differ. It no longer says idnits reports each untagged keyword.
+  can differ. It no longer says idnits reports each untagged keyword. The boilerplate test and
+  that count trim each text segment and join the segments with no separator, as idnits does with
+  text that a child element splits when the whitespace at the split is written literally. So
+  `<t>The key words "MUST" and "MAY" <xref target="BCP14"/> in this document ...</t>` is not the
+  boilerplate paragraph and counts 2, and `<t>Before <xref target="RFC2119"/> MUST after</t>`,
+  which reads "BeforeMUST after", counts 0, as idnits reports. Whitespace that JavaScript's
+  `trim()` removes, written as a character reference at a split, is removed by the check and kept
+  by idnits, which trims the text as written: `<t>Implementations MUST&#160;<xref
+  target="RFC2119"/>&#160;support it.</t>` counts 0 where idnits reports 1. A processing
+  instruction or CDATA section splits the text for idnits only: `<t>Before <?pi x?> MUST
+  after</t>` counts 1 where idnits reports none.
+  The names in the script say counted rather than idnits (`COUNTED_TEXT`, `Untagged.counted`).
 - `scripts/check_draft_sync.py` finds the BCP 14 boilerplate paragraph in linear time. It used
   idnits' pattern, which takes quadratic time on text with many "The key words" and no " in this
   document" (about 1.4 s for 81 KB); it now searches in two steps that give the same result.
@@ -62,7 +78,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   pairing paragraph states how the xml on the datatracker differs from the repository xml.
   README.md also says one editorial change has been made to the specification since
   `draft-fane-opena2a-aip-04`: §12.1 now reads "MUST NOT be transmitted" where Section 13.1 of
-  the draft reads "MUST NEVER be transmitted". Once a pairing paragraph no longer says its draft is not submitted,
+  the draft reads "MUST NEVER be transmitted". It also quotes the two statements of §6.1 on
+  substituting per-factor scoring functions that Section 7.1 of the draft lacks, though the
+  specification carried both when -04 was made, instead of saying -04 carries 1.2.0-draft whole.
+  Once a pairing paragraph no longer says its draft is not submitted,
   `scripts/check_draft_sync.py` requires it to record the submission as "`draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) is
   the current datatracker revision" and requires README.md to name that date.
 - AIP-SPEC.md §12.1 says private keys MUST NOT be transmitted in plaintext, the form BCP 14
@@ -73,9 +92,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 - `tests/test_check_scripts.py` covers the cases above, and pins three properties of the BCP 14
   rule: elements nested in `<artwork>`, `<sourcecode>` or `<bcp14>` are exempt, xml that is not
   well formed is reported, and "NOT RECOMMENDED" is one keyword. It also pins that a recorded
-  submission must say "is the current datatracker revision", and that the boilerplate paragraph
-  is recognised when its "in this document" or its keywords follow a child element such as
-  `<xref/>`. Run `python3 -m unittest discover -s tests`.
+  submission must say "is the current datatracker revision", that a `submissionType` written with
+  a character reference or a leading U+0085 or U+FEFF is read as idnits reads it, and that an
+  element's text segments are trimmed and joined, so a paragraph whose "in this document" or
+  keywords follow a child element such as `<xref/>` is not the boilerplate paragraph. Run
+  `python3 -m unittest discover -s tests`.
 
 ## [1.2.0-draft] - 2026-10-06
 
