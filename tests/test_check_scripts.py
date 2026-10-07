@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -95,6 +96,23 @@ class DraftSyncWholeWord(unittest.TestCase):
         )
         self.assertFalse(any("submissionType" in p for p in problems), problems)
 
+    def test_invalid_stream_in_draft_is_reported(self) -> None:
+        problems = self.problems_in_copy(
+            ".xml", 'ipr="trust200902"', 'ipr="trust200902"\n     submissionType="Independant"'
+        )
+        self.assertTrue(any("'Independant'" in p and "SUBMISSION_TYPE_INVALID" in p for p in problems), problems)
+        self.assertFalse(any("SUBMISSION_TYPE_UNEXPECTED" in p for p in problems), problems)
+
+    def test_invalid_stream_compares_in_lower_case(self) -> None:
+        def stream(xml: str) -> str | None:
+            return check_draft_sync.invalid_stream(ET.fromstring(xml))
+
+        self.assertEqual(stream('<rfc submissionType="Independant"/>'), "Independant")
+        self.assertEqual(stream('<rfc submissionType="ISE"/>'), "ISE")
+        for valid in ("IETF", "iab", "Irtf", "INDEPENDENT", "independent", "Editorial"):
+            self.assertIsNone(stream(f'<rfc submissionType="{valid}"/>'), valid)
+        self.assertIsNone(stream('<rfc docName="d"/>'))
+
     def test_flagged_stream_reads_the_parsed_rfc_element(self) -> None:
         def stream(xml: str) -> str | None:
             return check_draft_sync.flagged_stream(ET.fromstring(xml))
@@ -132,6 +150,21 @@ class DraftSyncWholeWord(unittest.TestCase):
         self.assertLess(checked, total)
         self.assertFalse(any("reports each" in p for p in problems), problems)
 
+    def test_untagged_count_names_only_keywords_idnits_reads(self) -> None:
+        probe = (
+            "<section><name>Probe SHALL heading</name><ul><li>List item MUST hold.</li>"
+            "<li><t>Para in li SHOULD hold.</t></li></ul><dl><dt>Term</dt><dd>Definition MAY apply.</dd></dl>"
+            "<table><tbody><tr><td>Cell REQUIRED here</td></tr></tbody></table>"
+            "<t>Plain para OPTIONAL here <em>emph MUST NOT</em> tail RECOMMENDED.</t></section>"
+        )
+        problems = self.problems_in_copy(".xml", "<middle>", "<middle>" + probe)
+        counts = [re.search(r"(\d+) BCP 14 keyword\(s\).* the (\d+) outside the BCP 14 boilerplate", p) for p in problems]
+        counts = [(int(m.group(1)), int(m.group(2))) for m in counts if m]
+        # idnits 3.1.0 reports 4 MISSING_BCP14_TAGS on this probe: none for <name>, <dd>, <td> or <em>.
+        self.assertEqual(counts, [(8, 4)], problems)
+        reported = [u.keyword for u in check_draft_sync.untagged_keywords(ET.fromstring(probe)) if u.idnits_reports]
+        self.assertEqual(reported, ["MUST", "SHOULD", "OPTIONAL", "RECOMMENDED"])
+
     def test_untagged_keywords_skips_tagged_and_verbatim_text(self) -> None:
         def keywords(xml: str) -> list[str]:
             return [u.keyword for u in check_draft_sync.untagged_keywords(ET.fromstring(xml))]
@@ -162,6 +195,47 @@ class DraftSyncWholeWord(unittest.TestCase):
         )
         found = [(u.keyword, u.boilerplate) for u in check_draft_sync.untagged_keywords(ET.fromstring(xml))]
         self.assertEqual(found, [("MUST", True), ("MAY", True), ("SHOULD", False)])
+
+    def test_boilerplate_paragraph_reads_text_after_a_child_element(self) -> None:
+        def found(xml: str) -> list[tuple[str, bool]]:
+            return [(u.keyword, u.boilerplate) for u in check_draft_sync.untagged_keywords(ET.fromstring(xml))]
+
+        scope_after_child = (
+            '<rfc><t>The key words "MUST" and "MAY" <xref target="BCP14"/> in this document are to be'
+            " interpreted as described.</t><t>It SHOULD hold.</t></rfc>"
+        )
+        self.assertEqual(found(scope_after_child), [("MUST", True), ("MAY", True), ("SHOULD", False)])
+        keywords_after_child = (
+            '<rfc><t>The key words <xref target="BCP14"/> "MUST" and "MAY" in this document are to be'
+            " interpreted as described.</t><t>It SHOULD hold.</t></rfc>"
+        )
+        self.assertEqual(found(keywords_after_child), [("MUST", True), ("MAY", True), ("SHOULD", False)])
+
+    def test_boilerplate_search_matches_the_idnits_pattern(self) -> None:
+        idnits = re.compile(r"The key\s?words .+? in this document .+?.", re.IGNORECASE | re.DOTALL)
+        texts = [
+            'The key words "MUST" in this document are to be interpreted.',
+            "the KEYWORDS x In This Document ab",
+            "The key words x in this document ab",
+            "The key words x in this document a",
+            "The key words  in this document ab",
+            "The key words x in this documentab",
+            "in this document ab. The key words x",
+            "The key words The key words x in this document ab",
+            "The key words in this document in this document ab",
+            "The key\twords x in this document\nab",
+            "The key  words x in this document ab",
+            "",
+        ]
+        for text in texts:
+            self.assertEqual(check_draft_sync.bcp14_boilerplate(text), idnits.search(text) is not None, text)
+
+    def test_boilerplate_search_takes_linear_time(self) -> None:
+        root = ET.fromstring("<rfc><t>" + "The key words " * 20000 + "MUST</t></rfc>")
+        start = time.monotonic()
+        found = check_draft_sync.untagged_keywords(root)
+        self.assertLess(time.monotonic() - start, 2.0)
+        self.assertEqual([(u.keyword, u.boilerplate) for u in found], [("MUST", False)])
 
     def test_untagged_keywords_walks_deep_nesting(self) -> None:
         depth = sys.getrecursionlimit() + 200
@@ -203,6 +277,11 @@ class DraftDisclosure(unittest.TestCase):
 
     def test_submission_of_another_draft_does_not_count(self) -> None:
         pairing = self.SUBMITTED.replace("-09", "-08")
+        problems = self.problems(pairing, "It was submitted 2026-10-06.")
+        self.assertTrue(any("records no submission" in p for p in problems), problems)
+
+    def test_submission_must_say_it_is_the_current_revision(self) -> None:
+        pairing = "`draft-fane-opena2a-aip-09` (submitted 2026-10-06) was withdrawn."
         problems = self.problems(pairing, "It was submitted 2026-10-06.")
         self.assertTrue(any("records no submission" in p for p in problems), problems)
 
