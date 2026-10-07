@@ -7,18 +7,26 @@ version in AIP-SPEC.md this script finds that line and checks the paired
 draft-fane-opena2a-aip-NN.{xml,txt}:
 
 - the xml docName is the paired name;
-- the parsed rfc element's submissionType is not IETF, IAB or IRTF (in any
-  case): an individual draft has no stream on the datatracker, and idnits
-  3.1.0 reports SUBMISSION_TYPE_UNEXPECTED for those three values only.
-  Without the attribute xml2rfc 3.34.0 warns "Expected a valid submissionType
-  (stream) setting" and uses 'IETF' to render; that warning is expected;
+- the parsed rfc element's submissionType, with surrounding whitespace
+  removed and compared in lower case as idnits 3.1.0 does, is independent,
+  editorial or empty, or absent: an individual draft has no stream on the
+  datatracker, idnits reports SUBMISSION_TYPE_UNEXPECTED for IETF, IAB and
+  IRTF, SUBMISSION_TYPE_INVALID for a non-empty value other than those five,
+  and nothing for an empty one. Without the attribute xml2rfc 3.34.0 warns
+  "Expected a valid submissionType (stream) setting" and uses 'IETF' to
+  render; that warning is expected;
 - every BCP 14 keyword in the xml text sits in a <bcp14> element (text in
   <artwork> and <sourcecode>, and in any element nested in those or in
   <bcp14>, is verbatim or tagged and exempt): idnits skips the BCP 14
   boilerplate paragraph ("The key words ... in this document ...") and
-  reports each other untagged keyword as MISSING_BCP14_TAGS, and, since it
-  counts a reference to BCP 14 on the xml only through an external entity or
-  a tagged keyword, reports MISSING_REQLEVEL_REF when none is tagged;
+  reports untagged keywords elsewhere in the text it checks as
+  MISSING_BCP14_TAGS, and, since it counts a reference to BCP 14 on the xml
+  only through an external entity or a tagged keyword, reports
+  MISSING_REQLEVEL_REF when none is tagged. The failure line also counts the
+  untagged keywords in <t> or <li> text outside that paragraph; that count
+  equals the MISSING_BCP14_TAGS that idnits 3.1.0 reports on -00 to -03 and
+  on the -04 xml without its tags, and can differ on other xml, because
+  idnits selects the text it checks by a different rule;
 - every tracked term is present in the draft text exactly when it is present
   in the specification (reject categories, the behavioral tier and unscored
   state fields, the clock-skew citation, the "trustLevel" JSON key that the
@@ -117,8 +125,12 @@ TRACKED = [
 PARAGRAPH_END = re.compile(r"\n[ \t]*(?:\n|#|[-*+] )")
 
 # idnits 3.1.0 reports SUBMISSION_TYPE_UNEXPECTED for these submissionType
-# values, compared in lower case, when the datatracker has no stream for the draft.
+# values, compared in lower case with surrounding whitespace removed, when the
+# datatracker has no stream for the draft.
 FLAGGED_STREAMS = {"ietf", "iab", "irtf"}
+# idnits 3.1.0 reports SUBMISSION_TYPE_INVALID for any non-empty submissionType
+# value outside these, compared the same way.
+VALID_STREAMS = FLAGGED_STREAMS | {"independent", "editorial"}
 
 BCP14_KEYWORD = re.compile(
     r"\b(?:MUST\s+NOT|SHALL\s+NOT|SHOULD\s+NOT|NOT\s+RECOMMENDED"
@@ -126,14 +138,32 @@ BCP14_KEYWORD = re.compile(
 )
 # Text in these elements needs no <bcp14> tag: the tag itself and verbatim blocks.
 TAGGED_OR_VERBATIM = {"bcp14", "artwork", "sourcecode"}
-# idnits 3.1.0 checks no keyword in a text that matches its BCP 14 boilerplate pattern.
-BCP14_BOILERPLATE = re.compile(r"The key\s?words .+? in this document .+?.", re.IGNORECASE | re.DOTALL)
+# idnits 3.1.0 checks no keyword in a text that matches its BCP 14 boilerplate
+# pattern, /The key\s?words .+? in this document .+?./is. Searched as one
+# pattern, it rescans the rest of the text from every "The key words", which
+# takes quadratic time; bcp14_boilerplate applies it in two linear steps.
+BCP14_KEY_WORDS = re.compile(r"The key\s?words ", re.IGNORECASE)
+BCP14_IN_DOCUMENT = re.compile(r" in this document ..", re.IGNORECASE | re.DOTALL)
+# The failure line's second count takes keywords only from the text of these
+# elements, tails of their children included. It equals the MISSING_BCP14_TAGS
+# that idnits 3.1.0 reports on -00 to -03 and on the -04 xml without its tags;
+# idnits selects the text it checks by a different rule, so on other xml the
+# two can differ.
+IDNITS_TEXT = {"t", "li"}
 
 
 class Untagged(NamedTuple):
     keyword: str
     context: str
     boilerplate: bool  # in the BCP 14 boilerplate paragraph, which idnits skips
+    element: str  # the element whose text, or child's tail, holds the keyword
+
+    @property
+    def idnits_reports(self) -> bool:
+        """Whether the failure line's second count includes this keyword: it is
+        outside the BCP 14 boilerplate paragraph, in the text of an IDNITS_TEXT
+        element."""
+        return not self.boilerplate and self.element in IDNITS_TEXT
 
 PAGE_LINE = re.compile(r"^(Fane\s+Expires\b.*\[Page \d+\]|Internet-Draft\s+OpenA2A AIP\s+.*)$")
 
@@ -212,7 +242,24 @@ def flagged_stream(root: ET.Element) -> str | None:
     """The rfc element's submissionType when idnits flags it on a draft that has
     no datatracker stream, else None."""
     stream = root.get("submissionType")
-    return stream if stream is not None and stream.lower() in FLAGGED_STREAMS else None
+    return stream if stream is not None and stream.strip().lower() in FLAGGED_STREAMS else None
+
+
+def invalid_stream(root: ET.Element) -> str | None:
+    """The rfc element's submissionType when idnits reports it as SUBMISSION_TYPE_INVALID, else None.
+    idnits reads the value with surrounding whitespace removed and skips an empty value."""
+    stream = root.get("submissionType")
+    value = (stream or "").strip().lower()
+    return stream if value and value not in VALID_STREAMS else None
+
+
+def bcp14_boilerplate(text: str) -> bool:
+    """Whether idnits' BCP 14 boilerplate pattern matches text. The first
+    "The key words" ends earliest, so the pattern matches exactly when " in
+    this document " starts at least one character after it and two characters
+    follow."""
+    key = BCP14_KEY_WORDS.search(text)
+    return key is not None and BCP14_IN_DOCUMENT.search(text, key.end() + 1) is not None
 
 
 def untagged_keywords(root: ET.Element) -> list[Untagged]:
@@ -221,14 +268,14 @@ def untagged_keywords(root: ET.Element) -> list[Untagged]:
     stack, so no nesting depth raises RecursionError."""
     found: list[Untagged] = []
 
-    def scan(text: str | None, boilerplate: bool) -> None:
+    def scan(text: str | None, boilerplate: bool, element: str) -> None:
         flat = re.sub(r"\s+", " ", text or "")
         for match in BCP14_KEYWORD.finditer(flat):
             context = flat[max(0, match.start() - 30): match.end() + 30].strip()
-            found.append(Untagged(match.group(0), context, boilerplate))
+            found.append(Untagged(match.group(0), context, boilerplate, element))
 
-    # An element still to visit, or a tail text to scan with its parent's boilerplate flag.
-    stack: list[ET.Element | tuple[str | None, bool]] = [root]
+    # An element still to visit, or a tail text to scan with its parent's boilerplate flag and tag.
+    stack: list[ET.Element | tuple[str | None, bool, str]] = [root]
     while stack:
         item = stack.pop()
         if isinstance(item, tuple):
@@ -237,10 +284,10 @@ def untagged_keywords(root: ET.Element) -> list[Untagged]:
         if item.tag in TAGGED_OR_VERBATIM:
             continue
         own = (item.text or "") + "".join(child.tail or "" for child in item)
-        boilerplate = BCP14_BOILERPLATE.search(re.sub(r"\s+", " ", own)) is not None
-        scan(item.text, boilerplate)
+        boilerplate = bcp14_boilerplate(re.sub(r"\s+", " ", own))
+        scan(item.text, boilerplate, item.tag)
         for child in reversed(item):
-            stack.append((child.tail, boilerplate))
+            stack.append((child.tail, boilerplate, item.tag))
             stack.append(child)
     return found
 
@@ -275,15 +322,21 @@ def check_draft(name: str, spec: str) -> list[str]:
                 f"{xml_path.name}: the rfc element sets submissionType={stream!r}; an individual draft has"
                 " no datatracker stream, so idnits reports SUBMISSION_TYPE_UNEXPECTED. Remove the attribute."
             )
+        stream = invalid_stream(root)
+        if stream is not None:
+            problems.append(
+                f"{xml_path.name}: the rfc element sets submissionType={stream!r}, which is not IETF, IAB,"
+                " IRTF, independent or editorial, so idnits reports SUBMISSION_TYPE_INVALID. Remove the attribute."
+            )
         untagged = untagged_keywords(root)
         if untagged:
             first = untagged[0]
-            checked = sum(not u.boilerplate for u in untagged)
+            checked = sum(u.idnits_reports for u in untagged)
             problems.append(
                 f"{xml_path.name}: {len(untagged)} BCP 14 keyword(s) outside <bcp14>, first {first.keyword!r}"
-                f" in '...{first.context}...'; idnits reports the {checked} outside the BCP 14 boilerplate"
-                " paragraph as MISSING_BCP14_TAGS, and MISSING_REQLEVEL_REF when none is tagged."
-                " Wrap each in <bcp14>."
+                f" in '...{first.context}...'; of those, the {checked} outside the BCP 14 boilerplate"
+                " paragraph that sit in <t> or <li> text estimate idnits' MISSING_BCP14_TAGS count, and"
+                " idnits reports MISSING_REQLEVEL_REF when none is tagged. Wrap each in <bcp14>."
             )
     raw = txt_path.read_text(encoding="utf-8")
     text = draft_text(raw)

@@ -36,21 +36,34 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   on the xml, but idnits then reports `MULTIPLE_REFERENCES_SECTION_TITLES` on the rendered txt, as
   it does on `draft-fane-opena2a-aip-03.txt`.
 - `scripts/check_draft_sync.py` reads `submissionType` from the parsed `rfc` element and fails
-  only for `IETF`, `IAB` or `IRTF` in any case, the values for which idnits 3.1.0 reports
+  for `IETF`, `IAB` or `IRTF` in any case, the values for which idnits 3.1.0 reports
   `SUBMISSION_TYPE_UNEXPECTED` on a draft with no datatracker stream; `independent` and
   `editorial` pass. An `<rfc` tag inside a comment or a `>` inside an attribute value no longer
   misleads it, and input with many `<rfc` and no `>` no longer takes quadratic time.
+- `scripts/check_draft_sync.py` also fails when `submissionType` is a non-empty value other than
+  `IETF`, `IAB`, `IRTF`, `independent` or `editorial`, compared in lower case, such as
+  `Independant`, for which idnits 3.1.0 reports `SUBMISSION_TYPE_INVALID`. As idnits does, both
+  `submissionType` checks remove whitespace around the value and pass an empty value: `""`,
+  `" independent"` and `"independent "` pass, and `" IETF"` fails as `IETF` does.
 - The BCP 14 failure line of `scripts/check_draft_sync.py` gives the number of untagged keywords
-  and the number outside the BCP 14 boilerplate paragraph, which idnits does not check: on the
-  -04 xml without its tags, 71 and 60, and idnits 3.1.0 reports 60 `MISSING_BCP14_TAGS`. It no
-  longer says idnits reports each untagged keyword.
+  and the number of those in `<t>` or `<li>` text outside the BCP 14 boilerplate paragraph, as an
+  estimate of the `MISSING_BCP14_TAGS` count of idnits 3.1.0. On the -04 xml without its tags the
+  line gives 71 and 60, and on -00 to -03 the second number is 39, 39, 47 and 49, the counts
+  idnits reports. idnits selects the text it checks by a different rule, so on other xml the two
+  can differ. It no longer says idnits reports each untagged keyword.
+- `scripts/check_draft_sync.py` finds the BCP 14 boilerplate paragraph in linear time. It used
+  idnits' pattern, which takes quadratic time on text with many "The key words" and no " in this
+  document" (about 1.4 s for 81 KB); it now searches in two steps that give the same result.
 - The BCP 14 walk of `scripts/check_draft_sync.py` keeps its own stack, so xml nested about 1000
-  elements deep gives a FAIL line instead of an uncaught `RecursionError`.
+  elements deep or more gives the same result as shallower xml instead of an uncaught
+  `RecursionError`.
 - README.md and the 1.2.0-draft pairing paragraph say `draft-fane-opena2a-aip-04` was submitted
   on 2026-10-06 and is the current datatracker revision, instead of not submitted yet, and the
-  pairing paragraph states how the xml on the datatracker differs from the repository xml. Once a
-  pairing paragraph no longer says its draft is not submitted, `scripts/check_draft_sync.py`
-  requires it to record the submission as "`draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) is
+  pairing paragraph states how the xml on the datatracker differs from the repository xml.
+  README.md also says one editorial change has been made to the specification since
+  `draft-fane-opena2a-aip-04`: §12.1 now reads "MUST NOT be transmitted" where Section 13.1 of
+  the draft reads "MUST NEVER be transmitted". Once a pairing paragraph no longer says its draft is not submitted,
+  `scripts/check_draft_sync.py` requires it to record the submission as "`draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) is
   the current datatracker revision" and requires README.md to name that date.
 - AIP-SPEC.md §12.1 says private keys MUST NOT be transmitted in plaintext, the form BCP 14
   defines, instead of "MUST NEVER". `draft-fane-opena2a-aip-04`, as submitted, still reads "MUST
@@ -59,8 +72,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   git's exit code 128.
 - `tests/test_check_scripts.py` covers the cases above, and pins three properties of the BCP 14
   rule: elements nested in `<artwork>`, `<sourcecode>` or `<bcp14>` are exempt, xml that is not
-  well formed is reported, and "NOT RECOMMENDED" is one keyword. Run `python3 -m unittest
-  discover -s tests`.
+  well formed is reported, and "NOT RECOMMENDED" is one keyword. It also pins that a recorded
+  submission must say "is the current datatracker revision", and that the boilerplate paragraph
+  is recognised when its "in this document" or its keywords follow a child element such as
+  `<xref/>`. Run `python3 -m unittest discover -s tests`.
 
 ## [1.2.0-draft] - 2026-10-06
 
