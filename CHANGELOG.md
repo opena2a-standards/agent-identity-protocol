@@ -58,9 +58,9 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 - README.md and the 1.2.0-draft pairing paragraph say `draft-fane-opena2a-aip-04` was submitted
   on 2026-10-06 and is the current datatracker revision, instead of not submitted yet, and the
   pairing paragraph states how the xml on the datatracker differs from the repository xml.
-  README.md also names the one editorial difference between the specification and the draft
-  text: §12.1 reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER
-  be transmitted". Once a pairing paragraph no longer says its draft is not submitted,
+  README.md also says one editorial change has been made to the specification since
+  `draft-fane-opena2a-aip-04`: §12.1 now reads "MUST NOT be transmitted" where Section 13.1 of
+  the draft reads "MUST NEVER be transmitted". Once a pairing paragraph no longer says its draft is not submitted,
   `scripts/check_draft_sync.py` requires it to record the submission as "`draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) is
   the current datatracker revision" and requires README.md to name that date.
 - AIP-SPEC.md §12.1 says private keys MUST NOT be transmitted in plaintext, the form BCP 14
