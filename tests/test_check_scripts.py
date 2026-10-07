@@ -109,8 +109,12 @@ class DraftSyncWholeWord(unittest.TestCase):
 
         self.assertEqual(stream('<rfc submissionType="Independant"/>'), "Independant")
         self.assertEqual(stream('<rfc submissionType="ISE"/>'), "ISE")
+        self.assertEqual(stream('<rfc submissionType=" ISE "/>'), " ISE ")
         for valid in ("IETF", "iab", "Irtf", "INDEPENDENT", "independent", "Editorial"):
             self.assertIsNone(stream(f'<rfc submissionType="{valid}"/>'), valid)
+        # idnits 3.1.0 removes whitespace around the value and reports nothing for an empty one.
+        for skipped in ("", "  ", " independent", "independent "):
+            self.assertIsNone(stream(f'<rfc submissionType="{skipped}"/>'), repr(skipped))
         self.assertIsNone(stream('<rfc docName="d"/>'))
 
     def test_flagged_stream_reads_the_parsed_rfc_element(self) -> None:
@@ -121,6 +125,7 @@ class DraftSyncWholeWord(unittest.TestCase):
         self.assertEqual(stream('<rfc docName="d"\n     submissionType = "iab"/>'), "iab")
         self.assertEqual(stream('<rfc submissionType="IRTF"/>'), "IRTF")
         self.assertEqual(stream('<rfc title="a>b" submissionType="IETF"/>'), "IETF")
+        self.assertEqual(stream('<rfc submissionType=" IETF "/>'), " IETF ")
         self.assertIsNone(stream('<rfc docName="d" submissionType="independent"/>'))
         self.assertIsNone(stream('<rfc docName="d" submissionType="editorial"/>'))
         self.assertIsNone(stream('<!-- <rfc submissionType="IETF"> --><rfc docName="d"/>'))

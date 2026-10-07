@@ -7,13 +7,14 @@ version in AIP-SPEC.md this script finds that line and checks the paired
 draft-fane-opena2a-aip-NN.{xml,txt}:
 
 - the xml docName is the paired name;
-- the parsed rfc element's submissionType, compared in lower case as idnits
-  3.1.0 does, is independent or editorial, or absent: an individual draft
-  has no stream on the datatracker, idnits reports SUBMISSION_TYPE_UNEXPECTED
-  for IETF, IAB and IRTF, and SUBMISSION_TYPE_INVALID for any value other
-  than those five. Without the attribute xml2rfc 3.34.0 warns "Expected a
-  valid submissionType (stream) setting" and uses 'IETF' to render; that
-  warning is expected;
+- the parsed rfc element's submissionType, with surrounding whitespace
+  removed and compared in lower case as idnits 3.1.0 does, is independent,
+  editorial or empty, or absent: an individual draft has no stream on the
+  datatracker, idnits reports SUBMISSION_TYPE_UNEXPECTED for IETF, IAB and
+  IRTF, SUBMISSION_TYPE_INVALID for a non-empty value other than those five,
+  and nothing for an empty one. Without the attribute xml2rfc 3.34.0 warns
+  "Expected a valid submissionType (stream) setting" and uses 'IETF' to
+  render; that warning is expected;
 - every BCP 14 keyword in the xml text sits in a <bcp14> element (text in
   <artwork> and <sourcecode>, and in any element nested in those or in
   <bcp14>, is verbatim or tagged and exempt): idnits skips the BCP 14
@@ -124,10 +125,11 @@ TRACKED = [
 PARAGRAPH_END = re.compile(r"\n[ \t]*(?:\n|#|[-*+] )")
 
 # idnits 3.1.0 reports SUBMISSION_TYPE_UNEXPECTED for these submissionType
-# values, compared in lower case, when the datatracker has no stream for the draft.
+# values, compared in lower case with surrounding whitespace removed, when the
+# datatracker has no stream for the draft.
 FLAGGED_STREAMS = {"ietf", "iab", "irtf"}
-# idnits 3.1.0 reports SUBMISSION_TYPE_INVALID for any submissionType value
-# outside these, compared in lower case.
+# idnits 3.1.0 reports SUBMISSION_TYPE_INVALID for any non-empty submissionType
+# value outside these, compared the same way.
 VALID_STREAMS = FLAGGED_STREAMS | {"independent", "editorial"}
 
 BCP14_KEYWORD = re.compile(
@@ -240,13 +242,15 @@ def flagged_stream(root: ET.Element) -> str | None:
     """The rfc element's submissionType when idnits flags it on a draft that has
     no datatracker stream, else None."""
     stream = root.get("submissionType")
-    return stream if stream is not None and stream.lower() in FLAGGED_STREAMS else None
+    return stream if stream is not None and stream.strip().lower() in FLAGGED_STREAMS else None
 
 
 def invalid_stream(root: ET.Element) -> str | None:
-    """The rfc element's submissionType when idnits reports it as SUBMISSION_TYPE_INVALID, else None."""
+    """The rfc element's submissionType when idnits reports it as SUBMISSION_TYPE_INVALID, else None.
+    idnits reads the value with surrounding whitespace removed and skips an empty value."""
     stream = root.get("submissionType")
-    return stream if stream is not None and stream.lower() not in VALID_STREAMS else None
+    value = (stream or "").strip().lower()
+    return stream if value and value not in VALID_STREAMS else None
 
 
 def bcp14_boilerplate(text: str) -> bool:

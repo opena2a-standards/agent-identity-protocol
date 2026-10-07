@@ -40,9 +40,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   `SUBMISSION_TYPE_UNEXPECTED` on a draft with no datatracker stream; `independent` and
   `editorial` pass. An `<rfc` tag inside a comment or a `>` inside an attribute value no longer
   misleads it, and input with many `<rfc` and no `>` no longer takes quadratic time.
-- `scripts/check_draft_sync.py` also fails when `submissionType` is any value other than `IETF`,
-  `IAB`, `IRTF`, `independent` or `editorial`, compared in lower case, such as `Independant`, for
-  which idnits 3.1.0 reports `SUBMISSION_TYPE_INVALID`.
+- `scripts/check_draft_sync.py` also fails when `submissionType` is a non-empty value other than
+  `IETF`, `IAB`, `IRTF`, `independent` or `editorial`, compared in lower case, such as
+  `Independant`, for which idnits 3.1.0 reports `SUBMISSION_TYPE_INVALID`. As idnits does, both
+  `submissionType` checks remove whitespace around the value and pass an empty value: `""`,
+  `" independent"` and `"independent "` pass, and `" IETF"` fails as `IETF` does.
 - The BCP 14 failure line of `scripts/check_draft_sync.py` gives the number of untagged keywords
   and the number of those in `<t>` or `<li>` text outside the BCP 14 boilerplate paragraph, as an
   estimate of the `MISSING_BCP14_TAGS` count of idnits 3.1.0. On the -04 xml without its tags the
