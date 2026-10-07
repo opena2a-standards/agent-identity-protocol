@@ -18,10 +18,14 @@ draft-fane-opena2a-aip-NN.{xml,txt}:
   <artwork> and <sourcecode>, and in any element nested in those or in
   <bcp14>, is verbatim or tagged and exempt): idnits skips the BCP 14
   boilerplate paragraph ("The key words ... in this document ...") and
-  reports each other untagged keyword in <t> or <li> text as
+  reports untagged keywords elsewhere in the text it checks as
   MISSING_BCP14_TAGS, and, since it counts a reference to BCP 14 on the xml
   only through an external entity or a tagged keyword, reports
-  MISSING_REQLEVEL_REF when none is tagged;
+  MISSING_REQLEVEL_REF when none is tagged. The failure line also counts the
+  untagged keywords in <t> or <li> text outside that paragraph; that count
+  equals the MISSING_BCP14_TAGS that idnits 3.1.0 reports on -00 to -03 and
+  on the -04 xml without its tags, and can differ on other xml, because
+  idnits selects the text it checks by a different rule;
 - every tracked term is present in the draft text exactly when it is present
   in the specification (reject categories, the behavioral tier and unscored
   state fields, the clock-skew citation, the "trustLevel" JSON key that the
@@ -138,8 +142,11 @@ TAGGED_OR_VERBATIM = {"bcp14", "artwork", "sourcecode"}
 # takes quadratic time; bcp14_boilerplate applies it in two linear steps.
 BCP14_KEY_WORDS = re.compile(r"The key\s?words ", re.IGNORECASE)
 BCP14_IN_DOCUMENT = re.compile(r" in this document ..", re.IGNORECASE | re.DOTALL)
-# idnits 3.1.0 reads keywords only in the text of these elements, tails of their
-# children included; it reports none in, for example, <name>, <dd>, <td> or <em>.
+# The failure line's second count takes keywords only from the text of these
+# elements, tails of their children included. It equals the MISSING_BCP14_TAGS
+# that idnits 3.1.0 reports on -00 to -03 and on the -04 xml without its tags;
+# idnits selects the text it checks by a different rule, so on other xml the
+# two can differ.
 IDNITS_TEXT = {"t", "li"}
 
 
@@ -151,7 +158,9 @@ class Untagged(NamedTuple):
 
     @property
     def idnits_reports(self) -> bool:
-        """Whether idnits 3.1.0 reports this keyword as MISSING_BCP14_TAGS."""
+        """Whether the failure line's second count includes this keyword: it is
+        outside the BCP 14 boilerplate paragraph, in the text of an IDNITS_TEXT
+        element."""
         return not self.boilerplate and self.element in IDNITS_TEXT
 
 PAGE_LINE = re.compile(r"^(Fane\s+Expires\b.*\[Page \d+\]|Internet-Draft\s+OpenA2A AIP\s+.*)$")
@@ -321,9 +330,9 @@ def check_draft(name: str, spec: str) -> list[str]:
             checked = sum(u.idnits_reports for u in untagged)
             problems.append(
                 f"{xml_path.name}: {len(untagged)} BCP 14 keyword(s) outside <bcp14>, first {first.keyword!r}"
-                f" in '...{first.context}...'; idnits reports the {checked} outside the BCP 14 boilerplate"
-                " paragraph that sit in <t> or <li> text as MISSING_BCP14_TAGS, and MISSING_REQLEVEL_REF"
-                " when none is tagged. Wrap each in <bcp14>."
+                f" in '...{first.context}...'; of those, the {checked} outside the BCP 14 boilerplate"
+                " paragraph that sit in <t> or <li> text estimate idnits' MISSING_BCP14_TAGS count, and"
+                " idnits reports MISSING_REQLEVEL_REF when none is tagged. Wrap each in <bcp14>."
             )
     raw = txt_path.read_text(encoding="utf-8")
     text = draft_text(raw)

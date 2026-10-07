@@ -44,11 +44,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   `IAB`, `IRTF`, `independent` or `editorial`, compared in lower case, such as `Independant`, for
   which idnits 3.1.0 reports `SUBMISSION_TYPE_INVALID`.
 - The BCP 14 failure line of `scripts/check_draft_sync.py` gives the number of untagged keywords
-  and the number idnits 3.1.0 reports as `MISSING_BCP14_TAGS`: those in `<t>` or `<li>` text
-  outside the BCP 14 boilerplate paragraph. idnits checks neither that paragraph nor a keyword in
-  a `<name>`, `<dd>`, `<td>` or inline element such as `<em>`. On the -04 xml without its tags the
+  and the number of those in `<t>` or `<li>` text outside the BCP 14 boilerplate paragraph, as an
+  estimate of the `MISSING_BCP14_TAGS` count of idnits 3.1.0. On the -04 xml without its tags the
   line gives 71 and 60, and on -00 to -03 the second number is 39, 39, 47 and 49, the counts
-  idnits reports. It no longer says idnits reports each untagged keyword.
+  idnits reports. idnits selects the text it checks by a different rule, so on other xml the two
+  can differ. It no longer says idnits reports each untagged keyword.
 - `scripts/check_draft_sync.py` finds the BCP 14 boilerplate paragraph in linear time. It used
   idnits' pattern, which takes quadratic time on text with many "The key words" and no " in this
   document" (about 1.4 s for 81 KB); it now searches in two steps that give the same result.
