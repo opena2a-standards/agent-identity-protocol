@@ -31,8 +31,8 @@ PENDING_PAIRING = (
     "carries the 1.1.0-draft text.\n"
 )
 SUBMITTED_PAIRING = (
-    "Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft and was submitted to the\n"
-    "datatracker on 2026-10-07.\n"
+    "Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft.\n"
+    "`draft-fane-opena2a-aip-04` (submitted 2026-10-07) is the current datatracker revision.\n"
 )
 
 PENDING_README = (
@@ -47,7 +47,8 @@ PENDING_README = (
 SUBMITTED_README = (
     "# Title\n\n"
     "**Internet-Draft.** This specification is also published as an Internet-Draft. The current\n"
-    "datatracker revision, `draft-fane-opena2a-aip-04`, carries the 1.2.0-draft text.\n\n"
+    "datatracker revision, `draft-fane-opena2a-aip-04` (submitted 2026-10-07), carries the\n"
+    "1.2.0-draft text.\n\n"
     "## Next\n"
 )
 

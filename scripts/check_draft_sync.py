@@ -7,14 +7,18 @@ version in AIP-SPEC.md this script finds that line and checks the paired
 draft-fane-opena2a-aip-NN.{xml,txt}:
 
 - the xml docName is the paired name;
-- the xml rfc element sets no submissionType: an individual draft has no
-  stream on the datatracker, so a stream named there (xml2rfc's default is
-  "IETF") makes idnits report SUBMISSION_TYPE_UNEXPECTED;
+- the parsed rfc element's submissionType is not IETF, IAB or IRTF (in any
+  case): an individual draft has no stream on the datatracker, and idnits
+  3.1.0 reports SUBMISSION_TYPE_UNEXPECTED for those three values only.
+  Without the attribute xml2rfc 3.34.0 warns "Expected a valid submissionType
+  (stream) setting" and uses 'IETF' to render; that warning is expected;
 - every BCP 14 keyword in the xml text sits in a <bcp14> element (text in
-  <artwork> and <sourcecode> is verbatim and exempt): idnits reports each
-  untagged keyword as MISSING_BCP14_TAGS, and, since it counts a reference to
-  BCP 14 on the xml only through an external entity or a tagged keyword,
-  reports MISSING_REQLEVEL_REF when none is tagged;
+  <artwork> and <sourcecode>, and in any element nested in those or in
+  <bcp14>, is verbatim or tagged and exempt): idnits skips the BCP 14
+  boilerplate paragraph ("The key words ... in this document ...") and
+  reports each other untagged keyword as MISSING_BCP14_TAGS, and, since it
+  counts a reference to BCP 14 on the xml only through an external entity or
+  a tagged keyword, reports MISSING_REQLEVEL_REF when none is tagged;
 - every tracked term is present in the draft text exactly when it is present
   in the specification (reject categories, the behavioral tier and unscored
   state fields, the clock-skew citation, the "trustLevel" JSON key that the
@@ -34,11 +38,15 @@ README.md must disclose the same pairing in one paragraph that starts with
 the pairing paragraph says the paired draft is not submitted, it says so too,
 says the datatracker copy "is behind this repository", and names the revision
 the CHANGELOG records as current on the datatracker, with its submission date
-and the version it carries; once the pairing no longer says "not submitted",
-the README may say neither. The pairing paragraph names that revision in one
-sentence shape only (line breaks allowed):
+and the version it carries. Once the pairing no longer says "not submitted",
+it must record the paired draft's submission in the second shape below, and
+the README names that submission date and may say neither. The pairing
+paragraph names each revision in one sentence shape only (line breaks
+allowed):
     `draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) remains the current
     datatracker revision and carries the <version> text
+    `draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) is the current
+    datatracker revision
 
 A version whose CHANGELOG heading still reads "unreleased" may name a draft that
 is not built yet: that is the disclosed pending state and passes. A dated
@@ -58,6 +66,7 @@ import re
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import NamedTuple
 
 # Imported by module name; an isolated run (python3 -I or -P) leaves this
 # directory off the path, so add it as a plain run does.
@@ -81,6 +90,10 @@ CURRENT = re.compile(
     r"`(draft-fane-opena2a-aip-\d\d)` \(submitted (\d{4}-\d{2}-\d{2})\) remains the current"
     r" datatracker revision and carries the (\S+) text"
 )
+SUBMITTED_SHAPE = "`draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) is the current datatracker revision"
+SUBMITTED = re.compile(
+    r"`(draft-fane-opena2a-aip-\d\d)` \(submitted (\d{4}-\d{2}-\d{2})\) is the current datatracker revision"
+)
 NAMESPACES = ROOT / "registries" / "capability-namespaces.json"
 GRAMMAR_MARKER = "<!-- opena2a-definition: capability-grammar -->"
 
@@ -103,7 +116,9 @@ TRACKED = [
 # A blank line, a heading or a list item ends the pairing paragraph.
 PARAGRAPH_END = re.compile(r"\n[ \t]*(?:\n|#|[-*+] )")
 
-RFC_TAG = re.compile(r"<rfc\b[^>]*>")
+# idnits 3.1.0 reports SUBMISSION_TYPE_UNEXPECTED for these submissionType
+# values, compared in lower case, when the datatracker has no stream for the draft.
+FLAGGED_STREAMS = {"ietf", "iab", "irtf"}
 
 BCP14_KEYWORD = re.compile(
     r"\b(?:MUST\s+NOT|SHALL\s+NOT|SHOULD\s+NOT|NOT\s+RECOMMENDED"
@@ -111,6 +126,14 @@ BCP14_KEYWORD = re.compile(
 )
 # Text in these elements needs no <bcp14> tag: the tag itself and verbatim blocks.
 TAGGED_OR_VERBATIM = {"bcp14", "artwork", "sourcecode"}
+# idnits 3.1.0 checks no keyword in a text that matches its BCP 14 boilerplate pattern.
+BCP14_BOILERPLATE = re.compile(r"The key\s?words .+? in this document .+?.", re.IGNORECASE | re.DOTALL)
+
+
+class Untagged(NamedTuple):
+    keyword: str
+    context: str
+    boilerplate: bool  # in the BCP 14 boilerplate paragraph, which idnits skips
 
 PAGE_LINE = re.compile(r"^(Fane\s+Expires\b.*\[Page \d+\]|Internet-Draft\s+OpenA2A AIP\s+.*)$")
 
@@ -185,32 +208,40 @@ def carries(text: str, term: str) -> bool:
     return re.search(pattern, text) is not None
 
 
-def names_stream(xml: str) -> bool:
-    """Whether the rfc start tag sets a submissionType attribute."""
-    tag = RFC_TAG.search(xml)
-    return tag is not None and re.search(r"\bsubmissionType\s*=", tag.group(0)) is not None
+def flagged_stream(root: ET.Element) -> str | None:
+    """The rfc element's submissionType when idnits flags it on a draft that has
+    no datatracker stream, else None."""
+    stream = root.get("submissionType")
+    return stream if stream is not None and stream.lower() in FLAGGED_STREAMS else None
 
 
-def untagged_keywords(xml: str) -> list[tuple[str, str]]:
-    """(keyword, surrounding text) for each BCP 14 keyword in the xml text that no
-    <bcp14>, <artwork> or <sourcecode> element encloses, in document order."""
-    found: list[tuple[str, str]] = []
+def untagged_keywords(root: ET.Element) -> list[Untagged]:
+    """Each BCP 14 keyword in the xml text that no <bcp14>, <artwork> or
+    <sourcecode> element encloses, in document order. The walk keeps its own
+    stack, so no nesting depth raises RecursionError."""
+    found: list[Untagged] = []
 
-    def scan(text: str | None) -> None:
+    def scan(text: str | None, boilerplate: bool) -> None:
         flat = re.sub(r"\s+", " ", text or "")
         for match in BCP14_KEYWORD.finditer(flat):
-            found.append((match.group(0), flat[max(0, match.start() - 30): match.end() + 30].strip()))
+            context = flat[max(0, match.start() - 30): match.end() + 30].strip()
+            found.append(Untagged(match.group(0), context, boilerplate))
 
-    def walk(element: ET.Element, exempt: bool) -> None:
-        exempt = exempt or element.tag in TAGGED_OR_VERBATIM
-        if not exempt:
-            scan(element.text)
-        for child in element:
-            walk(child, exempt)
-            if not exempt:
-                scan(child.tail)
-
-    walk(ET.fromstring(xml), False)
+    # An element still to visit, or a tail text to scan with its parent's boilerplate flag.
+    stack: list[ET.Element | tuple[str | None, bool]] = [root]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, tuple):
+            scan(*item)
+            continue
+        if item.tag in TAGGED_OR_VERBATIM:
+            continue
+        own = (item.text or "") + "".join(child.tail or "" for child in item)
+        boilerplate = BCP14_BOILERPLATE.search(re.sub(r"\s+", " ", own)) is not None
+        scan(item.text, boilerplate)
+        for child in reversed(item):
+            stack.append((child.tail, boilerplate))
+            stack.append(child)
     return found
 
 
@@ -233,22 +264,26 @@ def check_draft(name: str, spec: str) -> list[str]:
     xml = xml_path.read_text(encoding="utf-8")
     if f'docName="{name}"' not in xml:
         problems.append(f'{xml_path.name}: docName is not "{name}"')
-    if names_stream(xml):
-        problems.append(
-            f"{xml_path.name}: the rfc element sets submissionType; an individual draft has no"
-            " datatracker stream, so idnits reports SUBMISSION_TYPE_UNEXPECTED. Remove the attribute."
-        )
     try:
-        untagged = untagged_keywords(xml)
+        root = ET.fromstring(xml)
     except ET.ParseError as error:
         problems.append(f"{xml_path.name}: not well-formed xml: {error}")
     else:
-        if untagged:
-            keyword, context = untagged[0]
+        stream = flagged_stream(root)
+        if stream is not None:
             problems.append(
-                f"{xml_path.name}: {len(untagged)} BCP 14 keyword(s) outside <bcp14>, first {keyword!r}"
-                f" in '...{context}...'; idnits reports each as MISSING_BCP14_TAGS, and"
-                " MISSING_REQLEVEL_REF when none is tagged. Wrap each in <bcp14>."
+                f"{xml_path.name}: the rfc element sets submissionType={stream!r}; an individual draft has"
+                " no datatracker stream, so idnits reports SUBMISSION_TYPE_UNEXPECTED. Remove the attribute."
+            )
+        untagged = untagged_keywords(root)
+        if untagged:
+            first = untagged[0]
+            checked = sum(not u.boilerplate for u in untagged)
+            problems.append(
+                f"{xml_path.name}: {len(untagged)} BCP 14 keyword(s) outside <bcp14>, first {first.keyword!r}"
+                f" in '...{first.context}...'; idnits reports the {checked} outside the BCP 14 boilerplate"
+                " paragraph as MISSING_BCP14_TAGS, and MISSING_REQLEVEL_REF when none is tagged."
+                " Wrap each in <bcp14>."
             )
     raw = txt_path.read_text(encoding="utf-8")
     text = draft_text(raw)
@@ -293,6 +328,15 @@ def disclosure_problems(readme: str, changelog: str, version: str, draft: str) -
             problems.append(
                 f"{CHANGELOG.name} says {draft} is not submitted and names no current revision"
                 f" in the form: {CURRENT_SHAPE}"
+            )
+    else:
+        submitted = SUBMITTED.search(pairing_text)
+        if submitted and submitted.group(1) == draft:
+            expected.append(submitted.group(2))
+        else:
+            problems.append(
+                f"{CHANGELOG.name} does not say {draft} is not submitted and records no submission"
+                f" of it in the form: {SUBMITTED_SHAPE}"
             )
     for term in expected:
         if term not in text:
