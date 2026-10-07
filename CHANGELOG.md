@@ -18,7 +18,24 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   run (`python3 -I` or `-P`) finds the sibling check scripts as a plain run does.
 - `.gitignore` ignores secret-shaped files (`secrets.json`, `secrets.*.json`, `*.secrets.json`,
   `credentials.json`, `secrets/`, `credentials/`).
-- `tests/test_check_scripts.py` covers the four cases above: `python3 -m unittest discover -s tests`.
+- `draft-fane-opena2a-aip-04.xml` no longer sets `submissionType="IETF"` on its `rfc` element.
+  The draft is an individual submission with no stream on the datatracker, so `npx
+  @ietf-tools/idnits@3.1.0` on the xml reported the attribute as a `SUBMISSION_TYPE_UNEXPECTED`
+  error. xml2rfc 3.34.0 renders the same txt without it, so `draft-fane-opena2a-aip-04.txt` is
+  unchanged. `scripts/check_draft_sync.py` now fails when the paired draft's `rfc` element sets
+  `submissionType`.
+- `draft-fane-opena2a-aip-04.xml` wraps each of its 71 BCP 14 keywords in `<bcp14>`. On the xml,
+  `npx @ietf-tools/idnits@3.1.0` counts a reference to BCP 14 only through an external entity or
+  a tagged keyword, so it reported a `MISSING_REQLEVEL_REF` error and 60 `MISSING_BCP14_TAGS`
+  comments; it now reports neither. xml2rfc 3.34.0 renders the same txt with the tags, so
+  `draft-fane-opena2a-aip-04.txt` is unchanged. `scripts/check_draft_sync.py` now fails when a
+  BCP 14 keyword in the paired draft's xml sits outside `<bcp14>`, `<artwork>` or `<sourcecode>`.
+  The one error idnits still reports on the xml, `INVALID_REFERENCES_NAME`, is kept: idnits reads
+  only the name of each top-level `<references>`, and -04 nests Normative References and
+  Informative References under one References section. The flat layout of -03 clears that error
+  on the xml, but idnits then reports `MULTIPLE_REFERENCES_SECTION_TITLES` on the rendered txt, as
+  it does on `draft-fane-opena2a-aip-03.txt`.
+- `tests/test_check_scripts.py` covers the six cases above: `python3 -m unittest discover -s tests`.
 
 ## [1.2.0-draft] - 2026-10-06
 

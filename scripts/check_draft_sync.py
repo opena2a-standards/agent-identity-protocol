@@ -7,6 +7,14 @@ version in AIP-SPEC.md this script finds that line and checks the paired
 draft-fane-opena2a-aip-NN.{xml,txt}:
 
 - the xml docName is the paired name;
+- the xml rfc element sets no submissionType: an individual draft has no
+  stream on the datatracker, so a stream named there (xml2rfc's default is
+  "IETF") makes idnits report SUBMISSION_TYPE_UNEXPECTED;
+- every BCP 14 keyword in the xml text sits in a <bcp14> element (text in
+  <artwork> and <sourcecode> is verbatim and exempt): idnits reports each
+  untagged keyword as MISSING_BCP14_TAGS, and, since it counts a reference to
+  BCP 14 on the xml only through an external entity or a tagged keyword,
+  reports MISSING_REQLEVEL_REF when none is tagged;
 - every tracked term is present in the draft text exactly when it is present
   in the specification (reject categories, the behavioral tier and unscored
   state fields, the clock-skew citation, the "trustLevel" JSON key that the
@@ -48,6 +56,7 @@ import argparse
 import json
 import re
 import sys
+import xml.etree.ElementTree as ET
 from pathlib import Path
 
 # Imported by module name; an isolated run (python3 -I or -P) leaves this
@@ -93,6 +102,15 @@ TRACKED = [
 
 # A blank line, a heading or a list item ends the pairing paragraph.
 PARAGRAPH_END = re.compile(r"\n[ \t]*(?:\n|#|[-*+] )")
+
+RFC_TAG = re.compile(r"<rfc\b[^>]*>")
+
+BCP14_KEYWORD = re.compile(
+    r"\b(?:MUST\s+NOT|SHALL\s+NOT|SHOULD\s+NOT|NOT\s+RECOMMENDED"
+    r"|MUST|SHALL|SHOULD|RECOMMENDED|REQUIRED|MAY|OPTIONAL)\b"
+)
+# Text in these elements needs no <bcp14> tag: the tag itself and verbatim blocks.
+TAGGED_OR_VERBATIM = {"bcp14", "artwork", "sourcecode"}
 
 PAGE_LINE = re.compile(r"^(Fane\s+Expires\b.*\[Page \d+\]|Internet-Draft\s+OpenA2A AIP\s+.*)$")
 
@@ -167,6 +185,35 @@ def carries(text: str, term: str) -> bool:
     return re.search(pattern, text) is not None
 
 
+def names_stream(xml: str) -> bool:
+    """Whether the rfc start tag sets a submissionType attribute."""
+    tag = RFC_TAG.search(xml)
+    return tag is not None and re.search(r"\bsubmissionType\s*=", tag.group(0)) is not None
+
+
+def untagged_keywords(xml: str) -> list[tuple[str, str]]:
+    """(keyword, surrounding text) for each BCP 14 keyword in the xml text that no
+    <bcp14>, <artwork> or <sourcecode> element encloses, in document order."""
+    found: list[tuple[str, str]] = []
+
+    def scan(text: str | None) -> None:
+        flat = re.sub(r"\s+", " ", text or "")
+        for match in BCP14_KEYWORD.finditer(flat):
+            found.append((match.group(0), flat[max(0, match.start() - 30): match.end() + 30].strip()))
+
+    def walk(element: ET.Element, exempt: bool) -> None:
+        exempt = exempt or element.tag in TAGGED_OR_VERBATIM
+        if not exempt:
+            scan(element.text)
+        for child in element:
+            walk(child, exempt)
+            if not exempt:
+                scan(child.tail)
+
+    walk(ET.fromstring(xml), False)
+    return found
+
+
 def first_use_error(text: str) -> str | None:
     match = check_first_use.WORD.search(text)
     if not match:
@@ -183,8 +230,26 @@ def check_draft(name: str, spec: str) -> list[str]:
     problems = [f"{p.name} missing" for p in (xml_path, txt_path) if not p.exists()]
     if problems:
         return problems
-    if f'docName="{name}"' not in xml_path.read_text(encoding="utf-8"):
+    xml = xml_path.read_text(encoding="utf-8")
+    if f'docName="{name}"' not in xml:
         problems.append(f'{xml_path.name}: docName is not "{name}"')
+    if names_stream(xml):
+        problems.append(
+            f"{xml_path.name}: the rfc element sets submissionType; an individual draft has no"
+            " datatracker stream, so idnits reports SUBMISSION_TYPE_UNEXPECTED. Remove the attribute."
+        )
+    try:
+        untagged = untagged_keywords(xml)
+    except ET.ParseError as error:
+        problems.append(f"{xml_path.name}: not well-formed xml: {error}")
+    else:
+        if untagged:
+            keyword, context = untagged[0]
+            problems.append(
+                f"{xml_path.name}: {len(untagged)} BCP 14 keyword(s) outside <bcp14>, first {keyword!r}"
+                f" in '...{context}...'; idnits reports each as MISSING_BCP14_TAGS, and"
+                " MISSING_REQLEVEL_REF when none is tagged. Wrap each in <bcp14>."
+            )
     raw = txt_path.read_text(encoding="utf-8")
     text = draft_text(raw)
     flat_spec = re.sub(r"\s+", " ", spec)

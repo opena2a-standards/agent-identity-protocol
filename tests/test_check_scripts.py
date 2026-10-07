@@ -51,19 +51,62 @@ class DraftSyncWholeWord(unittest.TestCase):
         problems = check_draft_sync.check_draft(self.name, spec)
         self.assertTrue(any("'behaviorTier'" in p and "no longer" in p for p in problems), problems)
 
-    def test_field_renamed_in_draft_is_reported(self) -> None:
+    def problems_in_copy(self, suffix: str, old: str, new: str) -> list[str]:
+        """check_draft on a copy of the paired draft whose .xml or .txt has old replaced by new."""
         with tempfile.TemporaryDirectory() as tmp:
-            for suffix in (".xml", ".txt"):
-                shutil.copy(ROOT / f"{self.name}{suffix}", Path(tmp) / f"{self.name}{suffix}")
-            txt = Path(tmp) / f"{self.name}.txt"
-            txt.write_text(txt.read_text(encoding="utf-8").replace("behaviorTier", "behaviorTierX"), encoding="utf-8")
+            for ext in (".xml", ".txt"):
+                shutil.copy(ROOT / f"{self.name}{ext}", Path(tmp) / f"{self.name}{ext}")
+            edited = Path(tmp) / f"{self.name}{suffix}"
+            text = edited.read_text(encoding="utf-8")
+            self.assertIn(old, text)
+            edited.write_text(text.replace(old, new), encoding="utf-8")
             original = check_draft_sync.ROOT
             check_draft_sync.ROOT = Path(tmp)
             try:
-                problems = check_draft_sync.check_draft(self.name, self.spec)
+                return check_draft_sync.check_draft(self.name, self.spec)
             finally:
                 check_draft_sync.ROOT = original
+
+    def test_field_renamed_in_draft_is_reported(self) -> None:
+        problems = self.problems_in_copy(".txt", "behaviorTier", "behaviorTierX")
         self.assertTrue(any("lacks 'behaviorTier'" in p for p in problems), problems)
+
+    def test_paired_draft_names_no_stream(self) -> None:
+        xml = (ROOT / f"{self.name}.xml").read_text(encoding="utf-8")
+        self.assertFalse(check_draft_sync.names_stream(xml), f"{self.name}.xml sets submissionType")
+
+    def test_stream_in_draft_is_reported(self) -> None:
+        problems = self.problems_in_copy(".xml", 'ipr="trust200902"', 'ipr="trust200902"\n     submissionType="IETF"')
+        self.assertTrue(any("SUBMISSION_TYPE_UNEXPECTED" in p for p in problems), problems)
+
+    def test_names_stream_reads_only_the_rfc_tag(self) -> None:
+        self.assertTrue(check_draft_sync.names_stream('<rfc docName="d" submissionType="independent">'))
+        self.assertTrue(check_draft_sync.names_stream('<rfc docName="d"\n     submissionType = "IETF">'))
+        self.assertFalse(check_draft_sync.names_stream('<rfc docName="d"><t>submissionType="IETF"</t></rfc>'))
+        self.assertFalse(check_draft_sync.names_stream('<rfc docName="d" category="std">'))
+
+    def test_paired_draft_tags_every_keyword(self) -> None:
+        xml = (ROOT / f"{self.name}.xml").read_text(encoding="utf-8")
+        self.assertEqual(check_draft_sync.untagged_keywords(xml), [])
+
+    def test_untagged_keyword_in_draft_is_reported(self) -> None:
+        problems = self.problems_in_copy(".xml", "<bcp14>OPTIONAL</bcp14>", "OPTIONAL")
+        self.assertTrue(any("'OPTIONAL'" in p and "MISSING_REQLEVEL_REF" in p for p in problems), problems)
+
+    def test_untagged_keywords_skips_tagged_and_verbatim_text(self) -> None:
+        def keywords(xml: str) -> list[str]:
+            return [keyword for keyword, _ in check_draft_sync.untagged_keywords(xml)]
+
+        self.assertEqual(
+            keywords(
+                "<rfc><t>A <bcp14>MUST</bcp14> and a MAY.</t>"
+                "<artwork>MUST</artwork><sourcecode>SHOULD</sourcecode></rfc>"
+            ),
+            ["MAY"],
+        )
+        self.assertEqual(keywords("<rfc><t>It MUST\n      NOT be</t></rfc>"), ["MUST NOT"])
+        self.assertEqual(keywords('<rfc><t><xref target="x"/> SHOULD hold</t></rfc>'), ["SHOULD"])
+        self.assertEqual(keywords("<rfc><t>AUTH_REQUIRED, MAYBE and must</t></rfc>"), [])
 
     def test_carries_matches_whole_words(self) -> None:
         self.assertTrue(check_draft_sync.carries('{"behaviorTier": 3}', "behaviorTier"))
