@@ -26,7 +26,7 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   `submissionType`.
 - `draft-fane-opena2a-aip-04.xml` wraps each of its 71 BCP 14 keywords in `<bcp14>`. On the xml,
   `npx @ietf-tools/idnits@3.1.0` counts a reference to BCP 14 only through an external entity or
-  a tagged keyword, so it reported a `MISSING_REQLEVEL_REF` error and 61 `MISSING_BCP14_TAGS`
+  a tagged keyword, so it reported a `MISSING_REQLEVEL_REF` error and 60 `MISSING_BCP14_TAGS`
   comments; it now reports neither. xml2rfc 3.34.0 renders the same txt with the tags, so
   `draft-fane-opena2a-aip-04.txt` is unchanged. `scripts/check_draft_sync.py` now fails when a
   BCP 14 keyword in the paired draft's xml sits outside `<bcp14>`, `<artwork>` or `<sourcecode>`.
