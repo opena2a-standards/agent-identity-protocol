@@ -27,10 +27,15 @@ draft-fane-opena2a-aip-NN.{xml,txt}:
   only through an external entity or a tagged keyword, reports
   MISSING_REQLEVEL_REF when none is tagged. The failure line also counts the
   untagged keywords in <t> or <li> text outside that paragraph. Both the
-  paragraph test and that count read an element's text as idnits does: each
-  text segment (the element's text and the tail of each child) trimmed, and
-  the segments joined with no separator, so "Before <xref/> MUST" reads as
-  "BeforeMUST" and holds no keyword. The count is an estimate of idnits'
+  paragraph test and that count trim each text segment (the element's text
+  and the tail of each child) and join the segments with no separator, as
+  idnits does with text that a child element splits when the whitespace at
+  the split is written literally, so "Before <xref/> MUST" reads as
+  "BeforeMUST" and holds no keyword. Whitespace that JavaScript's trim()
+  removes, written as a character reference at a split, as in
+  "MUST&#160;<xref/>", is removed here and kept by idnits, which trims the
+  text as written, and a processing instruction or CDATA section splits the
+  text for idnits only. The count is an estimate of idnits'
   MISSING_BCP14_TAGS: it equals the count idnits 3.1.0 reports on -00 to -03
   and on the -04 xml without its tags, and can differ on other xml, because
   idnits selects the text it checks by a different rule;
@@ -293,12 +298,18 @@ def bcp14_boilerplate(text: str) -> bool:
 def untagged_keywords(root: ET.Element) -> list[Untagged]:
     """Each BCP 14 keyword in the xml text that no <bcp14>, <artwork> or
     <sourcecode> element encloses, in document order. An element's text is
-    read as idnits 3.1.0 reads it: each segment (the element's text and each
-    child's tail) trimmed as JavaScript's trim() trims, whitespace collapsed,
-    and the segments joined with no separator. The boilerplate test and the
-    second count read the joined text; each keyword is found in its own
-    segment. The walk keeps its own stack, so no nesting depth raises
-    RecursionError."""
+    read in segments (the element's text and each child's tail), each
+    trimmed as JavaScript's trim() trims and its whitespace collapsed, and
+    the segments are joined with no separator. That joins text that a child
+    element splits as idnits 3.1.0 joins it when the whitespace at each split
+    is written literally. The parser decodes character references before
+    the trim, so trim() whitespace written as a reference at a split is
+    removed here, while idnits trims the text as written and keeps the
+    reference; and the parser drops processing instructions and merges CDATA
+    sections into the text, while idnits splits the text at each. The
+    boilerplate test and the second count read the joined text; each keyword
+    is found in its own segment. The walk keeps its own stack, so no nesting
+    depth raises RecursionError."""
     found: list[Untagged] = []
 
     def scan(segment: str, start: int, boilerplate: bool, counted: set[tuple[int, int]]) -> None:

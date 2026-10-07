@@ -272,6 +272,24 @@ class DraftSyncWholeWord(unittest.TestCase):
         )
         self.assertEqual(counts('<t>Before <xref target="RFC2119"/> MUST after</t>'), [(1, 0)])
 
+    def test_count_differs_from_idnits_for_reference_whitespace_pis_and_cdata(self) -> None:
+        def counts(paragraph: str) -> list[tuple[int, int]]:
+            problems = self.problems_in_copy(".xml", "<middle>", f"<middle><section><name>P</name>{paragraph}</section>")
+            found = [re.search(r"(\d+) BCP 14 keyword\(s\).*; (\d+) of them, in <t> or <li> text", p) for p in problems]
+            return [(int(m.group(1)), int(m.group(2))) for m in found if m]
+
+        # idnits 3.1.0 trims each text segment as written and keeps "&#160;", so it reads
+        # "Implementations MUST&#160;&#160;support it." and reports 1 MISSING_BCP14_TAGS. The parser
+        # decodes the reference to U+00A0 before the check trims it, so the check reads
+        # "Implementations MUSTsupport it." and counts 0.
+        self.assertEqual(
+            counts('<t>Implementations MUST&#160;<xref target="RFC2119"/>&#160;support it.</t>'), [(1, 0)]
+        )
+        # idnits splits the text at a processing instruction or CDATA section and reports none here;
+        # the parser drops the one and merges the other into the text, so the check counts 1.
+        self.assertEqual(counts("<t>Before <?pi x?> MUST after</t>"), [(1, 1)])
+        self.assertEqual(counts("<t>Before<![CDATA[x]]> MUST after</t>"), [(1, 1)])
+
     def test_boilerplate_search_matches_the_idnits_pattern(self) -> None:
         idnits = re.compile(r"The key\s?words .+? in this document .+?.", re.IGNORECASE | re.DOTALL)
         texts = [

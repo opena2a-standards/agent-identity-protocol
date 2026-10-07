@@ -56,10 +56,16 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   line gives 71 and 60, and on -00 to -03 the second number is 39, 39, 47 and 49, the counts
   idnits reports. idnits selects the text it checks by a different rule, so on other xml the two
   can differ. It no longer says idnits reports each untagged keyword. The boilerplate test and
-  that count read an element's text as idnits does: each text segment trimmed and the segments
-  joined with no separator. So `<t>The key words "MUST" and "MAY" <xref target="BCP14"/> in this
-  document ...</t>` is not the boilerplate paragraph and counts 2, and `<t>Before <xref
-  target="RFC2119"/> MUST after</t>`, which reads "BeforeMUST after", counts 0, as idnits reports.
+  that count trim each text segment and join the segments with no separator, as idnits does with
+  text that a child element splits when the whitespace at the split is written literally. So
+  `<t>The key words "MUST" and "MAY" <xref target="BCP14"/> in this document ...</t>` is not the
+  boilerplate paragraph and counts 2, and `<t>Before <xref target="RFC2119"/> MUST after</t>`,
+  which reads "BeforeMUST after", counts 0, as idnits reports. Whitespace that JavaScript's
+  `trim()` removes, written as a character reference at a split, is removed by the check and kept
+  by idnits, which trims the text as written: `<t>Implementations MUST&#160;<xref
+  target="RFC2119"/>&#160;support it.</t>` counts 0 where idnits reports 1. A processing
+  instruction or CDATA section splits the text for idnits only: `<t>Before <?pi x?> MUST
+  after</t>` counts 1 where idnits reports none.
   The names in the script say counted rather than idnits (`COUNTED_TEXT`, `Untagged.counted`).
 - `scripts/check_draft_sync.py` finds the BCP 14 boilerplate paragraph in linear time. It used
   idnits' pattern, which takes quadratic time on text with many "The key words" and no " in this
