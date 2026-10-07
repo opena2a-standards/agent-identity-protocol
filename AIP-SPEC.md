@@ -928,7 +928,7 @@ Private keys MUST be encrypted at rest. Implementations SHOULD support:
 - Hardware security keys (WebAuthn/FIDO2)
 - HSM integration for server deployments
 
-Private keys MUST NEVER be transmitted in plaintext. The identity provider stores only public keys.
+Private keys MUST NOT be transmitted in plaintext. The identity provider stores only public keys.
 
 ### 12.2 Replay Attacks
 

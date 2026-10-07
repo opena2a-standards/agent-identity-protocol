@@ -37,7 +37,7 @@ On 2026-09-02 both `https://aim.opena2a.org/.well-known/aip` and `https://api.ai
 
 [AIP-SPEC.md](AIP-SPEC.md) — the full protocol specification.
 
-**Internet-Draft.** This specification is also published as the individual Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/), and the datatracker copy is behind this repository. The current datatracker revision, `draft-fane-opena2a-aip-03` (submitted 2026-10-02), carries the 1.1.0-draft text. This repository's specification is 1.2.0-draft: `draft-fane-opena2a-aip-04`, in this repository, carries it and is not submitted yet. The 1.2.0-draft entry in [CHANGELOG.md](CHANGELOG.md) lists what changed.
+**Internet-Draft.** This specification is also published as the individual Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/). This repository's specification is 1.2.0-draft, and `draft-fane-opena2a-aip-04` carries it. That revision, submitted 2026-10-06, is the current datatracker revision. Its txt there matches the txt in this repository; the xml in this repository has since dropped its `submissionType` attribute and tags its BCP 14 keywords. The 1.2.0-draft entry in [CHANGELOG.md](CHANGELOG.md) lists what changed.
 
 ## Conformance Levels
 

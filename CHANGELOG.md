@@ -23,7 +23,7 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   @ietf-tools/idnits@3.1.0` on the xml reported the attribute as a `SUBMISSION_TYPE_UNEXPECTED`
   error. xml2rfc 3.34.0 renders the same txt without it, so `draft-fane-opena2a-aip-04.txt` is
   unchanged. `scripts/check_draft_sync.py` now fails when the paired draft's `rfc` element sets
-  `submissionType`.
+  `submissionType` to `IETF`, `IAB` or `IRTF`.
 - `draft-fane-opena2a-aip-04.xml` wraps each of its 71 BCP 14 keywords in `<bcp14>`. On the xml,
   `npx @ietf-tools/idnits@3.1.0` counts a reference to BCP 14 only through an external entity or
   a tagged keyword, so it reported a `MISSING_REQLEVEL_REF` error and 60 `MISSING_BCP14_TAGS`
@@ -35,17 +35,45 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   Informative References under one References section. The flat layout of -03 clears that error
   on the xml, but idnits then reports `MULTIPLE_REFERENCES_SECTION_TITLES` on the rendered txt, as
   it does on `draft-fane-opena2a-aip-03.txt`.
-- `tests/test_check_scripts.py` covers the six cases above: `python3 -m unittest discover -s tests`.
+- `scripts/check_draft_sync.py` reads `submissionType` from the parsed `rfc` element and fails
+  only for `IETF`, `IAB` or `IRTF` in any case, the values for which idnits 3.1.0 reports
+  `SUBMISSION_TYPE_UNEXPECTED` on a draft with no datatracker stream; `independent` and
+  `editorial` pass. An `<rfc` tag inside a comment or a `>` inside an attribute value no longer
+  misleads it, and input with many `<rfc` and no `>` no longer takes quadratic time.
+- The BCP 14 failure line of `scripts/check_draft_sync.py` gives the number of untagged keywords
+  and the number outside the BCP 14 boilerplate paragraph, which idnits does not check: on the
+  -04 xml without its tags, 71 and 60, and idnits 3.1.0 reports 60 `MISSING_BCP14_TAGS`. It no
+  longer says idnits reports each untagged keyword.
+- The BCP 14 walk of `scripts/check_draft_sync.py` keeps its own stack, so xml nested about 1000
+  elements deep gives a FAIL line instead of an uncaught `RecursionError`.
+- README.md and the 1.2.0-draft pairing paragraph say `draft-fane-opena2a-aip-04` was submitted
+  on 2026-10-06 and is the current datatracker revision, instead of not submitted yet, and the
+  pairing paragraph states how the xml on the datatracker differs from the repository xml. Once a
+  pairing paragraph no longer says its draft is not submitted, `scripts/check_draft_sync.py`
+  requires it to record the submission as "`draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) is
+  the current datatracker revision" and requires README.md to name that date.
+- AIP-SPEC.md §12.1 says private keys MUST NOT be transmitted in plaintext, the form BCP 14
+  defines, instead of "MUST NEVER". `draft-fane-opena2a-aip-04`, as submitted, still reads "MUST
+  NEVER".
+- `test_secret_shaped_files_are_ignored` skips outside a git checkout instead of failing with
+  git's exit code 128.
+- `tests/test_check_scripts.py` covers the cases above, and pins three properties of the BCP 14
+  rule: elements nested in `<artwork>`, `<sourcecode>` or `<bcp14>` are exempt, xml that is not
+  well formed is reported, and "NOT RECOMMENDED" is one keyword. Run `python3 -m unittest
+  discover -s tests`.
 
 ## [1.2.0-draft] - 2026-10-06
 
 Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft. It was rendered on 2026-10-06
 with xml2rfc 3.34.0 and carries every change listed under this heading; `npx
-@ietf-tools/idnits@3.1.0` on the txt reports 0 errors and 6 warnings. It is not submitted yet:
-`draft-fane-opena2a-aip-03` (submitted 2026-10-02) remains the current datatracker revision and
-carries the 1.1.0-draft text. `scripts/stage_draft_upload.py` prints the file to upload and its
-SHA-256 and submits nothing. `-02` (2026-08-06) is the prior revision there and predates both the
-§3.2 DID method scoping and this tier rename.
+@ietf-tools/idnits@3.1.0` on the txt reports 0 errors and 6 warnings.
+`draft-fane-opena2a-aip-04` (submitted 2026-10-06) is the current datatracker revision. The txt
+there is byte-identical to `draft-fane-opena2a-aip-04.txt`. The xml there predates two changes
+listed under Unreleased, so it differs from `draft-fane-opena2a-aip-04.xml`: it sets
+`submissionType="IETF"` and tags none of the 71 BCP 14 keywords that the repository xml wraps in
+`<bcp14>`. `scripts/stage_draft_upload.py` prints the file to upload and its SHA-256 and submits
+nothing. `-03` (submitted 2026-10-02) is the prior revision there and carries the 1.1.0-draft
+text.
 
 ### Added
 

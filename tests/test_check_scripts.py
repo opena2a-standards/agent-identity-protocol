@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import contextlib
 import io
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
 import unittest
+import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Callable
 
 ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
@@ -53,13 +56,20 @@ class DraftSyncWholeWord(unittest.TestCase):
 
     def problems_in_copy(self, suffix: str, old: str, new: str) -> list[str]:
         """check_draft on a copy of the paired draft whose .xml or .txt has old replaced by new."""
+
+        def edit(text: str) -> str:
+            self.assertIn(old, text)
+            return text.replace(old, new)
+
+        return self.problems_in_edited_copy(suffix, edit)
+
+    def problems_in_edited_copy(self, suffix: str, edit: Callable[[str], str]) -> list[str]:
+        """check_draft on a copy of the paired draft whose .xml or .txt is passed through edit."""
         with tempfile.TemporaryDirectory() as tmp:
             for ext in (".xml", ".txt"):
                 shutil.copy(ROOT / f"{self.name}{ext}", Path(tmp) / f"{self.name}{ext}")
             edited = Path(tmp) / f"{self.name}{suffix}"
-            text = edited.read_text(encoding="utf-8")
-            self.assertIn(old, text)
-            edited.write_text(text.replace(old, new), encoding="utf-8")
+            edited.write_text(edit(edited.read_text(encoding="utf-8")), encoding="utf-8")
             original = check_draft_sync.ROOT
             check_draft_sync.ROOT = Path(tmp)
             try:
@@ -72,30 +82,59 @@ class DraftSyncWholeWord(unittest.TestCase):
         self.assertTrue(any("lacks 'behaviorTier'" in p for p in problems), problems)
 
     def test_paired_draft_names_no_stream(self) -> None:
-        xml = (ROOT / f"{self.name}.xml").read_text(encoding="utf-8")
-        self.assertFalse(check_draft_sync.names_stream(xml), f"{self.name}.xml sets submissionType")
+        root = ET.fromstring((ROOT / f"{self.name}.xml").read_text(encoding="utf-8"))
+        self.assertIsNone(check_draft_sync.flagged_stream(root), f"{self.name}.xml names a stream")
 
     def test_stream_in_draft_is_reported(self) -> None:
         problems = self.problems_in_copy(".xml", 'ipr="trust200902"', 'ipr="trust200902"\n     submissionType="IETF"')
         self.assertTrue(any("SUBMISSION_TYPE_UNEXPECTED" in p for p in problems), problems)
 
-    def test_names_stream_reads_only_the_rfc_tag(self) -> None:
-        self.assertTrue(check_draft_sync.names_stream('<rfc docName="d" submissionType="independent">'))
-        self.assertTrue(check_draft_sync.names_stream('<rfc docName="d"\n     submissionType = "IETF">'))
-        self.assertFalse(check_draft_sync.names_stream('<rfc docName="d"><t>submissionType="IETF"</t></rfc>'))
-        self.assertFalse(check_draft_sync.names_stream('<rfc docName="d" category="std">'))
+    def test_stream_idnits_accepts_is_not_reported(self) -> None:
+        problems = self.problems_in_copy(
+            ".xml", 'ipr="trust200902"', 'ipr="trust200902"\n     submissionType="independent"'
+        )
+        self.assertFalse(any("submissionType" in p for p in problems), problems)
+
+    def test_flagged_stream_reads_the_parsed_rfc_element(self) -> None:
+        def stream(xml: str) -> str | None:
+            return check_draft_sync.flagged_stream(ET.fromstring(xml))
+
+        self.assertEqual(stream('<rfc docName="d" submissionType="IETF"/>'), "IETF")
+        self.assertEqual(stream('<rfc docName="d"\n     submissionType = "iab"/>'), "iab")
+        self.assertEqual(stream('<rfc submissionType="IRTF"/>'), "IRTF")
+        self.assertEqual(stream('<rfc title="a>b" submissionType="IETF"/>'), "IETF")
+        self.assertIsNone(stream('<rfc docName="d" submissionType="independent"/>'))
+        self.assertIsNone(stream('<rfc docName="d" submissionType="editorial"/>'))
+        self.assertIsNone(stream('<!-- <rfc submissionType="IETF"> --><rfc docName="d"/>'))
+        self.assertIsNone(stream('<rfc docName="d"><t>submissionType="IETF"</t></rfc>'))
+        self.assertIsNone(stream('<rfc docName="d" category="std"/>'))
+
+    def test_not_well_formed_draft_is_reported(self) -> None:
+        problems = self.problems_in_copy(".xml", "</rfc>", "")
+        self.assertTrue(any("not well-formed xml" in p for p in problems), problems)
 
     def test_paired_draft_tags_every_keyword(self) -> None:
-        xml = (ROOT / f"{self.name}.xml").read_text(encoding="utf-8")
-        self.assertEqual(check_draft_sync.untagged_keywords(xml), [])
+        root = ET.fromstring((ROOT / f"{self.name}.xml").read_text(encoding="utf-8"))
+        self.assertEqual(check_draft_sync.untagged_keywords(root), [])
 
     def test_untagged_keyword_in_draft_is_reported(self) -> None:
         problems = self.problems_in_copy(".xml", "<bcp14>OPTIONAL</bcp14>", "OPTIONAL")
         self.assertTrue(any("'OPTIONAL'" in p and "MISSING_REQLEVEL_REF" in p for p in problems), problems)
 
+    def test_untagged_draft_counts_keywords_idnits_checks(self) -> None:
+        xml = (ROOT / f"{self.name}.xml").read_text(encoding="utf-8")
+        problems = self.problems_in_edited_copy(".xml", lambda text: re.sub(r"</?bcp14>", "", text))
+        counts = [re.search(r"(\d+) BCP 14 keyword\(s\).* the (\d+) outside the BCP 14 boilerplate", p) for p in problems]
+        counts = [(int(m.group(1)), int(m.group(2))) for m in counts if m]
+        self.assertEqual(len(counts), 1, problems)
+        total, checked = counts[0]
+        self.assertEqual(total, xml.count("<bcp14>"))
+        self.assertLess(checked, total)
+        self.assertFalse(any("reports each" in p for p in problems), problems)
+
     def test_untagged_keywords_skips_tagged_and_verbatim_text(self) -> None:
         def keywords(xml: str) -> list[str]:
-            return [keyword for keyword, _ in check_draft_sync.untagged_keywords(xml)]
+            return [u.keyword for u in check_draft_sync.untagged_keywords(ET.fromstring(xml))]
 
         self.assertEqual(
             keywords(
@@ -107,6 +146,27 @@ class DraftSyncWholeWord(unittest.TestCase):
         self.assertEqual(keywords("<rfc><t>It MUST\n      NOT be</t></rfc>"), ["MUST NOT"])
         self.assertEqual(keywords('<rfc><t><xref target="x"/> SHOULD hold</t></rfc>'), ["SHOULD"])
         self.assertEqual(keywords("<rfc><t>AUTH_REQUIRED, MAYBE and must</t></rfc>"), [])
+        self.assertEqual(keywords("<rfc><t>It is NOT\n RECOMMENDED</t></rfc>"), ["NOT RECOMMENDED"])
+        self.assertEqual(
+            keywords(
+                "<rfc><t><bcp14><em>MUST</em></bcp14> <sourcecode><x>SHALL</x></sourcecode>"
+                "<artwork><svg><text>SHOULD</text></svg></artwork> then MAY</t></rfc>"
+            ),
+            ["MAY"],
+        )
+
+    def test_untagged_keywords_marks_the_boilerplate_paragraph(self) -> None:
+        xml = (
+            '<rfc><t>The key words "MUST" and "MAY" in this document are to be interpreted as'
+            ' described in BCP 14 <xref target="RFC2119"/>.</t><t>It SHOULD hold.</t></rfc>'
+        )
+        found = [(u.keyword, u.boilerplate) for u in check_draft_sync.untagged_keywords(ET.fromstring(xml))]
+        self.assertEqual(found, [("MUST", True), ("MAY", True), ("SHOULD", False)])
+
+    def test_untagged_keywords_walks_deep_nesting(self) -> None:
+        depth = sys.getrecursionlimit() + 200
+        root = ET.fromstring("<rfc>" + "<t>" * depth + "MUST" + "</t>" * depth + "</rfc>")
+        self.assertEqual([u.keyword for u in check_draft_sync.untagged_keywords(root)], ["MUST"])
 
     def test_carries_matches_whole_words(self) -> None:
         self.assertTrue(check_draft_sync.carries('{"behaviorTier": 3}', "behaviorTier"))
@@ -115,6 +175,46 @@ class DraftSyncWholeWord(unittest.TestCase):
         self.assertTrue(check_draft_sync.carries('{"trustLevel": 3}', '"trustLevel":'))
         self.assertTrue(check_draft_sync.carries("the clock-skew bound of", "clock-skew bound"))
         self.assertFalse(check_draft_sync.carries("the clock-skew bounds of", "clock-skew bound"))
+
+
+class DraftDisclosure(unittest.TestCase):
+    DRAFT, VERSION = "draft-fane-opena2a-aip-09", "9.9.9-draft"
+    SUBMITTED = "`draft-fane-opena2a-aip-09` (submitted 2026-10-06) is the current datatracker revision."
+
+    def problems(self, pairing: str, readme: str) -> list[str]:
+        changelog = f"## [{self.VERSION}] - 2026-10-06\n\nDraft pairing: `{self.DRAFT}` pairs with {self.VERSION}. {pairing}\n"
+        readme = f"**Internet-Draft.** `{self.DRAFT}` carries {self.VERSION}. {readme}\n"
+        return check_draft_sync.disclosure_problems(readme, changelog, self.VERSION, self.DRAFT)
+
+    def test_readme_discloses_the_paired_draft(self) -> None:
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        version = check_draft_sync.spec_version(spec)
+        changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
+        name, _ = check_draft_sync.pairing(changelog, version)
+        readme = check_draft_sync.README.read_text(encoding="utf-8")
+        self.assertEqual(check_draft_sync.disclosure_problems(readme, changelog, version, name), [])
+
+    def test_submitted_draft_with_its_date_passes(self) -> None:
+        self.assertEqual(self.problems(self.SUBMITTED, "It was submitted 2026-10-06."), [])
+
+    def test_pairing_must_record_the_submission(self) -> None:
+        problems = self.problems("It was rendered.", "It was submitted 2026-10-06.")
+        self.assertTrue(any("records no submission" in p for p in problems), problems)
+
+    def test_submission_of_another_draft_does_not_count(self) -> None:
+        pairing = self.SUBMITTED.replace("-09", "-08")
+        problems = self.problems(pairing, "It was submitted 2026-10-06.")
+        self.assertTrue(any("records no submission" in p for p in problems), problems)
+
+    def test_readme_must_name_the_submission_date(self) -> None:
+        problems = self.problems(self.SUBMITTED, "It was submitted.")
+        self.assertTrue(any("'2026-10-06'" in p for p in problems), problems)
+
+
+class SpecRequirementLevels(unittest.TestCase):
+    def test_spec_uses_only_bcp14_forms(self) -> None:
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        self.assertEqual(re.findall(r"\b(?:MUST|SHALL|SHOULD)\s+NEVER\b", spec), [])
 
 
 class FirstUseMissingFile(unittest.TestCase):
@@ -158,6 +258,9 @@ class GitignoreSecrets(unittest.TestCase):
     def test_secret_shaped_files_are_ignored(self) -> None:
         if shutil.which("git") is None:
             self.skipTest("git is not installed")
+        inside = subprocess.run(["git", "rev-parse", "--is-inside-work-tree"], cwd=ROOT, capture_output=True)
+        if inside.returncode != 0:
+            self.skipTest("not a git checkout")
         for path in ("secrets.json", "secrets.local.json", "app.secrets.json", "credentials.json"):
             result = subprocess.run(["git", "check-ignore", "-q", path], cwd=ROOT)
             self.assertEqual(result.returncode, 0, f"{path} is not ignored")
