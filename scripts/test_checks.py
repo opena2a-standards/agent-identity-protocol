@@ -155,6 +155,15 @@ class ReadmeQuickStart(unittest.TestCase):
         self.assertEqual(command, "npx opena2a-cli identity create --name my-agent")
         self.assertIn("#   Identity created", output)
 
+    def test_output_note_says_a_repeat_run_keeps_the_agent_id(self):
+        # A second run with the same data directory prints "Identity already exists" and the
+        # same Agent ID, so the note must not say the ID differs on each run.
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        _, output = first_command_output(readme.splitlines()[:30])
+        note = " ".join(line.lstrip("#").strip() for line in output)
+        self.assertNotIn("each run", note)
+        self.assertIn('"Identity already exists"', note)
+
     def test_output_ends_at_a_blank_line(self):
         lines = ["```bash", "# Create", "run a", "", "# Next", "run b", "```"]
         self.assertEqual(first_command_output(lines), ("run a", []))
