@@ -17,6 +17,9 @@ This specification is early and authored in the open. We are looking for co-auth
 ```bash
 # Create an agent identity
 npx opena2a-cli identity create --name my-agent
+# prints, with opena2a-cli 0.10.13 (the agent ID differs on each run):
+#   Identity created
+#   Agent ID:    aim_LT56Njf8cjpbZggq
 
 # Discover an identity provider
 curl https://aim.opena2a.org/.well-known/aip

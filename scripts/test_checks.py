@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for scripts/check_draft_sync.py and the README link lists.
+"""Regression tests for scripts/check_draft_sync.py, the README link lists and Quick Start.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Runs on its own:
@@ -129,6 +129,35 @@ class ReadmeLinks(unittest.TestCase):
             elif in_block and line.strip() and not line.lstrip().startswith("#"):
                 commands[line.strip()] += 1
         self.assertEqual([line for line, n in commands.items() if n > 1], [])
+
+
+def first_command_output(lines: list[str]) -> tuple[str, list[str]]:
+    """Return the first command in the first fenced block and the comment lines right under it.
+
+    The output shown for a command is the run of comment lines that follows it before a blank
+    line, a closing fence or the next command.
+    """
+    fence = next(i for i, line in enumerate(lines) if line.startswith("```"))
+    block = lines[fence + 1:]
+    start = next(i for i, line in enumerate(block) if line.strip() and not line.startswith("#"))
+    output = []
+    for line in block[start + 1:]:
+        if not line.startswith("#"):
+            break
+        output.append(line)
+    return block[start], output
+
+
+class ReadmeQuickStart(unittest.TestCase):
+    def test_first_command_shows_its_output_in_the_first_30_lines(self):
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        command, output = first_command_output(readme.splitlines()[:30])
+        self.assertEqual(command, "npx opena2a-cli identity create --name my-agent")
+        self.assertIn("#   Identity created", output)
+
+    def test_output_ends_at_a_blank_line(self):
+        lines = ["```bash", "# Create", "run a", "", "# Next", "run b", "```"]
+        self.assertEqual(first_command_output(lines), ("run a", []))
 
 
 if __name__ == "__main__":
