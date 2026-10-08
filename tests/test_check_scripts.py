@@ -375,6 +375,25 @@ class SpecRequirementLevels(unittest.TestCase):
         self.assertEqual(re.findall(r"\b(?:MUST|SHALL|SHOULD)\s+NEVER\b", spec), [])
 
 
+class ImplementationStatusChallenge(unittest.TestCase):
+    ROUTE = "`/api/v1/agents/{agentId}/challenge`"
+
+    def section5_row(self) -> list[str]:
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        for line in spec.splitlines():
+            if line.startswith("| §5 Verification (challenge-response) |"):
+                return [cell.strip() for cell in line.strip().strip("|").split("|")]
+        self.fail("Appendix A.1 has no §5 Verification (challenge-response) row")
+
+    def test_row_agrees_with_readme_on_the_unserved_route(self) -> None:
+        readme = check_draft_sync.README.read_text(encoding="utf-8")
+        self.assertIn("advertises the challenge endpoint in its discovery document but does not serve that route", readme)
+        _, status, note = self.section5_row()
+        self.assertEqual(status, "Partial")
+        self.assertIn(self.ROUTE, note)
+        self.assertIn("registers no such route", note)
+
+
 class FirstUseMissingFile(unittest.TestCase):
     def test_missing_file_is_a_counted_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
