@@ -17,6 +17,9 @@ This specification is early and authored in the open. We are looking for co-auth
 ```bash
 # Create an agent identity
 npx opena2a-cli identity create --name my-agent
+# prints, with opena2a-cli 0.10.13 (the agent ID differs on each run):
+#   Identity created
+#   Agent ID:    aim_LT56Njf8cjpbZggq
 
 # Discover an identity provider
 curl https://aim.opena2a.org/.well-known/aip
@@ -57,12 +60,7 @@ A platform team runs agents built by several teams. One begins failing actions a
 
 AIP defines a trust score from 0.0 to 1.0 composed of nine weighted factors (Section 6). Penalties are applied and recorded against the agent, and the identity provider publishes a discovery document that any relying party can fetch.
 
-What you can do today:
-
-```bash
-npx opena2a-cli identity create --name my-agent
-curl https://aim.opena2a.org/.well-known/aip
-```
+What you can do today: run the first two commands in [Quick Start](#quick-start), which create an agent identity and fetch the identity provider's discovery document.
 
 Where it stops today: in the reference implementation six of the nine factors are measured and three are stubbed (AIP-SPEC Section 6.1, implementation status).
 

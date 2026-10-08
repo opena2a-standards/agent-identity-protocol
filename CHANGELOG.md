@@ -8,6 +8,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
+  matching the README. The reference provider's discovery document advertises
+  `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names
+  what is served: `/api/v1/agents/{id}/authorize`, a fine-grained authorization decision endpoint
+  that verifies no signed challenge, and the MCP server attestation challenge at
+  `/api/v1/mcp-servers/{id}/challenge`.
 - `scripts/check_draft_sync.py` matches each tracked term as a whole word, so a field renamed
   in the specification or in the draft (`behaviorTier` to `behaviorTierX`) is reported instead
   of passing as a substring.
