@@ -164,6 +164,16 @@ class ReadmeQuickStart(unittest.TestCase):
         self.assertNotIn("each run", note)
         self.assertIn('"Identity already exists"', note)
 
+    def test_first_command_shows_every_line_the_cli_prints(self):
+        # opena2a-cli 0.10.13 prints a heading and four labelled lines for identity create.
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        _, output = first_command_output(readme.splitlines()[:30])
+        shown = [line.removeprefix("#").strip() for line in output]
+        labels = ["Identity created", "Agent ID:", "Name:", "Public Key:", "Stored in:"]
+        start = shown.index(labels[0])
+        self.assertEqual([line.split("  ")[0] for line in shown[start:]], labels)
+        self.assertEqual(shown[start + 2].split(), ["Name:", "my-agent"])
+
     def test_output_ends_at_a_blank_line(self):
         lines = ["```bash", "# Create", "run a", "", "# Next", "run b", "```"]
         self.assertEqual(first_command_output(lines), ("run a", []))

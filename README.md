@@ -17,10 +17,14 @@ This specification is early and authored in the open. We are looking for co-auth
 ```bash
 # Create an agent identity
 npx opena2a-cli identity create --name my-agent
-# prints, with opena2a-cli 0.10.13 (your agent ID will differ; a repeat run in the
-# same home directory prints "Identity already exists" and the same agent ID):
+# prints, with opena2a-cli 0.10.13 (your agent ID and public key will differ and
+# Stored in names your own home directory; a repeat run in the same home directory
+# prints "Identity already exists" and the same agent ID):
 #   Identity created
-#   Agent ID:    aim_LT56Njf8cjpbZggq
+#     Agent ID:    aim_z9eLMMCNM2A3VpcV
+#     Name:        my-agent
+#     Public Key:  z9eLMMCNM2A3VpcVeef9RvgDQVX+E6zk...
+#     Stored in:   /home/you/.opena2a/aim-core
 
 # Discover an identity provider
 curl https://aim.opena2a.org/.well-known/aip
