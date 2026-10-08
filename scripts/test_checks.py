@@ -119,6 +119,17 @@ class ReadmeLinks(unittest.TestCase):
         bullets = Counter(line.strip() for line in readme.splitlines() if line.lstrip().startswith("- ["))
         self.assertEqual([line for line, n in bullets.items() if n > 1], [])
 
+    def test_readme_repeats_no_command(self):
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        commands: Counter[str] = Counter()
+        in_block = False
+        for line in readme.splitlines():
+            if line.lstrip().startswith("```"):
+                in_block = not in_block
+            elif in_block and line.strip() and not line.lstrip().startswith("#"):
+                commands[line.strip()] += 1
+        self.assertEqual([line for line, n in commands.items() if n > 1], [])
+
 
 if __name__ == "__main__":
     unittest.main()
