@@ -217,8 +217,9 @@ Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft. It was render
 with xml2rfc 3.34.0 and carries every change listed under this heading; `npx
 @ietf-tools/idnits@3.1.0` on the txt reports 0 errors and 6 warnings on 2026-10-06
 (`PREFER_BCP14_REF`, two `DOWNREF_TO_LOWER_STATUS_IN_REGISTRY` and three
-`SECTION_TITLE_HAS_UNEXPECTED_INDENTATION`); a seventh, `DOC_DATE_IN_PAST`, appears once the
-document date is more than three days before the day idnits runs, which is from 2026-10-10 on.
+`SECTION_TITLE_HAS_UNEXPECTED_INDENTATION`); a seventh, `DOC_DATE_IN_PAST`, appears once idnits
+runs more than three and a half days after the start of the document date in local time, which
+is from the afternoon of 2026-10-09 on.
 `draft-fane-opena2a-aip-04` (submitted 2026-10-06) is the current datatracker revision. The txt
 there is byte-identical to `draft-fane-opena2a-aip-04.txt`. The xml there predates two changes
 listed under Unreleased, so it differs from `draft-fane-opena2a-aip-04.xml`: it sets
