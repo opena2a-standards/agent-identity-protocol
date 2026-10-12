@@ -32,8 +32,9 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 ### Fixed
 
 - `AIP-SPEC.md` Appendix A.1 describes the reference implementation as it is, with each of three
-  notes dated. The hybrid signing row no longer names the removed `RealATCIssuer`: the reference
-  implementation signs no credential, and its `POST /api/v1/agents/{id}/atc` route asks the
+  notes dated. The hybrid signing row says the Ed25519-only `RealATCIssuer` was removed, where it
+  called it an issuer with no active production callers, and that the reference implementation
+  signs no credential: its `POST /api/v1/agents/{id}/atc` route asks the
   Registry to sign. The §6.5 ATP row is Partial, not "Not yet integrated", matching
   `GAP-ANALYSIS.md`, and cites ATP-SPEC 1.1.0-draft instead of calling v1.0.0-rc1 recent. The
   local verification row names the TypeScript and Java SDK verifiers and leaves Python as the one
