@@ -549,6 +549,16 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
     def status(self, name: str) -> str:
         return self.row(name).strip().strip("|").split("|")[1].strip()
 
+    @staticmethod
+    def finished(items: list[str]) -> list[str]:
+        """Return each priority list item that is marked finished or asks for trust scoring.
+
+        "done", "complete" and "completed" mark an item as finished. "Complete" is no mark where
+        it is the verb that opens the item's title, as in "Complete trust scoring".
+        """
+        marks = re.compile(r"\b(?:done|completed?)\b|trust scoring", re.IGNORECASE)
+        return [item for item in items if marks.search(re.sub(r"^(\d+\. \**)Complete (?=\w)", r"\1", item))]
+
     def test_challenge_response_row_is_partial_as_in_appendix_a1(self) -> None:
         # Appendix A.1 marks the §5 row Partial because the backend registers no route for the
         # challenge endpoint the discovery document advertises; the gap analysis row agrees.
@@ -578,13 +588,32 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         # it marked done, and the sentences under the list point to the table that records it.
         priorities = self.gap().split("## Priority Implementation Order", 1)[1].split("\n---", 1)[0]
         items = [line for line in priorities.splitlines() if re.match(r"\d+\. ", line)]
-        self.assertEqual([item for item in items if re.search(r"\bdone\b|trust scoring", item, re.IGNORECASE)], [])
+        self.assertEqual(self.finished(items), [])
         note = " ".join(line for line in priorities.splitlines() if line and not re.match(r"\d+\. ", line))
         self.assertIn("A completed item leaves this list", note)
         self.assertIn("is served (Discovery table above)", note)
         self.assertIn("trust scoring factors, third in this list until then, are implemented (Trust Scoring table above)", note)
         for factor in ("Compliance", "Drift", "Feedback"):
             self.assertTrue(self.status(f"{factor} factor").startswith("Complete"), factor)
+
+    def test_priority_list_item_marked_complete_is_reported(self) -> None:
+        # "Complete" is the word the tables above the list use for a finished row, so an item that
+        # carries it as a mark is reported, as one marked done is.
+        marked = [
+            "4. **WebAuthn/FIDO2** — browser-based key storage for Chrome integration (done, *updated 2026-10*)",
+            "6. **YAML policy format** — declarative governance policies (complete)",
+            "6. **YAML policy format** — declarative governance policies (completed 2026-10)",
+            "6. **YAML policy format** — Complete (*updated 2026-10*)",
+            "6. **Complete** — YAML policy format",
+            "1. **Complete the DID resolver** — required for Level 3 and cross-platform identity (complete)",
+        ]
+        self.assertEqual(self.finished(marked), marked)
+        # It is no mark where it is the verb that opens the title of an item still to do.
+        unfinished = [
+            "1. **Complete the DID resolver** — required for Level 3 and cross-platform identity",
+            "5. **Capability negotiation** — the runtime negotiation protocol between agents is incomplete",
+        ]
+        self.assertEqual(self.finished(unfinished), [])
 
     def test_links_to_appendix_a1(self) -> None:
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
@@ -687,38 +716,81 @@ class OperatorSpacing(unittest.TestCase):
     """The Python files in scripts/ and tests/ put whitespace on both sides of an operator.
 
     This is the rule of pycodestyle E225 for assignment, augmented assignment and comparison
-    operators, checked with the standard library tokenizer so it runs without pycodestyle. An "="
-    inside brackets or an f-string replacement field passes a keyword argument, gives a parameter
-    default or asks for the "{name=}" form, takes no whitespace and is left out.
+    operators, checked with the standard library tokenizer so it runs without pycodestyle. As
+    there, an "=" takes no whitespace and is left out where it stands directly inside parentheses,
+    passing a keyword argument or giving a parameter default, among the parameters of a lambda, or
+    in an f-string replacement field, asking for the "{name=}" form. An "=" directly inside square
+    brackets gives the default of a type parameter and is checked. A line break or a comment is
+    not a neighbour, so an operator that ends a line touches nothing on that side.
     """
 
     OPERATORS = {
         "=", "+=", "-=", "*=", "/=", "//=", "%=", "**=", "|=", "&=", "^=", ">>=", "<<=", ":=",
         "==", "!=", "<", ">", "<=", ">=", "->",
     }
+    # Tokens that hold no code.
+    SKIPPED = {tokenize.COMMENT, tokenize.NL, tokenize.NEWLINE, tokenize.INDENT, tokenize.DEDENT}
+    # Python 3.12 and later tokenize an f-string in parts, and 3.14 and later a t-string.
+    STRING_STARTS = {getattr(tokenize, name, None) for name in ("FSTRING_START", "TSTRING_START")} - {None}
+    STRING_ENDS = {getattr(tokenize, name, None) for name in ("FSTRING_END", "TSTRING_END")} - {None}
+
+    def unspaced_in(self, source: str) -> list[str]:
+        """Return "line:column: operator" for each operator of source that touches a neighbour."""
+        found = []
+        tokens = [t for t in tokenize.generate_tokens(io.StringIO(source).readline) if t.type not in self.SKIPPED]
+        # What encloses the token, innermost last: an opening bracket, "f" for a string tokenized
+        # in parts, or "lambda" from that keyword to the colon that ends its parameters.
+        inside: list[str] = []
+        for before, token, after in zip([None, *tokens], tokens, tokens[1:]):
+            op = token.string if token.type == tokenize.OP else ""
+            if op in ("(", "[", "{"):
+                inside.append(op)
+            elif token.type in self.STRING_STARTS:
+                inside.append("f")
+            elif token.type == tokenize.NAME and token.string == "lambda":
+                inside.append("lambda")
+            elif inside and (
+                op in (")", "]", "}") or token.type in self.STRING_ENDS or (op == ":" and inside[-1] == "lambda")
+            ):
+                inside.pop()
+            if op not in self.OPERATORS:
+                continue
+            if op == "=" and (inside[-1:] in (["("], ["lambda"]) or inside[-2:] == ["f", "{"]):
+                continue
+            if (before is not None and before.end == token.start) or token.end == after.start:
+                found.append(f"{token.start[0]}:{token.start[1] + 1}: {op}")
+        return found
 
     def unspaced(self, path: Path) -> list[str]:
-        found = []
         with tokenize.open(path) as source:
-            tokens = [t for t in tokenize.generate_tokens(source.readline) if t.type != tokenize.COMMENT]
-        depth = 0
-        for before, token, after in zip(tokens, tokens[1:], tokens[2:]):
-            if token.type == tokenize.OP and token.string in "([{":
-                depth += 1
-            elif token.type == tokenize.OP and token.string in ")]}":
-                depth -= 1
-            if token.type != tokenize.OP or token.string not in self.OPERATORS:
-                continue
-            if token.string == "=" and depth > 0:
-                continue
-            if before.end == token.start or token.end == after.start:
-                found.append(f"{path.relative_to(ROOT)}:{token.start[0]}:{token.start[1] + 1}: {token.string}")
-        return found
+            return [f"{path.relative_to(ROOT)}:{place}" for place in self.unspaced_in(source.read())]
 
     def test_operators_have_whitespace_around_them(self) -> None:
         paths = sorted([*SCRIPTS.glob("*.py"), *(ROOT / "tests").glob("*.py")])
         self.assertIn(SCRIPTS / "test_checks.py", paths)
         self.assertEqual([line for path in paths for line in self.unspaced(path)], [])
+
+    def test_operator_that_ends_a_line_inside_brackets_is_not_reported(self) -> None:
+        # The line break starts where the operator ends, and is not a neighbour of it.
+        self.assertEqual(self.unspaced_in("_Z = (1 ==\n      2)\n"), [])
+        self.assertEqual(self.unspaced_in("_Z = (1 ==  # a comment\n      2)\n"), [])
+        self.assertEqual(self.unspaced_in("_Z = (1==\n      2)\n"), ["1:8: =="])
+        self.assertEqual(self.unspaced_in("_Z = (1\n      ==2)\n"), ["2:7: =="])
+
+    def test_default_of_a_lambda_parameter_is_not_reported(self) -> None:
+        self.assertEqual(self.unspaced_in("_L = lambda a=1: a\n"), [])
+        self.assertEqual(self.unspaced_in("_L = lambda a={1: 2}, b=_Z[1:2]: a\n"), [])
+        # The colon ends the parameters, so an operator after it is checked again.
+        self.assertEqual(self.unspaced_in("_L = lambda a=1: a==1\n"), ["1:19: =="])
+        self.assertEqual(self.unspaced_in("_L = lambda: 0\n_M=1\n"), ["2:3: ="])
+
+    def test_default_of_a_type_parameter_is_reported(self) -> None:
+        self.assertEqual(self.unspaced_in("def _n[T=int]():\n    pass\n"), ["1:9: ="])
+        self.assertEqual(self.unspaced_in("def _n[T = int](a=1):\n    pass\n"), [])
+
+    def test_keyword_argument_parameter_default_and_replacement_field_are_not_reported(self) -> None:
+        self.assertEqual(self.unspaced_in('def _f(a=1):\n    return _f(a=2), f"{a=}", _Z[_f(a=3)]\n'), [])
+        self.assertEqual(self.unspaced_in("_G = (_Z:=1)\n"), ["1:9: :="])
 
 
 if __name__ == "__main__":

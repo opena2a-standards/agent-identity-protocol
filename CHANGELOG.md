@@ -343,6 +343,19 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   Python files in `scripts/` and `tests/` put whitespace around assignment and comparison
   operators, the pycodestyle E225 rule, using the standard library tokenizer, so the check needs
   no package.
+- That operator check in `tests/test_check_scripts.py` now agrees with `flake8 --select=E225` in
+  three cases where it did not. An operator that ends a line inside brackets, as the `==` of
+  `_Z = (1 ==` does, is no longer reported: the line break is not a neighbour of the operator.
+  The `=` that gives a lambda parameter its default, as in `lambda a=1: a`, is no longer
+  reported. An `=` directly inside square brackets, which gives a type parameter its default as
+  in `def _n[T=int]():`, is now reported. The check skipped every `=` inside brackets; it now
+  skips one directly inside parentheses, among the parameters of a lambda or in an f-string
+  replacement field.
+- The priority list check in `tests/test_check_scripts.py` also reports an item of the
+  `GAP-ANALYSIS.md` priority list that is marked `complete` or `completed`, the word the tables
+  of that file use for a finished row. It reported only an item marked done or one asking for
+  trust scoring, so an item ending in `(complete)` passed. "Complete" is not read as a mark where
+  it is the verb that opens an item's title, as it was in "Complete trust scoring".
 
 ## [1.2.0-draft] - 2026-10-06
 
