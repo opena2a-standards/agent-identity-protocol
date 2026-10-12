@@ -6,7 +6,7 @@
 **Authors:** OpenA2A
 **Date:** October 2026 (first published March 2026)
 
-> **Naming note.** As of 2026-09-30, at least three other Internet-Drafts use the abbreviation "AIP" for an agent identity protocol: draft-aip-agent-identity-protocol-00 (Cao and Arango at NVIDIA, first published 2026-03-16, expired 2026-09-17), draft-singla-agent-identity-protocol (Singla, first published 2026-04-16, active) and draft-prakash-aip (revision 01, 2026-08-19, active). When referenced outside this document, use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
+> **Naming note.** As of 2026-09-30, at least three other Internet-Drafts use the abbreviation "AIP" for an agent identity protocol: draft-aip-agent-identity-protocol-00 (James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), first published 2026-03-16, expired 2026-09-17), draft-singla-agent-identity-protocol (Singla, first published 2026-04-16, active) and draft-prakash-aip (revision 01, 2026-08-19, active). When referenced outside this document, use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
 
 ---
 
@@ -24,14 +24,14 @@ AIP provides:
 6. **Lifecycle** — creation, rotation, suspension, and revocation of agent identities (Section 8)
 7. **Audit** — append-only event log for accountability (Section 9)
 
-AIP is designed to complement existing protocols and standards:
+AIP is designed to complement existing protocols and standards. Each line below ends with a status, as of 2026-10-11, for what that line describes, read against the reference implementation named after the list: *specified* (this document describes it and no code for it was found in the reference implementation), *implemented* (the reference implementation has code for it) or *tested in conformance* (a fixture in the [`aip-conformance`](https://github.com/opena2a-standards/aip-conformance) suite exercises it). None of the six is tested in conformance: that suite's fixtures cover the §5.1 challenge-response and the §6.1 trust-score composition. The statuses are informative.
 
-- **Google A2A** — AIP identity in the agent card. Agents verify each other via AIP before task delegation.
-- **Anthropic MCP** — AIP capabilities map to MCP tool permissions. MCP servers verify connecting agents via AIP challenge-response.
-- **OpenID Connect** — AIP agent tokens extend OAuth 2.0 for machine-to-machine authentication.
-- **WebAuthn/FIDO2** — AIP key storage can use hardware authenticators for high-assurance agent identity.
-- **W3C Verifiable Credentials** — AIP trust scores expressed as VCs for cross-platform portability.
-- **ATP (Agent Trust Protocol)** — AIP provides identity; ATP provides ecosystem-wide trust verification. They're complementary layers.
+- **Google A2A** — AIP identity in the agent card. Agents verify each other via AIP before task delegation. *Status: implemented in part, for the agent card. The card the reference implementation serves carries the agent's ID and registered public key in an `aim` extension, and that ID is the UUID the provider assigns (§3.1). Appendix A lists the reference implementation's A2A verification service, which this status does not assess.*
+- **Anthropic MCP** — AIP capabilities map to MCP tool permissions. MCP servers verify connecting agents via AIP challenge-response. *Status: implemented in part. The reference implementation checks capabilities (§4, Appendix A.1) and does not serve the §5.1 exchange a server would use to verify a connecting agent (§5, Appendix A.1).*
+- **OpenID Connect** — AIP agent tokens extend OAuth 2.0 for machine-to-machine authentication. *Status: implemented in part. The reference implementation serves an OAuth 2.0 token endpoint (RFC 6749) that accepts the JWT-bearer grant type of RFC 7523, where a registered agent exchanges an assertion signed with its Ed25519 key for a bearer access token (GAP-ANALYSIS). That endpoint returns no OpenID Connect ID token, and §5.4 defines AIP's own JWT bearer tokens and no OAuth 2.0 or OpenID Connect flow.*
+- **WebAuthn/FIDO2** — AIP key storage can use hardware authenticators for high-assurance agent identity. *Status: specified (§11.1, §12.1); not implemented by the reference implementation (GAP-ANALYSIS).*
+- **W3C Verifiable Credentials** — AIP trust scores expressed as VCs for cross-platform portability. *Status: specified (§6.4); not implemented by the reference implementation (GAP-ANALYSIS).*
+- **ATP (Agent Trust Protocol)** — AIP provides identity; ATP provides ecosystem-wide trust verification. They're complementary layers. *Status: implemented in part. The reference implementation has a one-way push through its registry bridge (GAP-ANALYSIS), and AIP trust scores are not yet wired into the ATP transparency log (§6.5, Appendix A.1).*
 
 This specification defines the protocol. The OpenA2A AIM (Agent Identity Management) platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation.
 
@@ -103,14 +103,19 @@ Every agent MUST have an Ed25519 keypair (RFC 8032).
 ```
 Private key: 64 bytes (generated via crypto/rand)
 Public key:  32 bytes (derived from private key)
-Agent ID:    "aim_" + first 8 hex chars of SHA-256(public_key)
+Agent ID:    "aim_" + base64url(first 12 bytes of public_key), 16 characters
 ```
 
-Example:
+The encoding is the URL and filename safe base64 alphabet of RFC 4648 Section 5. Twelve bytes encode to exactly 16 characters, so the agent ID carries no padding. A tool that creates an identity locally derives its agent ID this way, so anyone holding the public key can recompute it. An identity provider MAY instead assign its own identifier to an agent it registers: the reference provider assigns each agent a UUID and carries it in the agent's DID (§3.2). A verifier treats an agent ID of either kind as an opaque string bound to a key by its registration state (§3.2), and does not recompute it to authenticate the agent.
+
+Example, for the public key of the §5.1.2 `challenge-response-valid` fixture:
 ```
-Agent ID:    aim_7f3a9c2e
-Public Key:  ed25519:x8Kp2mN...4RqW (base64)
+Public key (base64):        PUAXw+hDiVqStwqnTRt+vJyYLM8uxJaMwM1V8Sr0Zgw
+First 12 bytes, base64url:  PUAXw-hDiVqStwqn
+Agent ID:                   aim_PUAXw-hDiVqStwqn
 ```
+
+Revisions up to 1.2.0-draft specified the agent ID as "aim_" followed by the first 8 hexadecimal characters of SHA-256(public_key). Neither the reference CLI nor the reference provider produces that form, and identity files already created carry the form above, so this section specifies the form in use. For the key above the earlier rule gives `aim_39f713d0`, which is not a locally derived agent ID.
 
 Implementations SHOULD also support hybrid Ed25519 + ML-DSA-65 (FIPS 204) for post-quantum readiness:
 
@@ -191,10 +196,10 @@ Identity file format:
 
 ```json
 {
-  "id": "aim_7f3a9c2e",
+  "id": "aim_PUAXw-hDiVqStwqn",
   "name": "my-agent",
   "type": "claude",
-  "publicKey": "ed25519:x8Kp2mN...4RqW",
+  "publicKey": "ed25519:PUAXw+hDiVqStwqn...Zgw",
   "encryptedPrivateKey": "aes-256-gcm:...",
   "capabilities": ["file:read", "api:call"],
   "declaredPurpose": {
@@ -215,6 +220,8 @@ Identity file format:
 Private keys MUST be encrypted at rest. The default encryption is AES-256-GCM with a key derived from the user's system keychain or a passphrase.
 
 `declaredPurpose` is **optional**: a structured declaration of what the agent is *for* (`category`, `taskScopes`, `capabilityJustification`, `autonomy`, and the optional `dataScopes` / `egressScopes`). It is an identity and attestation property plus an offline detection signal — it MUST NOT be used as an authorization input, and a verifier MUST NOT reject an identity for lacking it. Its full vocabulary and semantics are defined in [`atx-spec` core.md §1.5](https://github.com/opena2a-standards/atx-spec); when carried in an ATX it is covered by the v1.1 signed payload. At the DID layer, declared purpose is surfaced only as a `PurposeAttestation` service-endpoint pointer, never inline in the DID Document body.
+
+> **Reference implementation status (2026-10-11, published packages `opena2a-cli` 0.10.13 and `@opena2a/aim-core` 0.2.0, the latest of each).** The CLI's local identity does not follow this section. `opena2a-cli identity create` keeps one identity per data directory, in `~/.opena2a/aim-core/identity.json` (aim-core `dist/identity.js:44`), not in a per-agent file under `identities/`. The file holds `agentId`, `agentName`, `publicKey`, `secretKey` and `createdAt`: the agent ID and name sit under different keys from `id` and `name` above, `publicKey` is plain base64 without the `ed25519:` prefix, and there is no `type`, `capabilities` or `status`. `secretKey` is the Ed25519 secret key in plain base64 (`dist/identity.js:62`), protected only by file mode 0600 (`dist/identity.js:71`), so the private key is not encrypted at rest as this section and Section 12.1 require. This revision specifies the target; it does not change the tool.
 
 ### 3.4 Agent Types
 
@@ -498,7 +505,7 @@ Every verification attempt MUST be logged as a verification event:
 ```json
 {
   "id": "evt_abc123",
-  "agentId": "aim_7f3a9c2e",
+  "agentId": "aim_PUAXw-hDiVqStwqn",
   "protocol": "mcp",
   "verificationType": "identity",
   "status": "success",
@@ -520,7 +527,7 @@ Every verification attempt MUST be logged as a verification event:
 For programmatic access, AIP supports:
 
 - **API Keys** — SHA-256 hashed, stored server-side, base64-encoded for transport
-- **JWT Bearer Tokens** — HMAC-SHA256 signed, 1-hour TTL, containing agent ID and organization ID
+- **JWT Bearer Tokens** — HMAC-SHA256 signed, containing agent ID and organization ID; an access token's lifetime SHOULD NOT exceed 2 hours
 - **SDK Tokens** — scoped tokens for SDK operations (agent registration, verification)
 
 JWT claims:
@@ -676,7 +683,7 @@ Where α and β are configurable weights (default: α=0.5, β=0.5).
 Agent governance policies are expressed in YAML:
 
 ```yaml
-agent: aim_7f3a9c2e
+agent: aim_PUAXw-hDiVqStwqn
 policies:
   - name: "Require approval for file writes"
     capability: "file:write"
@@ -749,7 +756,7 @@ Agents SHOULD rotate keys periodically. The rotation protocol:
 
 ```json
 {
-  "agentId": "aim_7f3a9c2e",
+  "agentId": "aim_PUAXw-hDiVqStwqn",
   "currentKey": "ed25519:newKey...",
   "previousKey": "ed25519:oldKey...",
   "keyRotationGraceUntil": "2026-03-29T14:00:00Z"
@@ -794,10 +801,12 @@ Level 1 implementations MUST maintain a local append-only audit log:
 Each line is a JSON event:
 
 ```json
-{"type":"identity_created","agentId":"aim_7f3a9c2e","timestamp":"2026-03-22T10:00:00Z"}
-{"type":"verification_success","agentId":"aim_7f3a9c2e","protocol":"mcp","durationMs":42,"timestamp":"2026-03-22T10:01:00Z"}
-{"type":"capability_violation","agentId":"aim_7f3a9c2e","capability":"system:exec","severity":"critical","blocked":true,"timestamp":"2026-03-22T10:02:00Z"}
+{"type":"identity_created","agentId":"aim_PUAXw-hDiVqStwqn","timestamp":"2026-03-22T10:00:00Z"}
+{"type":"verification_success","agentId":"aim_PUAXw-hDiVqStwqn","protocol":"mcp","durationMs":42,"timestamp":"2026-03-22T10:01:00Z"}
+{"type":"capability_violation","agentId":"aim_PUAXw-hDiVqStwqn","capability":"system:exec","severity":"critical","blocked":true,"timestamp":"2026-03-22T10:02:00Z"}
 ```
+
+> **Reference implementation status (2026-10-11, the packages named in Section 3.3).** The CLI appends events to `~/.opena2a/aim-core/audit.jsonl` (aim-core `dist/audit.js:42`), but `opena2a-cli identity create` writes none, so the log holds no `identity_created` event. An event written by `opena2a-cli identity log` has the keys `timestamp`, `action`, `target`, `result` and `plugin`, not the `type` and `agentId` keys shown above. This revision specifies the target; it does not change the tool.
 
 ### 9.2 Server Audit Log
 
@@ -971,7 +980,7 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 
 ## Appendix A: Reference Implementation
 
-The OpenA2A AIM platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation at Conformance Level 2.
+The OpenA2A AIM platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation and targets Conformance Level 2. It does not meet Level 2 yet: challenge-response verification (Section 5) is a Level 2 requirement, and A.1 below marks it Partial because the Section 5.1 exchange is not served.
 
 | Component | Implementation |
 |-----------|---------------|
@@ -992,7 +1001,7 @@ The reference implementation's coverage is uneven and the gaps are tracked publi
 
 | AIP / AIP-adjacent section | AIM status | Notes |
 |---|---|---|
-| §3 Agent Identity (Ed25519 keypair, agent ID, DID) | Shipped | `crypto/keygen.go`, `domain/agent.go`. Server-side key generation; agent receives Ed25519 public key registered on its record. DID resolution serves the deprecated alias form only and rejects other prefixes (`handlers/aip_handler.go:68`); the `did:web` route of §3.2 is not implemented as of 2026-09-08. |
+| §3 Agent Identity (Ed25519 keypair, agent ID, DID) | Shipped | `crypto/keygen.go`, `domain/agent.go`. Server-side key generation; agent receives Ed25519 public key registered on its record. The provider identifies each agent by a UUID it assigns, as §3.1 permits, and derives no `aim_` agent ID; `opena2a-cli identity create` derives the §3.1 agent ID from the public key. DID resolution serves the deprecated alias form only and rejects other prefixes (`handlers/aip_handler.go:68`); the `did:web` route of §3.2 is not implemented as of 2026-09-08. |
 | §3 Hybrid PQC signing (Ed25519 + ML-DSA-65) | Shipped end to end on the registry path | Registry-side code paths below are in a private repository; the publicly checkable evidence for this row is the hybrid fixture in [`atx-conformance`](https://github.com/opena2a-standards/atx-conformance) (`fixtures/baseline-valid-hybrid.json`), which the Go reference verifier accepts on both algorithms. Registry-side `ATCService.IssueATC()` at `opena2a-registry/internal/application/atc_service.go` emits hybrid signatures in production: threshold Ed25519 plus one ML-DSA-65 signature from the hybrid keypair wired in at `cmd/server/main.go:682-685` (startup log: "ATC post-quantum hybrid signing enabled (Ed25519 + ML-DSA-65)"). The ML-DSA-65 signature `Value` is the raw 3309-byte `mldsa65.SignatureSize` blob as of opena2a-registry PR #215 (prior credentials carried a legacy combined Ed25519+ML-DSA blob; ATC TTL is 7 days, so the rollover is naturally complete one week after PR #215 ships). The standalone offline-verify package `opena2a-registry/pkg/atcverify` enforces the hybrid signing mandate as of opena2a-registry PR #214: when a credential declares an ML-DSA-65 signature, at least one ML-DSA-65 signature must verify in addition to at least one Ed25519 signature. A parallel AIM-side CBOR issuer (`agent-identity-management/apps/backend/internal/infrastructure/atc/atc_issuer.go` `RealATCIssuer`) signs Ed25519 only and has no active production callers today. |
 | §4 Capabilities | Shipped | `application/capability_service.go`, FGA engine at `application/fga_engine.go` with 5-step blocking enforcement (capability, attribute, context, chain, intent). |
 | §4 JIT capability grants with TTL | Partial | TTL exists for PAM (Privileged Access Management) emergency-escalation grants. Routine capability grants are static. |

@@ -6,8 +6,68 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ## [Unreleased]
 
+### Changed
+
+- `AIP-SPEC.md` §3.1 defines the agent ID as `aim_` followed by the base64url encoding (RFC 4648
+  Section 5) of the first 12 bytes of the public key, 16 characters, the form
+  `opena2a-cli identity create` prints and writes to identity files. It previously gave `aim_`
+  followed by the first 8 hexadecimal characters of SHA-256 of the public key, a form neither the
+  CLI nor the reference provider produces. §3.1 also says a provider MAY assign its own
+  identifier instead (the reference provider assigns a UUID) and that a verifier treats either
+  kind as opaque. Its example is now a vector: the public key of the §5.1.2
+  `challenge-response-valid` fixture and the agent ID derived from it, `aim_PUAXw-hDiVqStwqn`,
+  which replaces `aim_7f3a9c2e` in every example. Appendix A.1 and GAP-ANALYSIS.md say the CLI
+  derives the agent ID and the provider assigns a UUID. `draft-fane-opena2a-aip-04`, as
+  submitted, still gives the SHA-256 form in Section 4.1; README.md says so.
+- `tests/test_agent_id.py` derives the agent ID of the §3.1 example from its public key and checks
+  it, checks that every other `aim_` agent ID in `AIP-SPEC.md` has the §3.1 shape, and checks the
+  README Quick Start agent ID against the public key printed beside it.
+
 ### Fixed
 
+- `AIP-SPEC.md` Sections 3.3 and 9.1 carry a reference implementation status note, as Section
+  3.2 does. The published CLI (`opena2a-cli` 0.10.13 with `@opena2a/aim-core` 0.2.0) stores one
+  identity in `~/.opena2a/aim-core/identity.json`, not under `identities/`, with `agentId` and
+  `agentName` where Section 3.3 has `id` and `name`, no `type`, `capabilities` or `status`, and the
+  Ed25519 secret key in plain base64 protected only by file mode 0600, so it is not encrypted at
+  rest. `identity create` writes no `identity_created` audit event, and an event written by
+  `identity log` has `timestamp`, `action`, `target`, `result` and `plugin` instead of the `type`
+  and `agentId` keys in Section 9.1. The notes describe the gap; the requirements are unchanged.
+  `draft-fane-opena2a-aip-04`, as submitted, carries neither note in its Sections 4.3 and 11.1,
+  and the README's Internet-Draft paragraph says so.
+- `README.md` and `AIP-SPEC.md` Appendix A say the reference implementation targets Conformance
+  Level 2, instead of saying it implements Level 2. Level 2 requires challenge-response
+  verification (Section 5), which Appendix A.1 marks Partial because the reference backend does
+  not serve the Section 5.1 exchange.
+- `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
+  giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
+  valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,
+  as submitted, still gives "a one-hour time-to-live" in Section 6.4, and README.md now lists this
+  change beside the §12.1 one.
+- `AIP-SPEC.md`, `README.md` and `GAP-ANALYSIS.md` attribute draft-aip-agent-identity-protocol-00
+  as that draft does: James Cao (Montcao), Carlos Eduardo Arango Gutierrez (NVIDIA). They had
+  placed both authors at NVIDIA. The `GAP-ANALYSIS.md` comparison heading calls it the Cao/Arango
+  draft, and its prior-art table dates draft-singla-agent-identity-protocol-00 2026-04-16, the
+  datatracker submission date the other two files use, instead of 2026-04-17, the date printed on
+  the document.
+- The README Interoperability list and the list of protocols AIP is designed to complement in the
+  `AIP-SPEC.md` abstract end each of their six lines with a status as of 2026-10-11: specified,
+  implemented, or tested in conformance. Both lists stated all six without one. WebAuthn/FIDO2
+  and W3C Verifiable Credentials are specified, with no code for them found in the reference
+  implementation. Google A2A, Anthropic MCP, OpenID Connect and ATP are implemented in part: the
+  reference implementation serves an agent card that carries the agent's ID and registered public
+  key in an `aim` extension, checks capabilities, serves an OAuth 2.0 token endpoint that accepts
+  the JWT-bearer grant type of RFC 7523 from a registered agent, and has a one-way push through
+  its registry bridge, and it does not serve the §5.1 exchange, return an OpenID Connect ID token
+  from that endpoint, or wire AIP trust scores into the ATP transparency log. Its A2A
+  verification service is not assessed. None of the six is tested in conformance. The statuses
+  are informative, and `draft-fane-opena2a-aip-04` does not carry them; the README's
+  Internet-Draft paragraph says so. The `GAP-ANALYSIS.md` row for OAuth 2.0 / OIDC, which said
+  that code was removed, names the token endpoint and the device authorization grant the backend
+  serves. `scripts/test_checks.py` checks that each line of both lists carries one status, that
+  the two lists agree, that the status matches the protocol's `GAP-ANALYSIS.md` row, that the
+  OpenID Connect lines and that row name the token endpoint, and that the Google A2A lines name
+  the `aim` extension.
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names

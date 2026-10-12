@@ -75,7 +75,7 @@ Why you can check this yourself: [`AIP-SPEC.md`](AIP-SPEC.md) and the Internet-D
 
 [AIP-SPEC.md](AIP-SPEC.md) — the full protocol specification.
 
-**Internet-Draft.** This specification is also published as the individual Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/). This repository's specification is 1.2.0-draft, and `draft-fane-opena2a-aip-04` carries it except for two statements of §6.1 that Section 7.1 of the draft lacks, both in the specification when that revision was made: "AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged" and "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them". One editorial change has been made to the specification since that revision: §12.1 now reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". That revision, submitted 2026-10-06, is the current datatracker revision. Its txt there matches the txt in this repository; the xml in this repository has since dropped its `submissionType` attribute and tags its BCP 14 keywords. The 1.2.0-draft entry in [CHANGELOG.md](CHANGELOG.md) lists what changed.
+**Internet-Draft.** This specification is also published as the individual Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/). This repository's specification is 1.2.0-draft, and `draft-fane-opena2a-aip-04` carries it except for two statements of §6.1 that Section 7.1 of the draft lacks, both in the specification when that revision was made: "AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged" and "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them". Three changes have been made to the specification since that revision. One is editorial: §12.1 now reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". Another is in §5.4, which now says a JWT access token's lifetime SHOULD NOT exceed 2 hours, where Section 6.4 of the draft gives JWT bearer tokens "a one-hour time-to-live". §3.1 now defines the agent ID as `aim_` followed by the base64url encoding of the first 12 bytes of the public key, the form `opena2a-cli identity create` prints, and lets a provider assign its own identifier instead, where Section 4.1 of the draft gives the first eight hexadecimal characters of the SHA-256 digest of the public key. Three informative additions have been made too: each line of the abstract's list of protocols AIP is designed to complement ends with an implementation status, which Section 1 of the draft does not give, and §3.3 and §9.1 each carry a reference implementation status note, which Sections 4.3 and 11.1 of the draft do not. That revision, submitted 2026-10-06, is the current datatracker revision. Its txt there matches the txt in this repository; the xml in this repository has since dropped its `submissionType` attribute and tags its BCP 14 keywords. The 1.2.0-draft entry in [CHANGELOG.md](CHANGELOG.md) lists what changed.
 
 ## Conformance Levels
 
@@ -87,13 +87,16 @@ Why you can check this yourself: [`AIP-SPEC.md`](AIP-SPEC.md) and the Internet-D
 
 ## Interoperability
 
-AIP is designed to complement:
-- [Google A2A Protocol](https://github.com/a2aproject/A2A) — AIP identity in agent cards
-- [Anthropic MCP](https://modelcontextprotocol.io) — capability-based tool access control
-- [OpenID Connect](https://openid.net/connect/) — JWT tokens for machine-to-machine auth
-- [WebAuthn/FIDO2](https://www.w3.org/TR/webauthn-3/) — hardware key storage for browsers
-- [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) — trust scores as VCs
-- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust
+AIP is designed to complement the six protocols below. Each line ends with a status, as of 2026-10-11, for what that line describes. **Specified** means AIP-SPEC describes it and no code for it was found in the reference implementation. **Implemented** means the reference implementation has code for it. **Tested in conformance** means a fixture in [aip-conformance](https://github.com/opena2a-standards/aip-conformance) exercises it; none of the six is, because that suite's fixtures cover the Section 5.1 challenge-response and the Section 6.1 trust-score composition.
+
+- [Google A2A Protocol](https://github.com/a2aproject/A2A) — AIP identity in agent cards. **Implemented** in part, for the agent card: the card the reference implementation serves carries the agent's ID and registered public key in an `aim` extension, and that ID is the UUID the provider assigns (AIP-SPEC Section 3.1). Its A2A verification service (AIP-SPEC Appendix A) is not assessed here.
+- [Anthropic MCP](https://modelcontextprotocol.io) — capability-based tool access control. **Implemented** in part: the reference implementation checks an agent's capabilities server-side. Verifying a connecting agent by the Section 5.1 challenge-response is specified, and the reference implementation does not serve that exchange.
+- [OpenID Connect](https://openid.net/connect/) — JWT tokens for machine-to-machine auth. **Implemented** in part: the reference implementation serves an OAuth 2.0 token endpoint (RFC 6749) that accepts the JWT-bearer grant type of RFC 7523, where a registered agent exchanges an assertion signed with its Ed25519 key for a bearer access token. That endpoint returns no OpenID Connect ID token, and Section 5.4 defines AIP's own JWT bearer tokens and no OAuth 2.0 or OpenID Connect flow.
+- [WebAuthn/FIDO2](https://www.w3.org/TR/webauthn-3/) — hardware key storage for browsers. **Specified** (Sections 11.1 and 12.1).
+- [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) — trust scores as VCs. **Specified** (Section 6.4).
+- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust. **Implemented** in part: the reference implementation has a one-way push through its registry bridge, and AIP trust scores are not yet wired into the ATP transparency log (Section 6.5).
+
+The rows behind these statuses are in [GAP-ANALYSIS.md](GAP-ANALYSIS.md) (OAuth 2.0 / OIDC, WebAuthn/FIDO2, Verifiable Credential expression, ATP integration) and in AIP-SPEC Appendix A.1 (§4 Capabilities, §5 Verification, §6.5 ATP integration).
 
 ## How AIP and ATP Work Together
 
@@ -107,7 +110,7 @@ AIP (identity + behavior)     ATP (code + provenance)
 
 ## Reference Implementation
 
-The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-management) implements AIP at Level 2.
+The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-management) is the reference implementation and targets AIP Level 2. It does not serve the Section 5.1 challenge-response exchange yet, which Level 2 requires; [AIP-SPEC.md Appendix A.1](AIP-SPEC.md#a1-spec-sections-currently-implemented-by-aim) lists the status of each section.
 
 ## Related Standards
 
@@ -120,7 +123,7 @@ The abbreviation "AIP" for "Agent Identity Protocol" appears in at least four in
 | Spec                                                                                                 | Authors                                | First publication | Scope                                                                                                                                              |
 | ---------------------------------------------------------------------------------------------------- | -------------------------------------- | ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **OpenA2A AIP** (this repository)                                                                    | OpenA2A                                | March 2026        | Identity, capabilities, verification, trust scoring, governance, lifecycle, audit. Reference implementation in [AIM](https://github.com/opena2a-org/agent-identity-management). |
-| **[draft-aip-agent-identity-protocol-00](https://datatracker.ietf.org/doc/draft-aip-agent-identity-protocol/)** | James Cao, Carlos Eduardo Arango Gutierrez (NVIDIA) | March 16, 2026    | Two-layer model: unique agent identity with cryptographic signing + policy enforcement through an interposing proxy.                                |
+| **[draft-aip-agent-identity-protocol-00](https://datatracker.ietf.org/doc/draft-aip-agent-identity-protocol/)** | James Cao (Montcao), Carlos Eduardo Arango Gutierrez (NVIDIA) | March 16, 2026    | Two-layer model: unique agent identity with cryptographic signing + policy enforcement through an interposing proxy.                                |
 | **[draft-singla-agent-identity-protocol-00](https://datatracker.ietf.org/doc/draft-singla-agent-identity-protocol/00/)** | Paras Singla (Independent)             | April 16, 2026    | Decentralized identity + delegation; introduces the `did:aip` DID method, capability-based authorization, cryptographic delegation chains.          |
 
 A fourth, draft-prakash-aip (revision 01, 2026-08-19), also uses the abbreviation; its scope is not summarized here. draft-aip-agent-identity-protocol-00 expired on 2026-09-17 (datatracker state as of 2026-09-30).

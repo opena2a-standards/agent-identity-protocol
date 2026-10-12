@@ -10,7 +10,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 |-----------------|----------------------|------|
 | Ed25519 keypair generation | Complete | `apps/backend/internal/crypto/keygen.go` |
 | ML-DSA-65 hybrid signing | Complete | `apps/backend/internal/crypto/pqc/hybrid.go` |
-| Agent ID format (aim_XXXXXXXX) | Complete | `apps/backend/internal/domain/agent.go` |
+| Agent ID format (`aim_` + 16 base64url characters, AIP-SPEC §3.1) | Complete in the CLI (*updated 2026-10*): `opena2a-cli identity create` derives it from the public key. The provider assigns each agent a UUID instead and has no `aim_` derivation, which §3.1 permits | `apps/backend/internal/domain/agent.go` (UUID) |
 | DID resolution | Partial (*updated 2026-09*): the resolver answers the deprecated pre-1.1 alias form only; the `did:web` form and its `did.json` route (AIP-SPEC §3.2, 1.1.0-draft) are not implemented | `handlers/aip_handler.go` (ResolveDID), `domain/agent_did.go` |
 | DID Document generation | Complete (*updated 2026-07*) — W3C DID Document served by the resolver | `handlers/aip_handler.go` |
 | Local identity file format | Partial — SDK creates files but format not standardized | `sdk/typescript/` |
@@ -33,7 +33,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 | Challenge-response (Ed25519) | Complete | `apps/backend/internal/application/verification_event_service.go` |
 | MCP verification flow | Complete | `mcp_service.go` |
 | A2A verification flow | Complete | `a2a_service.go` |
-| OAuth 2.0 / OIDC | REMOVED from codebase | `auth_service.go` line 54 comment |
+| OAuth 2.0 / OIDC | Partial (*updated 2026-10*): the backend serves an OAuth 2.0 token endpoint, `POST /api/v1/oauth/token` (RFC 6749), that accepts the JWT-bearer grant type of RFC 7523 from a registered agent and returns a bearer access token, and a device authorization grant (RFC 8628) for CLI login. No code that issues an OpenID Connect ID token was found | `handlers/oauth_token_handler.go`, `handlers/device_auth_handler.go` |
 | WebAuthn/FIDO2 | NOT IMPLEMENTED | - |
 | JWT tokens | Complete (custom, not standard OAuth) | `infrastructure/auth/jwt.go` |
 | API keys | Complete | `api_key_service.go` |
@@ -113,13 +113,13 @@ repository, use the fully qualified name **OpenA2A AIP**.
 
 | Draft | Author(s) | datatracker (initial) | Scope |
 |---|---|---|---|
-| draft-aip-agent-identity-protocol | Cao, Arango (NVIDIA) | -00, 2026-03-16 | Agent identity registry + enforcement proxy |
-| draft-singla-agent-identity-protocol | Singla | -00, 2026-04-17 | Agent identity + delegation |
+| draft-aip-agent-identity-protocol | James Cao (Montcao), Carlos Eduardo Arango Gutierrez (NVIDIA) | -00, 2026-03-16 | Agent identity registry + enforcement proxy |
+| draft-singla-agent-identity-protocol | Singla | -00, 2026-04-16 | Agent identity + delegation |
 | draft-aap-oauth-profile, "Agent Authorization Profile" | Cruz (independent) | -01, 2026-02-07 | OAuth 2.0 profile for agent-to-API authorization |
 | OpenA2A AIP (this spec) | OpenA2A | not yet filed | Identity, capabilities, verification, trust scoring, governance, lifecycle, audit |
 | OpenA2A AAP (companion) | OpenA2A | not yet filed | Authorization token model + broker/resolution layer |
 
-### OpenA2A AIP vs draft-aip-agent-identity-protocol (NVIDIA)
+### OpenA2A AIP vs draft-aip-agent-identity-protocol (Cao/Arango)
 
 The two specifications share a common spine — a Layer 1 agent-identity registry
 and a Layer 2 policy/enforcement proxy — and differ on what is built above it.
