@@ -362,6 +362,16 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   of that file use for a finished row. It reported only an item marked done or one asking for
   trust scoring, so an item ending in `(complete)` passed. "Complete" is not read as a mark where
   it is the verb that opens an item's title, as it was in "Complete trust scoring".
+- That priority list check no longer reports an item still to do that uses "complete" after its
+  title, as a verb in "complete the depth limit enforcement" or before a noun in "needs a complete
+  runtime protocol". "Complete" is now no mark wherever a word it governs follows it, and is still
+  a mark where it stands alone or before a date, a conjunction or a preposition, as in
+  `(complete 2026-10)` and "complete and served".
+- The tests of the operator check in `tests/test_check_scripts.py` now cover a comment that
+  starts where an operator ends, as in `_Z = (1 ==# a comment`, and, on Python 3.14 and later,
+  the `=` of a t-string replacement field, as in `t"{a=}"`. `flake8 --select=E225` reports
+  neither. Before, the check could stop skipping comments or stop reading t-strings in parts and
+  every one of its tests still passed.
 
 ## [1.2.0-draft] - 2026-10-06
 

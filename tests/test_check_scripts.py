@@ -577,11 +577,15 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
     def finished(items: list[str]) -> list[str]:
         """Return each priority list item that is marked finished or asks for trust scoring.
 
-        "done", "complete" and "completed" mark an item as finished. "Complete" is no mark where
-        it is the verb that opens the item's title, as in "Complete trust scoring".
+        "done", "complete" and "completed" mark an item as finished. "Complete" is no mark where a
+        word it governs follows it, as a verb, as in "Complete the DID resolver" or "complete the
+        depth limit enforcement", or before a noun, as in "a complete runtime protocol". A date, a
+        conjunction or a preposition is no such word, as in "complete 2026-10" or "complete and
+        served", so "complete" before one is a mark.
         """
-        marks = re.compile(r"\b(?:done|completed?)\b|trust scoring", re.IGNORECASE)
-        return [item for item in items if marks.search(re.sub(r"^(\d+\. \**)Complete (?=\w)", r"\1", item))]
+        word = r"\s+(?!(?:and|but|or|as|at|by|for|in|on|since|with)\b)\w*[^\W\d_]"
+        marks = re.compile(rf"\b(?:done|completed)\b|\bcomplete\b(?!{word})|trust scoring", re.IGNORECASE)
+        return [item for item in items if marks.search(item)]
 
     def test_challenge_response_row_is_partial_as_in_appendix_a1(self) -> None:
         # Appendix A.1 marks the §5 row Partial because the backend registers no route for the
@@ -630,11 +634,18 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — Complete (*updated 2026-10*)",
             "6. **Complete** — YAML policy format",
             "1. **Complete the DID resolver** — required for Level 3 and cross-platform identity (complete)",
+            "6. **YAML policy format** — declarative governance policies (complete 2026-10)",
+            "6. **YAML policy format** — complete and served by the backend",
+            "6. **YAML policy format** — declarative governance policies, complete since 2026-10",
         ]
         self.assertEqual(self.finished(marked), marked)
-        # It is no mark where it is the verb that opens the title of an item still to do.
+        # It is no mark where it is a verb with an object, in the title of an item still to do or
+        # after it, or where it stands before a noun.
         unfinished = [
             "1. **Complete the DID resolver** — required for Level 3 and cross-platform identity",
+            "1. **Complete 2FA support** — required for Level 3",
+            "3. **Delegation chains** — complete the depth limit enforcement",
+            "2. **Capability negotiation** — needs a complete runtime protocol",
             "5. **Capability negotiation** — the runtime negotiation protocol between agents is incomplete",
         ]
         self.assertEqual(self.finished(unfinished), [])
@@ -743,7 +754,7 @@ class OperatorSpacing(unittest.TestCase):
     operators, checked with the standard library tokenizer so it runs without pycodestyle. As
     there, an "=" takes no whitespace and is left out where it stands directly inside parentheses,
     passing a keyword argument or giving a parameter default, among the parameters of a lambda, or
-    in an f-string replacement field, asking for the "{name=}" form. An "=" directly inside square
+    in an f-string or t-string replacement field, asking for the "{name=}" form. An "=" directly inside square
     brackets gives the default of a type parameter and is checked. A line break or a comment is
     not a neighbour, so an operator that ends a line touches nothing on that side.
     """
@@ -798,6 +809,8 @@ class OperatorSpacing(unittest.TestCase):
         # The line break starts where the operator ends, and is not a neighbour of it.
         self.assertEqual(self.unspaced_in("_Z = (1 ==\n      2)\n"), [])
         self.assertEqual(self.unspaced_in("_Z = (1 ==  # a comment\n      2)\n"), [])
+        # Nor is a comment that starts where the operator ends.
+        self.assertEqual(self.unspaced_in("_Z = (1 ==# a comment\n      2)\n"), [])
         self.assertEqual(self.unspaced_in("_Z = (1==\n      2)\n"), ["1:8: =="])
         self.assertEqual(self.unspaced_in("_Z = (1\n      ==2)\n"), ["2:7: =="])
 
@@ -815,6 +828,11 @@ class OperatorSpacing(unittest.TestCase):
     def test_keyword_argument_parameter_default_and_replacement_field_are_not_reported(self) -> None:
         self.assertEqual(self.unspaced_in('def _f(a=1):\n    return _f(a=2), f"{a=}", _Z[_f(a=3)]\n'), [])
         self.assertEqual(self.unspaced_in("_G = (_Z:=1)\n"), ["1:9: :="])
+
+    @unittest.skipUnless(hasattr(tokenize, "TSTRING_START"), "Python 3.14 and later tokenize a t-string in parts")
+    def test_replacement_field_of_a_t_string_is_not_reported(self) -> None:
+        self.assertEqual(self.unspaced_in('_A = 1\n_T = t"{a=}"\n'), [])
+        self.assertEqual(self.unspaced_in('_A = 1\n_T = t"{(a==1)=}"\n'), ["2:11: =="])
 
 
 if __name__ == "__main__":
