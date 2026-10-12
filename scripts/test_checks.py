@@ -419,6 +419,17 @@ class ComplementedProtocols(unittest.TestCase):
                 self.assertIn("RFC 7523", line)
                 self.assertNotIn("removed", line.lower())
 
+    def test_google_a2a_lines_name_the_identity_in_the_agent_card(self):
+        # The agent card the reference implementation serves carries the agent's ID and its
+        # registered public key in an `aim` extension, so neither list says that no AIP
+        # identifier field was found in that card.
+        for name, line in self.lines("Google A2A").items():
+            with self.subTest(doc=name):
+                self.assertIn("`aim` extension", line)
+                self.assertNotIn("no aip identifier field", line.lower())
+        self.assertEqual(self.readme["Google A2A Protocol"], ["Implemented"])
+        self.assertEqual(self.spec["Google A2A"], ["Implemented"])
+
     def test_readme_defines_each_status_before_the_list(self):
         readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
         intro = next(line for line in readme.splitlines() if line.startswith("AIP is designed to complement"))
