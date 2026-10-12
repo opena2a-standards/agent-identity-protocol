@@ -81,6 +81,22 @@ One statement of §6.1 was in the specification when that revision was made and 
 
 - "AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged"
 
+Four parts of the specification have no counterpart in the draft, and none of them carries a BCP 14 keyword:
+
+- §2.1 Relationship to A2A-IDF identity levels.
+- §11 Integration Patterns.
+- Appendix A, Reference Implementation.
+- Appendix B, Relationship to ATP.
+
+Six parts of the draft have no counterpart in the specification:
+
+- Section 1, Introduction. The specification's abstract carries the list of protocols AIP is designed to complement and names the reference implementation, as that section does.
+- Section 8, Portable Credential and Transparency Log. It states a requirement the specification does not: "A verifier that encounters a credential declaring an ML-DSA-65 signature MUST verify at least one ML-DSA-65 signature in addition to at least one Ed25519 signature."
+- Section 13.5, Unverified Type and Declared-Purpose Fields. Its MUST NOT statements restate the §3.3 rule on the declared purpose and the §3.4 rule on the agent type.
+- Appendix A, Related Work.
+- Appendix B, Document History.
+- Appendix C, Acknowledgments.
+
 Four changes made to the specification since that revision are to a requirement or its wording:
 
 - §3.1 defines the agent ID as `aim_` followed by the base64url encoding of the first 12 bytes of the public key, the form `opena2a-cli identity create` prints, and lets a provider assign its own identifier instead, where Section 4.1 of the draft gives the first eight hexadecimal characters of the SHA-256 digest of the public key. The examples in §3.3, §5.3, §7.1, §8.2 and §9.1 carry `aim_PUAXw-hDiVqStwqn`, an agent ID of that form, where the draft's examples carry `aim_7f3a9c2e`.

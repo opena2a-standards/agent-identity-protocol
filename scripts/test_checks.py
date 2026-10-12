@@ -572,7 +572,83 @@ def row_section(cell: str) -> str:
     return numbered.group(0) if numbered else cell
 
 
-FULL_CLONE = "use a full clone (in CI, actions/checkout with fetch-depth: 0)"
+NO_COUNTERPART = "have no counterpart"
+SPEC_SECTION = re.compile(r"(#{2,4}) (?:\d+(?:\.\d+)*\.?|Appendix [A-Z]:|[A-Z]\.\d+) +(.+?)\s*$")
+# A heading in the body of a draft's txt starts in column 0; its table of contents is indented.
+DRAFT_SECTION = re.compile(r"^((?:\d+\.)+|Appendix [A-Z]\.) +(\S.*?)\s*$", re.MULTILINE)
+
+
+def change_items(readme: str) -> list[str]:
+    """Return the items of the Internet-Draft lists that say what the draft leaves out of a part or what has changed.
+
+    A list whose lead-in says its parts have no counterpart names whole sections that only one
+    document has. Its items say nothing about a change, so they do not count as naming a changed
+    part of the specification.
+    """
+    lists = counted_lists(draft_disclosure(readme))
+    return [item for lead, items in lists if NO_COUNTERPART not in lead for item in items]
+
+
+def counterpart_list(readme: str, document: str) -> tuple[str, list[str]]:
+    """Return (lead-in, items) of the list of the parts of document that the other document lacks.
+
+    document is "specification" or "draft".
+    """
+    opening = f"parts of the {document} {NO_COUNTERPART}"
+    found = [(lead, items) for lead, items in counted_lists(draft_disclosure(readme)) if opening in lead]
+    if len(found) != 1:
+        raise AssertionError(f"expected one Internet-Draft list whose lead-in says {opening!r}, found {len(found)}")
+    return found[0]
+
+
+def spec_sections(spec: str) -> list[tuple[bool, str]]:
+    """Return (whether it is top-level, title) for each numbered section and appendix heading of the specification."""
+    found, fenced = [], False
+    for line in spec.splitlines():
+        if line.startswith("```"):
+            fenced = not fenced
+        heading = None if fenced else SPEC_SECTION.match(line)
+        if heading:
+            found.append((heading.group(1) == "##", heading.group(2)))
+    return found
+
+
+def draft_sections(txt: str) -> list[tuple[bool, str]]:
+    """Return (whether it is top-level, title) for each section and appendix heading in the body of a draft's txt."""
+    return [(number.count(".") == 1, title) for number, title in DRAFT_SECTION.findall(txt)]
+
+
+def draft_section(txt: str, number: str) -> str:
+    """Return a section of a draft's txt, from its heading to the next heading that is not a subsection of it.
+
+    number is the heading's own, as "8.", "13.5." or "Appendix A.".
+    """
+    headings = [(match.group(1), match.start()) for match in DRAFT_SECTION.finditer(txt)]
+    starts = [at for found, at in headings if found == number]
+    if len(starts) != 1:
+        raise AssertionError(f"expected one heading {number!r} in the draft, found {len(starts)}")
+    end = next((at for found, at in headings if at > starts[0] and not found.startswith(number)), len(txt))
+    return txt[starts[0]: end]
+
+
+def has_counterpart(title: str, others: list[str]) -> bool:
+    """Whether a title is one of others, or holds or is held in one, as "Terminology" is in "Conventions and Terminology"."""
+    return any(title.lower() in other.lower() or other.lower() in title.lower() for other in others)
+
+
+def only_in(sections: list[tuple[bool, str]], others: list[tuple[bool, str]], top_level: bool) -> list[str]:
+    """Return the titles in sections that have no counterpart in others.
+
+    With top_level the top-level sections of each are compared and the rest left out. Without it
+    every heading is compared, and a subsection the other document renames is returned too
+    ("ATP Integration" beside "Agent Trust Protocol Integration"), so that result says which titles
+    an item may name, not which the lists have to name.
+    """
+    against = [title for top, title in others if top or not top_level]
+    return [title for top, title in sections if (top or not top_level) and not has_counterpart(title, against)]
+
+
+FULL_CLONE ="use a full clone (in CI, actions/checkout with fetch-depth: 0)"
 INSTALL_GIT = "install git"
 
 
@@ -775,15 +851,14 @@ class InternetDraftLists(unittest.TestCase):
         self.assertEqual([row_section(cell) for cell in ("§6 Trust", "Local verify")], ["§6", "Local verify"])
 
     def draft_then_and_now(self) -> tuple[str, str, str, list[str]]:
-        """Return the paired draft, AIP-SPEC.md when it was made, AIP-SPEC.md now and the README list items."""
+        """Return the paired draft, AIP-SPEC.md when it was made, AIP-SPEC.md now and the README change items."""
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
         changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
         draft, _ = check_draft_sync.pairing(changelog, check_draft_sync.spec_version(spec))
         if draft is None:
             self.skipTest("the CHANGELOG pairs no draft with the specification's version")
         readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
-        items = [item for _, listed in counted_lists(draft_disclosure(readme)) for item in listed]
-        return draft, spec_when_draft_was_made(draft), spec, items
+        return draft, spec_when_draft_was_made(draft), spec, change_items(readme)
 
     def test_lists_name_every_part_of_the_specification_changed_since_the_draft(self):
         # The lists say where the specification differs from the paired draft, so each part of
@@ -803,6 +878,136 @@ class InternetDraftLists(unittest.TestCase):
             if not any(names_part(item, "Appendix A.1") and names_part(item, row_section(cell)) for item in items)
         ]
         self.assertEqual(unnamed, [], f"Appendix A.1 rows changed since {draft} that no Internet-Draft list item names")
+
+
+COUNTERPART_README = (
+    "**Internet-Draft.** The draft is submitted.\n\n"
+    "Two parts of the specification have no counterpart in the draft, and none of them carries a BCP 14 keyword:\n\n"
+    "- §11 Integration Patterns.\n- Appendix A, Reference Implementation.\n\n"
+    "One change is informative:\n\n- §3.1 carries a note.\n\n"
+    "## Next\n"
+)
+DRAFT_TXT = (
+    "Table of Contents\n\n   1.  Introduction . . . 3\n   2.  Identity . . . 4\n\n"
+    "1.  Introduction\n\n   Text.\n\n2.  Identity\n\n   A key MUST be kept.\n\n2.1.  Keys\n\n   A key.\n\n"
+    "10.  Discovery\n\n   Text.\n\nAppendix A.  Related Work\n\n   Text.\n"
+)
+
+
+class SectionsWithoutCounterpart(unittest.TestCase):
+    """The two README lists of the parts that only the specification or only the paired draft has."""
+
+    def test_a_no_counterpart_list_is_read_by_its_document_and_is_not_a_list_of_changes(self):
+        lead, items = counterpart_list(COUNTERPART_README, "specification")
+        self.assertTrue(lead.startswith("Two parts of the specification have no counterpart"), lead)
+        self.assertEqual(items, ["- §11 Integration Patterns.", "- Appendix A, Reference Implementation."])
+        with self.assertRaises(AssertionError) as raised:
+            counterpart_list(COUNTERPART_README, "draft")
+        self.assertIn("'parts of the draft have no counterpart', found 0", str(raised.exception))
+        # An item that says §11 has no counterpart does not say what changed in §11.
+        self.assertEqual(change_items(COUNTERPART_README), ["- §3.1 carries a note."])
+        self.assertEqual(len(change_items(LISTS_README)), 5)
+
+    def test_sections_are_read_from_each_document_with_their_level(self):
+        self.assertEqual(
+            spec_sections(PARTS_SPEC),
+            [
+                (True, "Identity"), (False, "Keys"), (False, "Example"), (False, "Types"), (True, "References"),
+                (True, "Reference Implementation"), (False, "Spec sections"),
+            ],
+        )
+        self.assertEqual(
+            draft_sections(DRAFT_TXT),
+            [(True, "Introduction"), (True, "Identity"), (False, "Keys"), (True, "Discovery"), (True, "Related Work")],
+        )
+
+    def test_a_draft_section_ends_at_the_next_heading_that_is_not_its_subsection(self):
+        self.assertEqual(draft_section(DRAFT_TXT, "1."), "1.  Introduction\n\n   Text.\n\n")
+        self.assertTrue(draft_section(DRAFT_TXT, "2.").endswith("2.1.  Keys\n\n   A key.\n\n"))
+        self.assertEqual(draft_section(DRAFT_TXT, "Appendix A."), "Appendix A.  Related Work\n\n   Text.\n")
+        with self.assertRaises(AssertionError):
+            draft_section(DRAFT_TXT, "8.")
+
+    def test_a_section_only_one_document_has_is_found(self):
+        spec = [(True, "Terminology"), (False, "ATP Integration"), (True, "Integration Patterns"), (True, "Audit")]
+        draft = [
+            (True, "Introduction"), (True, "Conventions and Terminology"),
+            (False, "Agent Trust Protocol Integration"), (False, "Integration Patterns"), (True, "Audit"),
+        ]
+        self.assertEqual(only_in(spec, draft, top_level=True), ["Integration Patterns"])
+        self.assertEqual(only_in(draft, spec, top_level=True), ["Introduction"])
+        self.assertEqual(only_in(spec, draft, top_level=False), ["ATP Integration"])
+        self.assertEqual(only_in(draft, spec, top_level=False), ["Introduction", "Agent Trust Protocol Integration"])
+
+    def documents(self) -> tuple[str, str, str]:
+        """Return README.md, AIP-SPEC.md and the txt of the draft paired with the specification's version."""
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
+        draft, _ = check_draft_sync.pairing(changelog, check_draft_sync.spec_version(spec))
+        if draft is None or not (check_draft_sync.ROOT / f"{draft}.txt").exists():
+            self.skipTest("the draft paired with the specification's version is not built")
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        return readme, spec, (check_draft_sync.ROOT / f"{draft}.txt").read_text(encoding="utf-8")
+
+    def test_lists_name_every_top_level_section_only_one_document_has(self):
+        readme, spec, txt = self.documents()
+        ours, theirs = spec_sections(spec), draft_sections(txt)
+        self.assertGreater(len([title for top, title in ours if top]), 10, ours)
+        self.assertGreater(len([title for top, title in theirs if top]), 10, theirs)
+        for document, sections, others in (("specification", ours, theirs), ("draft", theirs, ours)):
+            with self.subTest(document=document):
+                _, items = counterpart_list(readme, document)
+                only = only_in(sections, others, top_level=True)
+                unnamed = [title for title in only if not any(title.lower() in item.lower() for item in items)]
+                self.assertEqual(unnamed, [], f"top-level sections only the {document} has that its list does not name")
+
+    def test_each_item_names_a_section_the_other_document_lacks(self):
+        # An item goes stale when the other document gains its section, or its own drops or
+        # renames it: it then names no title that only its document has.
+        readme, spec, txt = self.documents()
+        ours, theirs = spec_sections(spec), draft_sections(txt)
+        for document, sections, others in (("specification", ours, theirs), ("draft", theirs, ours)):
+            _, items = counterpart_list(readme, document)
+            only = only_in(sections, others, top_level=False)
+            for item in items:
+                with self.subTest(document=document, item=item):
+                    self.assertTrue(
+                        any(title.lower() in item.lower() for title in only),
+                        f"the item names no section title that only the {document} has",
+                    )
+
+    def test_specification_only_parts_carry_no_keyword_where_the_lead_in_says_so(self):
+        readme, spec, _ = self.documents()
+        lead, items = counterpart_list(readme, "specification")
+        parts = spec_parts(spec)
+        carrying = []
+        for item in items:
+            named = re.match(r"- (§\d+(?:\.\d+)*|Appendix [A-Z])\b", item)
+            self.assertIsNotNone(named, f"the item opens with no part of the specification: {item!r}")
+            texts = [text for name, text in parts.items() if name == named.group(1) or name.startswith(named.group(1) + ".")]
+            self.assertTrue(texts, f"AIP-SPEC.md has no part {named.group(1)}")
+            if any(check_draft_sync.BCP14_KEYWORD.search(text) for text in texts):
+                carrying.append(named.group(1))
+        self.assertEqual("none of them carries a BCP 14 keyword" in lead, not carrying, carrying)
+
+    def test_each_draft_only_item_names_a_keyword_where_its_section_carries_one(self):
+        # A section only the draft has can state a requirement the specification lacks. Its item
+        # names a BCP 14 keyword when the section carries one and none when it does not, and what
+        # it quotes is in the draft and not in the specification.
+        readme, spec, txt = self.documents()
+        _, items = counterpart_list(readme, "draft")
+        for item in items:
+            with self.subTest(item=item):
+                named = re.match(r"- (?:Section (\d+(?:\.\d+)*)|(Appendix [A-Z])), ", item)
+                self.assertIsNotNone(named, "the item opens with no section of the draft")
+                section = draft_section(txt, (named.group(1) or named.group(2)) + ".")
+                self.assertEqual(
+                    check_draft_sync.BCP14_KEYWORD.search(item) is not None,
+                    check_draft_sync.BCP14_KEYWORD.search(section) is not None,
+                )
+                for quoted in re.findall(r'"([^"]+)"', item):
+                    self.assertIn(quoted, check_draft_sync.draft_text(section))
+                    self.assertNotIn(quoted, re.sub(r"\s+", " ", spec))
 
 
 class MissingDraftHistory(unittest.TestCase):
