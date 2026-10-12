@@ -369,12 +369,13 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   "in-browser" is one word and is not "in". Where "complete" opens an item's title, in any letter
   case, it is also no mark where "and", a word and an object follow it. So an item still to do
   worded "complete the depth limit enforcement", "needs a complete runtime protocol", "complete
-  in-browser key storage", "complete 3 remaining checks" or "Complete and publish the DID
-  resolver" is no longer reported, and neither is a finished item worded "complete per Appendix
-  A.1". "complete" is still a mark at the end of an item and before punctuation, one of those
-  words or a word of digits, so an item worded `(complete 2026-10)`, "(complete October 2026)",
-  "(complete 3 October 2026)" or "complete and served" is reported, and so is an item whose title
-  is "Complete 2026-10" or "Complete and served", whether it is finished or still to do.
+  in-browser key storage" or "complete 3 remaining checks", or one whose title is "complete and
+  publish the DID resolver" or "COMPLETE and publish the DID resolver", is no longer reported,
+  and neither is a finished item worded "complete per Appendix A.1". "complete" is still a mark
+  at the end of an item and before punctuation, one of those words or a word of digits, so an
+  item worded `(complete 2026-10)`, "(complete October 2026)", "(complete 3 October 2026)" or
+  "complete and served" is reported, and so is an item whose title is "Complete 2026-10" or
+  "Complete and served", whether it is finished or still to do.
 - The tests of the operator check in `tests/test_check_scripts.py` now cover a comment that
   starts where an operator ends, as in `_Z = (1 ==# a comment`, and, on Python 3.14 and later,
   the `=` of a t-string replacement field, as in `t"{a=}"`, and a keyword argument after a
