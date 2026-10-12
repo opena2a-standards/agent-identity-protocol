@@ -465,6 +465,23 @@ class PairingIdnitsCount(unittest.TestCase):
         self.assertIn(f"from the afternoon of {first.date().isoformat()} on", paragraph)
         self.assertNotIn("2026-10-10", paragraph)
 
+    def test_a_later_section_records_the_two_corrections_made_in_place(self) -> None:
+        # The idnits sentence was edited in place after 1.2.0-draft was dated: the warning names
+        # and the measurement date were added, then the DOC_DATE_IN_PAST boundary moved from
+        # 2026-10-10 to the afternoon of 2026-10-09. An entry above that heading records both.
+        changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
+        later = changelog[: changelog.index("\n## [1.2.0-draft]")]
+        entries = [" ".join(e.split()) for e in re.findall(r"^- .*(?:\n  .*)*", later, flags=re.MULTILINE)]
+        terms = (
+            "1.2.0-draft pairing paragraph",
+            "0 errors and 6 warnings on 2026-10-06",
+            "`DOC_DATE_IN_PAST`",
+            "from 2026-10-10 on",
+            "from the afternoon of 2026-10-09 on",
+        )
+        recorded = [entry for entry in entries if all(term in entry for term in terms)]
+        self.assertTrue(recorded, f"no entry above the 1.2.0-draft heading names all of {terms}")
+
 
 class FirstUseMissingFile(unittest.TestCase):
     def test_missing_file_is_a_counted_failure(self) -> None:

@@ -221,6 +221,17 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 - `scripts/test_checks.py` does not report a number word joined by a hyphen, as in "one-way" or
   "two-factor", as a count outside a lead-in, so a sentence such as "after a one-way comparison"
   in the README Internet-Draft section no longer fails `test_no_count_stands_outside_a_lead_in`.
+- The idnits sentence of the 1.2.0-draft pairing paragraph was corrected in place twice. It read
+  "reports 0 errors and 6 warnings", with no date and no warning names. The first correction made
+  it "0 errors and 6 warnings on 2026-10-06", named the six (`PREFER_BCP14_REF`, two
+  `DOWNREF_TO_LOWER_STATUS_IN_REGISTRY` and three `SECTION_TITLE_HAS_UNEXPECTED_INDENTATION`) and
+  added a seventh, `DOC_DATE_IN_PAST`, which it dated from 2026-10-10 on, "once the document date
+  is more than three days before the day idnits runs". The second correction replaced that rule
+  and date: the seventh warning appears once idnits runs more than three and a half days after
+  the start of the document date in local time, which is from the afternoon of 2026-10-09 on.
+  `tests/test_check_scripts.py` checks the count and its date, derives that boundary from the
+  rule idnits 3.1.0 applies, and checks that an entry above the 1.2.0-draft heading names both
+  corrections.
 
 ## [1.2.0-draft] - 2026-10-06
 
