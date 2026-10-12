@@ -410,8 +410,9 @@ class ChangelogEntryLookup(unittest.TestCase):
         self.assertEqual(str(raised.exception), "no CHANGELOG.md entry starts with 'A fix nobody made'")
 
 
-# The number words the checks know: zero to twelve only. A higher number written as a word, as in
-# "a twenty-item list" or "a thirteen-field form", is not read as a count and is not reported.
+# The number words the checks know: zero to twelve only. A higher number written as one word, as
+# "twenty" is in "a twenty-item list" and "thirteen" in "a thirteen-field form", is not read as a
+# count and is not reported.
 NUMBER_WORDS = (
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
 )
@@ -419,7 +420,7 @@ NUMBER_WORDS = (
 # matched, whether it ends a compound ("non-zero") or is part of a count, as the "five" of "a
 # twenty-five-field form" is; "twenty" is not a number word here either, so that count is not
 # reported.
-COUNT =re.compile(r"(?<![\w-])(%s)((?:-\w+)*)(?!\w)" % "|".join(NUMBER_WORDS), re.IGNORECASE)
+COUNT = re.compile(r"(?<![\w-])(%s)((?:-\w+)*)(?!\w)" % "|".join(NUMBER_WORDS), re.IGNORECASE)
 # Compounds that begin with a number word and are not reported. Every other compound that begins
 # with one is reported, whether it states a count ("a two-item list", "the five-field form") or
 # not ("one-off", "one-shot", "one-sided"); an entry here or a rewording clears one that does not.
@@ -597,8 +598,11 @@ def spec_when_draft_was_made(draft: str) -> str:
         raise history_missing("git is not installed", INSTALL_GIT)
 
     def git(*args: str) -> str:
+        # LC_ALL=C keeps git from translating its messages, so an error starts with "fatal:" or
+        # "error:" under any locale ("Schwerwiegend:" under de_DE.UTF-8 otherwise).
         result = subprocess.run(
-            ["git", *args], cwd=check_draft_sync.ROOT, capture_output=True, text=True, encoding="utf-8"
+            ["git", *args], cwd=check_draft_sync.ROOT, capture_output=True, text=True, encoding="utf-8",
+            env={**os.environ, "LC_ALL": "C"},
         )
         if result.returncode != 0:
             # git can fail with history present (over the repository's ownership, or with GIT_DIR
@@ -688,11 +692,16 @@ class InternetDraftLists(unittest.TestCase):
         self.assertIn('as "one-off" does', entry)
 
     def test_changelog_entry_names_the_number_words_the_check_knows(self):
-        # NUMBER_WORDS ends at "twelve", so a higher number written as a word is never reported; the
-        # entry says so, and names the range NUMBER_WORDS covers, so extending it fails here.
+        # NUMBER_WORDS ends at "twelve", so a higher number written as one word, as "twenty" and
+        # "thirteen" are, is never reported; the entry says so, and names the range NUMBER_WORDS
+        # covers, so extending it fails here. A higher number written as a compound that begins
+        # with a word in NUMBER_WORDS is reported, as any such compound outside NO_COUNT is.
         for text in ("A twenty-item list.", "A thirteen-field form.", "A twenty-five-field form."):
             self.assertEqual(unchecked_counts(text), [], text)
+        self.assertEqual(unchecked_counts("A one-hundred-item list."), ["'one' in 'A one-hundred-item list.'"])
+        self.assertEqual(unchecked_counts("Twelve-hundred rows."), ["'Twelve' in 'Twelve-hundred rows.'"])
         entry = changelog_entry(COUNT_ENTRY)
+        self.assertIn("a higher number written as one word", entry)
         self.assertIn(f"the number words from {NUMBER_WORDS[0]} to {NUMBER_WORDS[-1]} only", entry)
         for example in ('"a twenty-item list"', '"a thirteen-field form"'):
             self.assertIn(example, entry)
@@ -801,22 +810,33 @@ class MissingDraftHistory(unittest.TestCase):
     # (as in a tree exported with git archive, outside any checkout), or no commit that changed the
     # draft's txt.
     HISTORIES = ("shallow", "git fails", "draft unchanged")
+    # The line git writes before its error where GIT_TRACE is set.
+    TRACE = "05:22:41.554242 git.c:502               trace: built-in: git rev-parse --is-shallow-repository\n"
 
     def outcome(
         self, ci: str | None, history: str = "shallow", git: str | None = "git",
-        stderr: str = "fatal: not a git repository\n",
+        stderr: str = "fatal: not a git repository\n", translated: str | None = None,
     ) -> BaseException:
         """Return what spec_when_draft_was_made raises where the history is missing, with CI set to ci or unset.
 
-        Where history is "git fails", every git command exits 128 and prints stderr.
+        Where history is "git fails", every git command exits 128 and prints stderr. Where
+        translated is given, LC_ALL is de_DE.UTF-8 and a failing git command prints translated
+        instead, unless it is run with LC_ALL=C, as git translates its messages under a locale
+        other than C. self.ran lists the environment each git command was run with.
         """
         env = {name: value for name, value in os.environ.items() if name != "CI"}
         if ci is not None:
             env["CI"] = ci
+        if translated is not None:
+            env["LC_ALL"] = "de_DE.UTF-8"
+        self.ran: list[dict[str, str]] = []
 
-        def run(args: list[str], **_: object) -> subprocess.CompletedProcess:
+        def run(args: list[str], **options: object) -> subprocess.CompletedProcess:
+            given = options.get("env")
+            self.ran.append(dict(os.environ if given is None else given))
             if history == "git fails":
-                return subprocess.CompletedProcess(args, 128, stdout="", stderr=stderr)
+                said = stderr if translated is None or self.ran[-1].get("LC_ALL") == "C" else translated
+                return subprocess.CompletedProcess(args, 128, stdout="", stderr=said)
             if args[1] == "rev-parse":
                 shallow = "true\n" if history == "shallow" else "false\n"
                 return subprocess.CompletedProcess(args, 0, stdout=shallow, stderr="")
@@ -865,7 +885,8 @@ class MissingDraftHistory(unittest.TestCase):
     def test_a_git_failure_quotes_what_git_said(self):
         # git can fail where the history is present, as over the repository's ownership or with
         # GIT_DIR set elsewhere, and a full clone does not help there, so the reason quotes the
-        # first line of git's message and the remedy starts from it.
+        # first line of git's message that starts with "fatal:" or "error:", or its first line
+        # where none does, and the remedy starts from it.
         stderr = "fatal: detected dubious ownership in repository at '/repo'\nTo add an exception, call:\n"
         for ci, kind in ((None, unittest.SkipTest), ("true", AssertionError)):
             with self.subTest(ci=ci):
@@ -880,11 +901,16 @@ class MissingDraftHistory(unittest.TestCase):
 
     def test_a_git_failure_quotes_git_s_error_after_lines_written_before_it(self):
         # With GIT_TRACE set, git writes a trace line before its error, so the reason quotes the
-        # first line that starts with "fatal:" or "error:", and the first line where none does.
-        trace = "05:22:41.554242 git.c:502               trace: built-in: git rev-parse --is-shallow-repository\n"
+        # first line that starts with "fatal:" or "error:", and the first line where none does. A
+        # line that has either word after its start, as the warning of the third case has both,
+        # is not that line. No other line git wrote is quoted.
         cases = (
-            (trace + "fatal: not a git repository: '/nonexistent'\n", "fatal: not a git repository: '/nonexistent'"),
-            (trace + "error: object file is empty\nfatal: bad object HEAD\n", "error: object file is empty"),
+            (
+                self.TRACE + "fatal: not a git repository: '/nonexistent'\n",
+                "fatal: not a git repository: '/nonexistent'",
+            ),
+            (self.TRACE + "error: object file is empty\nfatal: bad object HEAD\n", "error: object file is empty"),
+            ("warning: a hook wrote error: and fatal: lines\nfatal: bad object HEAD\n", "fatal: bad object HEAD"),
             ("warning: unable to access 'attributes'\nhint: check it\n", "warning: unable to access 'attributes'"),
         )
         for stderr, quoted in cases:
@@ -893,18 +919,35 @@ class MissingDraftHistory(unittest.TestCase):
                     raised = self.outcome(ci, "git fails", stderr=stderr)
                     self.assertIsInstance(raised, kind)
                     self.assertIn(f"git rev-parse failed here, saying {quoted!r}, so", str(raised))
-                    self.assertNotIn("hint:", str(raised))
-                    self.assertNotIn("trace:", str(raised))
-                    self.assertNotIn("fatal: bad object", str(raised))
+                    for line in stderr.splitlines():
+                        if line != quoted:
+                            self.assertNotIn(line, str(raised))
+
+    def test_git_runs_with_lc_all_c_so_its_error_is_quoted_under_another_locale(self):
+        # git translates the "fatal:" and "error:" that start its messages ("Schwerwiegend:" under
+        # de_DE.UTF-8), so under such a locale no line would start with either and the trace line
+        # would be quoted. Each git command runs with LC_ALL=C, under which git does not
+        # translate, and with the rest of the environment as it is.
+        english = self.TRACE + "fatal: not a git repository: '/nonexistent'\n"
+        german = self.TRACE + "Schwerwiegend: Kein Git-Repository: '/nonexistent'\n"
+        for ci, kind in ((None, unittest.SkipTest), ("true", AssertionError)):
+            with self.subTest(ci=ci):
+                raised = self.outcome(ci, "git fails", stderr=english, translated=german)
+                self.assertIsInstance(raised, kind)
+                self.assertIn("""saying "fatal: not a git repository: '/nonexistent'", so""", str(raised))
+                self.assertNotIn("trace:", str(raised))
+        self.outcome("true", "draft unchanged", translated=german)
+        self.assertEqual(self.ran, [{**os.environ, "CI": "true", "LC_ALL": "C"}] * 2)
 
     def test_docs_say_how_ci_is_read_and_what_a_git_failure_reports(self):
         # history_missing strips CI before reading it, so " false " skips; the module docstring and
         # the CHANGELOG entry say so, as the history_missing docstring does. The entry also says a
-        # git failure quotes git.
+        # git failure quotes git, and that the two cases run git with LC_ALL=C.
         entry = changelog_entry(HISTORY_ENTRY)
         for text in (" ".join(sys.modules[__name__].__doc__.split()), entry):
             self.assertIn("in any letter case or with surrounding spaces", text)
         self.assertIn("the first line of git's message that starts with `fatal:` or `error:`", entry)
+        self.assertIn("run git with `LC_ALL=C`", entry)
 
 
 STATUSES = ("Specified", "Implemented", "Tested in conformance")
