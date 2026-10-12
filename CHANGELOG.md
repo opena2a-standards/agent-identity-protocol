@@ -307,6 +307,17 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   `tests/test_check_scripts.py` checks the count and its date, derives that boundary from the
   rule idnits 3.1.0 applies, and checks that an entry above the 1.2.0-draft heading names both
   corrections.
+- The priority list of `GAP-ANALYSIS.md` no longer keeps "Complete trust scoring" as item 2
+  marked done; the item leaves the list, as the `/.well-known/aip` discovery endpoint did. The
+  sentences under the list say that a completed item leaves it and where each item that left it
+  in 2026-10 is recorded: the discovery endpoint in the Discovery table, and the compliance,
+  drift and feedback factors in the Trust Scoring table. `tests/test_check_scripts.py` checks
+  that no item is marked done or asks for trust scoring.
+- `scripts/test_checks.py` has a space after the `=` that assigns `FULL_CLONE`, so
+  `flake8 --select=E225` no longer reports it. `tests/test_check_scripts.py` checks that the
+  Python files in `scripts/` and `tests/` put whitespace around assignment and comparison
+  operators, the pycodestyle E225 rule, using the standard library tokenizer, so the check needs
+  no package.
 
 ## [1.2.0-draft] - 2026-10-06
 
