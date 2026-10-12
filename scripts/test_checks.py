@@ -358,6 +358,58 @@ class JwtAccessTokenLifetime(unittest.TestCase):
             self.assertTrue(claim in named[0], f"the §5.4 item does not say {claim!r}")
 
 
+# The opening words of the two CHANGELOG entries the cases below read.
+COUNT_ENTRY = "`scripts/test_checks.py` does not report"
+HISTORY_ENTRY = "The two cases of `scripts/test_checks.py`"
+
+
+def changelog_entry(start: str, changelog: str | None = None) -> str:
+    """Return the first CHANGELOG entry that starts with start, on one line.
+
+    The whole CHANGELOG is read, so an entry is found under Unreleased and, once a release moves
+    it, under a version heading. Fails, quoting start, where no entry starts with it.
+    """
+    if changelog is None:
+        changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
+    entries = [" ".join(entry.split()) for entry in re.findall(r"^- .*(?:\n  .*)*", changelog, flags=re.MULTILINE)]
+    found = [entry for entry in entries if entry.startswith("- " + start)]
+    if not found:
+        raise AssertionError(f"no CHANGELOG.md entry starts with {start!r}")
+    return found[0]
+
+
+ENTRY_LOG = (
+    "# Changelog\n\n## [Unreleased]\n\n### Fixed\n\n- A fix that is\n  not released.\n\n"
+    "## [1.2.0-draft] - 2026-10-06\n\n### Fixed\n\n- A fix that was\n  released.\n"
+)
+
+
+class ChangelogEntryLookup(unittest.TestCase):
+    """An entry a case reads is found wherever the CHANGELOG lists it, and a missing one is named."""
+
+    def test_an_entry_is_found_under_unreleased_and_under_a_version_heading(self):
+        self.assertEqual(changelog_entry("A fix that is", ENTRY_LOG), "- A fix that is not released.")
+        self.assertEqual(changelog_entry("A fix that was", ENTRY_LOG), "- A fix that was released.")
+
+    def test_an_entry_is_found_once_a_release_moves_it_under_a_version_heading(self):
+        # A release dates the entries under Unreleased: a version heading right under the
+        # Unreleased one moves each of them, the two entries the cases below read among them.
+        heading = "## [Unreleased]\n"
+        dated = heading + "\n## [1.3.0-draft] - 2026-11-01\n"
+        self.assertEqual(
+            changelog_entry("A fix that is", ENTRY_LOG.replace(heading, dated)), "- A fix that is not released."
+        )
+        released = check_draft_sync.CHANGELOG.read_text(encoding="utf-8").replace(heading, dated)
+        for start in (COUNT_ENTRY, HISTORY_ENTRY):
+            with self.subTest(start=start):
+                self.assertEqual(changelog_entry(start, released), changelog_entry(start))
+
+    def test_a_missing_entry_fails_with_a_message_that_quotes_its_opening_words(self):
+        with self.assertRaises(AssertionError) as raised:
+            changelog_entry("A fix nobody made", ENTRY_LOG)
+        self.assertEqual(str(raised.exception), "no CHANGELOG.md entry starts with 'A fix nobody made'")
+
+
 NUMBER_WORDS = (
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
 )
@@ -370,15 +422,6 @@ COUNT = re.compile(r"(?<![\w-])(%s)((?:-\w+)*)(?!\w)" % "|".join(NUMBER_WORDS), 
 # not ("one-off", "one-shot", "one-sided"); an entry here or a rewording clears one that does not.
 NO_COUNT = ("one-way", "two-way", "one-time", "one-hour", "one-to-one", "two-factor")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
-
-
-def unreleased_entry(start: str) -> str:
-    """Return the entry under the CHANGELOG's Unreleased heading that starts with start, on one line."""
-    changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
-    heading = changelog.index("## [Unreleased]")
-    unreleased = changelog[heading: changelog.index("\n## [", heading)]
-    entries = [" ".join(entry.split()) for entry in re.findall(r"^- .*(?:\n  .*)*", unreleased, flags=re.MULTILINE)]
-    return next(entry for entry in entries if entry.startswith("- " + start))
 
 
 def draft_disclosure(readme: str) -> str:
@@ -632,7 +675,7 @@ class InternetDraftLists(unittest.TestCase):
     def test_changelog_entry_says_what_is_not_reported(self):
         # The entry names each NO_COUNT compound, and says that a number word after any hyphen is
         # skipped, not only one that ends a compound, and that "one-off" is still reported.
-        entry = unreleased_entry("`scripts/test_checks.py` does not report")
+        entry = changelog_entry(COUNT_ENTRY)
         self.assertEqual([compound for compound in NO_COUNT if f'"{compound}"' not in entry], [])
         self.assertIn("a number word that follows a hyphen", entry)
         self.assertIn('as "one-off" does', entry)
@@ -822,7 +865,7 @@ class MissingDraftHistory(unittest.TestCase):
         # history_missing strips CI before reading it, so " false " skips; the module docstring and
         # the CHANGELOG entry say so, as the history_missing docstring does. The entry also says a
         # git failure quotes git.
-        entry = unreleased_entry("The two cases of `scripts/test_checks.py`")
+        entry = changelog_entry(HISTORY_ENTRY)
         for text in (" ".join(sys.modules[__name__].__doc__.split()), entry):
             self.assertIn("in any letter case or with surrounding spaces", text)
         self.assertIn("the first line of git's message", entry)

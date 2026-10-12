@@ -230,6 +230,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   count, as "a two-item list" and "the five-field form" do, or not, as "one-off" does. A number
   word that follows a hyphen is not reported even where it is part of a count, as the "five" of "a
   twenty-five-field form" is.
+- `test_changelog_entry_says_what_is_not_reported` and
+  `test_docs_say_how_ci_is_read_and_what_a_git_failure_reports` in `scripts/test_checks.py` look
+  their entry up in the whole of this file, not only under Unreleased, so they no longer end in a
+  bare `StopIteration` once a release moves the two entries above under a version heading. Where
+  no entry starts with the words a case looks for, the case fails and its message quotes those
+  words.
 - The idnits sentence of the 1.2.0-draft pairing paragraph was corrected in place twice. It read
   "reports 0 errors and 6 warnings", with no date and no warning names. The first correction made
   it "0 errors and 6 warnings on 2026-10-06", named the six (`PREFER_BCP14_REF`, two
