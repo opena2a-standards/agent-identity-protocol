@@ -25,6 +25,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` Appendix A.1 marks "§6 Trust Scoring (9-factor)" Partial, not Shipped, and §6.1
+  says the reference calculator implements algorithm version 1, not "the 9-factor algorithm
+  above". Since 1.2.0-draft that algorithm includes the unscored state, which the reference
+  calculator does not implement: it publishes a composite for every agent, including one with no
+  verification events, and carries no `algorithmVersion` or `scoreStatus`. §6.1 gains a
+  composition implementation status paragraph and `GAP-ANALYSIS.md` a row for the gap.
 - `AIP-SPEC.md` Sections 3.3 and 9.1 carry a reference implementation status note, as Section
   3.2 does. The published CLI (`opena2a-cli` 0.10.13 with `@opena2a/aim-core` 0.2.0) stores one
   identity in `~/.opena2a/aim-core/identity.json`, not under `identities/`, with `agentId` and
@@ -168,7 +174,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 Draft pairing: `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft. It was rendered on 2026-10-06
 with xml2rfc 3.34.0 and carries every change listed under this heading; `npx
-@ietf-tools/idnits@3.1.0` on the txt reports 0 errors and 6 warnings.
+@ietf-tools/idnits@3.1.0` on the txt reports 0 errors and 6 warnings on 2026-10-06
+(`PREFER_BCP14_REF`, two `DOWNREF_TO_LOWER_STATUS_IN_REGISTRY` and three
+`SECTION_TITLE_HAS_UNEXPECTED_INDENTATION`); a seventh, `DOC_DATE_IN_PAST`, appears once the
+document date is more than three days before the day idnits runs, which is from 2026-10-10 on.
 `draft-fane-opena2a-aip-04` (submitted 2026-10-06) is the current datatracker revision. The txt
 there is byte-identical to `draft-fane-opena2a-aip-04.txt`. The xml there predates two changes
 listed under Unreleased, so it differs from `draft-fane-opena2a-aip-04.xml`: it sets

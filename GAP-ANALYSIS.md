@@ -43,6 +43,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
 | 9-factor algorithm (spec §6.1) | 6 of 9 factors implemented (*updated 2026-07*; execution isolation measured; §6.1 exclusion + anti-gaming cap implemented) | `trust_calculator.go` |
+| Unscored state and algorithm version (spec §6.1, since 1.2.0-draft) | NOT IMPLEMENTED (*updated 2026-10*): a composite is published for every agent, including one with no verification events; no `algorithmVersion` or `scoreStatus` | `trust_calculator.go`, `domain/trust_score.go` |
 | Verification factor (25%) | Complete | `trust_calculator.go` |
 | Uptime factor (15%) | Complete | `trust_calculator.go` |
 | Success rate factor (15%) | Complete | `trust_calculator.go` |
