@@ -1551,6 +1551,9 @@ class ReferenceProviderDid(unittest.TestCase):
 HYBRID_ROW = "§3 Hybrid PQC signing (Ed25519 + ML-DSA-65)"
 ATP_ROW = "§6.5 ATP integration"
 LOCAL_VERIFY_ROW = "Local offline verification"
+# The date a note gives for its status. A row can carry other dates, such as the ATP release
+# date in the §6.5 row, so a bare date does not show that the note is dated.
+STATUS_DATE = r"\b(?:[Ss]tatus|[Aa]s of) 20\d\d-\d\d-\d\d\b"
 
 
 def a1_cells(spec: str) -> dict[str, list[str]]:
@@ -1567,7 +1570,14 @@ class AppendixA1(unittest.TestCase):
     def test_notes_on_changed_code_are_dated(self):
         for row in (HYBRID_ROW, ATP_ROW, LOCAL_VERIFY_ROW):
             with self.subTest(row=row):
-                self.assertRegex(self.rows[row][1], r"\b20\d\d-\d\d-\d\d\b")
+                self.assertRegex(self.rows[row][1], STATUS_DATE)
+
+    def test_a_release_date_does_not_date_a_note(self):
+        # With "status <date>, " deleted, the §6.5 row still carries ATP's release date.
+        note, deleted = re.subn(r"status 20\d\d-\d\d-\d\d, ", "", self.rows[ATP_ROW][1])
+        self.assertEqual(deleted, 1)
+        self.assertRegex(note, r"\b20\d\d-\d\d-\d\d\b")
+        self.assertNotRegex(note, STATUS_DATE)
 
     def test_hybrid_row_says_aim_delegates_signing(self):
         # RealATCIssuer and atc_issuer.go are gone; AIM's issuance route asks the Registry to sign.

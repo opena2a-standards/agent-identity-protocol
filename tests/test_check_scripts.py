@@ -428,22 +428,29 @@ class ImplementationStatusTrustScoring(unittest.TestCase):
 # `opena2a-cli identity` subcommands and the options each accepts, as of opena2a-cli 0.10.13.
 # `identity trust` also exists; add it with its options before a document quotes it. The
 # §9.1 status note quotes `identity log` without an option, so none of its options is listed;
-# add each one before a document quotes it.
+# add each one before a document quotes it. `create` takes `--server` and `--api-key` to register
+# the identity with a provider (handleServerCreate). The CLI registers no short option for
+# `identity`, so each one quoted is reported.
 CLI_IDENTITY_OPTIONS = {
-    "create": {"--name"},
+    "create": {"--name", "--server", "--api-key"},
     "verify": {"--data", "--signature", "--public-key"},
     "log": set(),
 }
 
 
 def unknown_cli_usage(text: str) -> list[str]:
-    """Return each subcommand or option of a quoted `opena2a-cli identity` command the CLI lacks."""
+    """Return each subcommand or option of a quoted `opena2a-cli identity` command the CLI lacks.
+
+    The CLI's usage text calls it `opena2a`, so `opena2a identity` is read the same way, and a
+    command continued with a backslash is read as one line.
+    """
+    text = re.sub(r"\\\r?\n", " ", text)
     problems = []
-    for sub, rest in re.findall(r"opena2a-cli identity ([a-z-]+)([^\n`]*)", text):
+    for sub, rest in re.findall(r"\bopena2a(?:-cli)? identity ([a-z-]+)([^\n`]*)", text):
         if sub not in CLI_IDENTITY_OPTIONS:
             problems.append(f"identity {sub}")
             continue
-        options = re.findall(r"(?<!\S)--[a-z][a-z-]*", rest)
+        options = re.findall(r"(?<!\S)--?[a-zA-Z][a-zA-Z-]*", rest)
         problems += [f"identity {sub} {option}" for option in options if option not in CLI_IDENTITY_OPTIONS[sub]]
     return problems
 
@@ -466,6 +473,23 @@ class CliCommandsInDocs(unittest.TestCase):
             unknown_cli_usage(text),
             ["identity create --type", "identity verify --name", "identity check-trust"],
         )
+
+    def test_continued_line_bin_name_and_short_option_are_read(self) -> None:
+        cases = {
+            "npx opena2a-cli identity verify \\\n  --name a --min-score 0.7": [
+                "identity verify --name",
+                "identity verify --min-score",
+            ],
+            "npx opena2a identity check-trust --min-score 0.7": ["identity check-trust"],
+            "npx opena2a-cli identity create --name a -t custom": ["identity create -t"],
+        }
+        for text, expected in cases.items():
+            with self.subTest(text=text):
+                self.assertEqual(unknown_cli_usage(text), expected)
+
+    def test_server_options_of_create_are_accepted(self) -> None:
+        text = "npx opena2a-cli identity create --name a --server cloud --api-key k"
+        self.assertEqual(unknown_cli_usage(text), [])
 
 
 class PairingIdnitsCount(unittest.TestCase):
