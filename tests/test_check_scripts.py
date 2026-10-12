@@ -573,24 +573,34 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
     def status(self, name: str) -> str:
         return self.row(name).strip().strip("|").split("|")[1].strip()
 
-    @staticmethod
-    def finished(items: list[str]) -> list[str]:
+    @classmethod
+    def finished(cls, items: list[str]) -> list[str]:
         """Return each priority list item that is marked finished or asks for trust scoring.
 
-        "done", "complete" and "completed" mark an item as finished. "Complete" is no mark where it
-        is the verb that opens the item's title, as in "Complete trust scoring". Elsewhere it is no
-        mark where a space and a word with a letter follow it, as in "complete the depth limit
-        enforcement" and "a complete runtime protocol", unless that word is and, but, or, as, at,
-        by, for, in, on, since or with, in any letter case. A word is read up to its first
-        punctuation mark. So "complete" is still a mark at the end of an item and before
-        punctuation, one of those words or a word with no letter, as in "complete 2026-10",
-        "complete and served", "complete in-browser key storage" and "complete 3 remaining checks",
-        and a finished item worded "complete per Appendix A.1" or "(complete October 2026)" is not
-        reported.
+        "done", "complete" and "completed" mark an item as finished, in any letter case. Of these,
+        "complete" is no mark where an object follows it: a space and a word with a letter, as in
+        "complete the depth limit enforcement", "a complete runtime protocol" and "complete
+        in-browser key storage", or a space, a number, a space and such a word, as in "complete 3
+        remaining checks". That word is not and, but, or, as, at, by, for, in, on, since, with or
+        a month name, in any letter case. A word runs up to a space or to a punctuation mark that
+        no letter, digit or underscore follows, so "in-browser" and "802.1X" are each one word,
+        and neither "in-browser" nor "inside" is "in". Where "complete" opens the item's title, it
+        is also no mark where "and", a word and an object follow it, as in "Complete and publish
+        the DID resolver". So "complete" is still a mark at the end of an item and before
+        punctuation, one of those words or a word of digits and the punctuation marks between
+        them, as in "complete 2026-10", "complete and served", "(complete October 2026)" and
+        "(complete 3 October 2026)", and where it opens a title such as "Complete 2026-10" or
+        "Complete and served". A finished item worded "complete per Appendix A.1" or "complete
+        from 2026-10" is not reported.
         """
-        word = r"\s+(?!(?:and|but|or|as|at|by|for|in|on|since|with)\b)\w*[^\W\d_]"
-        marks = re.compile(rf"\b(?:done|completed)\b|\bcomplete\b(?!{word})|trust scoring", re.IGNORECASE)
-        return [item for item in items if marks.search(re.sub(r"^(\d+\. \**)Complete (?=\w)", r"\1", item))]
+        # A word ends where neither a letter, digit or underscore nor a punctuation mark and one of
+        # those follows.
+        end = r"(?![^\w\s]?\w)"
+        no_object = rf"(?:and|but|or|as|at|by|for|in|on|since|with|{cls.MONTHS}|\d+(?:[^\w\s]\d+)*){end}"
+        obj = rf"\s+(?:\d+\s+)?(?!{no_object})\w"
+        marks = re.compile(rf"\b(?:done|completed)\b|\bcomplete\b(?!{obj})|trust scoring", re.IGNORECASE)
+        verb = re.compile(rf"^(\d+\. \**)complete(?=\s+and\s+\S+{obj})", re.IGNORECASE)
+        return [item for item in items if marks.search(verb.sub(r"\1", item))]
 
     def test_challenge_response_row_is_partial_as_in_appendix_a1(self) -> None:
         # Appendix A.1 marks the §5 row Partial because the backend registers no route for the
@@ -642,30 +652,49 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — declarative governance policies (complete 2026-10)",
             "6. **YAML policy format** — complete and served by the backend",
             "6. **YAML policy format** — declarative governance policies, complete since 2026-10",
-            # It is a mark in an item still to do as well where one of the words finished() names
-            # or a word with no letter follows it, read up to its first punctuation mark.
-            "4. **WebAuthn/FIDO2** — complete in-browser key storage",
-            "3. **Delegation chains** — complete 3 remaining checks",
+            "6. **YAML policy format** — declarative governance policies (complete October 2026)",
+            "6. **YAML policy format** — declarative governance policies (complete 3 October 2026)",
+            "6. **YAML policy format** — declarative governance policies, complete (October 2026)",
+            "6. **YAML policy format** — complete and served to every caller",
+            # A title that opens with "Complete" and no object of it is a mark as well.
+            "6. **Complete 2026-10** — YAML policy format",
+            "6. **Complete and served** — YAML policy format",
+            "6. **COMPLETE and served** — YAML policy format",
         ]
+        # Each word finished() names, in each letter case, leaves "complete" a mark before it, and
+        # so does each month name.
+        words = (
+            "and", "but", "or", "as", "at", "by", "for", "in", "on", "since", "with", "January", "February",
+            "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
+        )
+        for word in words:
+            for case in (word.lower(), word.title(), word.upper()):
+                marked.append(f"6. **YAML policy format** — complete {case} the backend")
         self.assertEqual(self.finished(marked), marked)
-        # It is no mark where it is the verb that opens the title of an item still to do, or where a
-        # space and a word with a letter follow it that is not one of the words finished() names.
+        # It is no mark where an object follows it in an item still to do: a word with a letter
+        # that finished() does not name, or a number and such a word, or, where it opens the title,
+        # "and", a word and an object.
         unfinished = [
             "1. **Complete the DID resolver** — required for Level 3 and cross-platform identity",
             "1. **Complete 2FA support** — required for Level 3",
             "4. **Complete in-browser key storage** — WebAuthn/FIDO2 for Chrome integration",
             "1. **Complete and publish the DID resolver** — required for Level 3",
+            "1. **complete and publish the DID resolver** — required for Level 3",
+            "1. **COMPLETE and publish the DID resolver** — required for Level 3",
             "1. **Complete 802.1X support** — required for Level 3",
             "3. **Delegation chains** — complete the depth limit enforcement",
             "2. **Capability negotiation** — needs a complete runtime protocol",
             "5. **Capability negotiation** — the runtime negotiation protocol between agents is incomplete",
+            "5. **Capability negotiation** — check the completeness of the runtime protocol",
+            "4. **WebAuthn/FIDO2** — complete in-browser key storage",
+            "3. **Delegation chains** — complete 3 remaining checks",
+            "6. **YAML policy format** — complete inside the backend",
         ]
         self.assertEqual(self.finished(unfinished), [])
         # So a finished item worded that way is not reported either.
         unreported = [
             "6. **YAML policy format** — complete per Appendix A.1",
             "6. **YAML policy format** — complete from 2026-10",
-            "6. **YAML policy format** — declarative governance policies (complete October 2026)",
         ]
         self.assertEqual(self.finished(unreported), [])
 
@@ -852,6 +881,8 @@ class OperatorSpacing(unittest.TestCase):
     def test_replacement_field_of_a_t_string_is_not_reported(self) -> None:
         self.assertEqual(self.unspaced_in('_A = 1\n_T = t"{a=}"\n'), [])
         self.assertEqual(self.unspaced_in('_A = 1\n_T = t"{(a==1)=}"\n'), ["2:11: =="])
+        # The t-string ends at its closing quote, so a keyword argument after it is skipped again.
+        self.assertEqual(self.unspaced_in('_f(t"{_A}", b=1)\n'), [])
 
 
 if __name__ == "__main__":
