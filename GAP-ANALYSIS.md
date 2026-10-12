@@ -33,7 +33,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 | Challenge-response (Ed25519) | Complete | `apps/backend/internal/application/verification_event_service.go` |
 | MCP verification flow | Complete | `mcp_service.go` |
 | A2A verification flow | Complete | `a2a_service.go` |
-| OAuth 2.0 / OIDC | REMOVED from codebase | `auth_service.go` line 54 comment |
+| OAuth 2.0 / OIDC | Partial (*updated 2026-10*): the backend serves an OAuth 2.0 token endpoint, `POST /api/v1/oauth/token` (RFC 6749), that accepts the JWT-bearer grant type of RFC 7523 from a registered agent and returns a bearer access token, and a device authorization grant (RFC 8628) for CLI login. No code that issues an OpenID Connect ID token was found | `handlers/oauth_token_handler.go`, `handlers/device_auth_handler.go` |
 | WebAuthn/FIDO2 | NOT IMPLEMENTED | - |
 | JWT tokens | Complete (custom, not standard OAuth) | `infrastructure/auth/jwt.go` |
 | API keys | Complete | `api_key_service.go` |

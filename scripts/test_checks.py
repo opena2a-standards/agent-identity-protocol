@@ -376,8 +376,17 @@ class ComplementedProtocols(unittest.TestCase):
     def setUp(self):
         readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
-        self.readme = statuses(complemented(readme, "## ", "- ["), README_STATUS)
-        self.spec = statuses(complemented(spec, "This specification defines", "- **"), SPEC_STATUS)
+        self.readme_items = complemented(readme, "## ", "- [")
+        self.spec_items = complemented(spec, "This specification defines", "- **")
+        self.readme = statuses(self.readme_items, README_STATUS)
+        self.spec = statuses(self.spec_items, SPEC_STATUS)
+
+    def lines(self, protocol: str) -> dict[str, str]:
+        """Return the README line and the spec line whose protocol name starts with protocol."""
+        return {
+            "README.md": next(item for item in self.readme_items if item.startswith(f"- [{protocol}")),
+            "AIP-SPEC.md": next(item for item in self.spec_items if item.startswith(f"- **{protocol}")),
+        }
 
     def test_each_readme_line_carries_one_status(self):
         self.assertEqual(len(self.readme), 6, self.readme)
@@ -397,6 +406,18 @@ class ComplementedProtocols(unittest.TestCase):
             with self.subTest(protocol=name):
                 self.assertEqual(self.readme[name], [gap_status(row)])
                 self.assertEqual(self.spec[name], [gap_status(row)])
+
+    def test_openid_connect_lines_name_the_oauth_token_endpoint(self):
+        # The reference implementation serves an OAuth 2.0 token endpoint that accepts the
+        # JWT-bearer grant type of RFC 7523 from a registered agent, so neither list nor the
+        # gap analysis row says its OAuth 2.0 code was removed.
+        gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
+        row = next(line for line in gap.splitlines() if line.startswith("| OAuth 2.0 / OIDC |"))
+        for name, line in {**self.lines("OpenID Connect"), "GAP-ANALYSIS.md": row}.items():
+            with self.subTest(doc=name):
+                self.assertIn("OAuth 2.0 token endpoint", line)
+                self.assertIn("RFC 7523", line)
+                self.assertNotIn("removed", line.lower())
 
     def test_readme_defines_each_status_before_the_list(self):
         readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")

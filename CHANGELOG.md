@@ -51,15 +51,19 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 - The README Interoperability list and the list of protocols AIP is designed to complement in the
   `AIP-SPEC.md` abstract end each of their six lines with a status as of 2026-10-11: specified,
   implemented, or tested in conformance. Both lists stated all six without one. Google A2A identity
-  in the agent card, OpenID Connect, WebAuthn/FIDO2 and W3C Verifiable Credentials are specified,
-  with no code for them found in the reference implementation. Anthropic MCP and ATP are
-  implemented in part: the reference implementation checks capabilities and has a one-way push
-  through its registry bridge, and it does not serve the §5.1 exchange or wire AIP trust scores
-  into the ATP transparency log. None of the six is tested in conformance. The statuses are
-  informative, and `draft-fane-opena2a-aip-04` does not carry them; the README's Internet-Draft
-  paragraph says so. `scripts/test_checks.py` checks that each line of both lists carries one
-  status, that the two lists agree, and that the status matches the protocol's `GAP-ANALYSIS.md`
-  row.
+  in the agent card, WebAuthn/FIDO2 and W3C Verifiable Credentials are specified, with no code for
+  them found in the reference implementation. Anthropic MCP, OpenID Connect and ATP are
+  implemented in part: the reference implementation checks capabilities, serves an OAuth 2.0
+  token endpoint that accepts the JWT-bearer grant type of RFC 7523 from a registered agent, and
+  has a one-way push through its registry bridge, and it does not serve the §5.1 exchange, return
+  an OpenID Connect ID token from that endpoint, or wire AIP trust scores into the ATP
+  transparency log. None of the six is tested in conformance. The statuses are informative, and
+  `draft-fane-opena2a-aip-04` does not carry them; the README's Internet-Draft paragraph says so.
+  The `GAP-ANALYSIS.md` row for OAuth 2.0 / OIDC, which said that code was removed, names the
+  token endpoint and the device authorization grant the backend serves. `scripts/test_checks.py`
+  checks that each line of both lists carries one status, that the two lists agree, that the
+  status matches the protocol's `GAP-ANALYSIS.md` row, and that the OpenID Connect lines and that
+  row name the token endpoint.
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names
