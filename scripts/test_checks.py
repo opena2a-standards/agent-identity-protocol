@@ -287,6 +287,15 @@ class LocalIdentityStatus(unittest.TestCase):
                 missing = [term for term in terms if term not in notes[0]]
                 self.assertEqual(missing, [], f"Section {heading} status note")
 
+    def test_readme_says_the_draft_lacks_both_status_notes(self):
+        # Sections 4.3 and 11.1 of draft -04, the counterparts of Sections 3.3 and 9.1, carry no
+        # status note, so the README's Internet-Draft paragraph names both notes among the
+        # informative additions made since that revision.
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        paragraph = next(p for p in re.split(r"\n\s*\n", readme) if p.startswith("**Internet-Draft.**"))
+        for claim in ("§3.3 and §9.1", "Sections 4.3 and 11.1 of the draft"):
+            self.assertTrue(claim in paragraph, f"Internet-Draft paragraph does not say {claim!r}")
+
 
 PRIOR_ART_DOCS = ("README.md", "AIP-SPEC.md", "GAP-ANALYSIS.md")
 

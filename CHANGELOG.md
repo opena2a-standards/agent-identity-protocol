@@ -33,6 +33,8 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   rest. `identity create` writes no `identity_created` audit event, and an event written by
   `identity log` has `timestamp`, `action`, `target`, `result` and `plugin` instead of the `type`
   and `agentId` keys in Section 9.1. The notes describe the gap; the requirements are unchanged.
+  `draft-fane-opena2a-aip-04`, as submitted, carries neither note in its Sections 4.3 and 11.1,
+  and the README's Internet-Draft paragraph says so.
 - `README.md` and `AIP-SPEC.md` Appendix A say the reference implementation targets Conformance
   Level 2, instead of saying it implements Level 2. Level 2 requires challenge-response
   verification (Section 5), which Appendix A.1 marks Partial because the reference backend does
