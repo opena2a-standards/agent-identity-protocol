@@ -34,16 +34,19 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 - `AIP-SPEC.md` Appendix A.1 describes the reference implementation as it is, with each of three
   notes dated. The hybrid signing row says the Ed25519-only `RealATCIssuer` was removed, where it
   called it an issuer with no active production callers, and that the reference implementation
-  signs no credential: its `POST /api/v1/agents/{id}/atc` route asks the
-  Registry to sign. The §6.5 ATP row is Partial, not "Not yet integrated", matching
-  `GAP-ANALYSIS.md`, and cites ATP-SPEC 1.1.0-draft instead of calling v1.0.0-rc1 recent. The
-  local verification row names the TypeScript and Java SDK verifiers and leaves Python as the one
-  SDK without one. The lists under the README's Internet-Draft paragraph name the three rows in
-  one item. That item would be the thirteenth informative change in one list, and the count that
-  opens a lead-in is a number word no higher than twelve, so the four changes to Appendix A.1 rows
-  now have a list of their own, after the nine other informative changes.
-  `scripts/test_checks.py` checks each note, and fails if an item on an Appendix A.1 row sits in
-  another list.
+  signs no ATC: its `POST /api/v1/agents/{id}/atc` route asks the Registry to sign. The §6.5 ATP
+  row is Partial, not "Not yet integrated", matching `GAP-ANALYSIS.md`, and cites ATP-SPEC
+  1.1.0-draft instead of calling v1.0.0-rc1 recent. It calls the registry bridge's contributor
+  token a fixed per-organization pseudonymous token, the SHA-256 of the organization ID and a
+  server secret, with which the Registry can link every batch from one organization. The local
+  verification row names the TypeScript and Java SDK verifiers and leaves Python as the one SDK
+  without one. The lists under the README's Internet-Draft paragraph name the three rows in one
+  item. That item would be the thirteenth informative change in one list, and the count that opens
+  a lead-in is a number word no higher than twelve, so the four changes to Appendix A.1 rows now
+  have a list of their own, after the nine other informative changes. `scripts/test_checks.py`
+  checks each note, fails if a note gives no status date (`status <date>` or `as of <date>`), so
+  that ATP's release date in the §6.5 row does not count, and fails if an item on an Appendix A.1
+  row sits in another list.
 - `AIP-SPEC.md` Appendix A.1 marks "§6 Trust Scoring (9-factor)" Partial, not Shipped, and §6.1
   says the reference calculator implements algorithm version 1, not "the 9-factor algorithm
   above". Since 1.2.0-draft that algorithm includes the unscored state, which the reference
@@ -103,9 +106,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   not have: `identity check-trust`, its `--min-score` option, `identity create --type` and
   `identity verify --name`. The section now describes the trust-threshold step as a flow, shows
   `identity create --name deploy-agent` as the one step the CLI runs today, and states that no CLI
-  command fails a job when the trust score is below a threshold. A test in
+  command fails a job when the trust score is below a threshold. It says that the step as shown
+  does not register the identity with a provider. A test in
   `tests/test_check_scripts.py` fails when `AIP-SPEC.md` or `README.md` quotes an
-  `opena2a-cli identity` subcommand or option outside the ones the CLI accepts. The README's
+  `opena2a-cli identity` subcommand or option outside the ones the CLI accepts, including a
+  command quoted as `opena2a identity`, a short option and an option on a line continued with a
+  backslash. The README's
   Internet-Draft paragraph lists the change as an informative one, in a list of its own for a
   change to an example that quoted commands the CLI does not have; `draft-fane-opena2a-aip-04`
   has no section of integration patterns.
@@ -343,6 +349,19 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   Python files in `scripts/` and `tests/` put whitespace around assignment and comparison
   operators, the pycodestyle E225 rule, using the standard library tokenizer, so the check needs
   no package.
+- That operator check in `tests/test_check_scripts.py` now agrees with `flake8 --select=E225` in
+  three cases where it did not. An operator that ends a line inside brackets, as the `==` of
+  `_Z = (1 ==` does, is no longer reported: the line break is not a neighbour of the operator.
+  The `=` that gives a lambda parameter its default, as in `lambda a=1: a`, is no longer
+  reported. An `=` directly inside square brackets, which gives a type parameter its default as
+  in `def _n[T=int]():`, is now reported. The check skipped every `=` inside brackets; it now
+  skips one directly inside parentheses, among the parameters of a lambda or in an f-string
+  replacement field.
+- The priority list check in `tests/test_check_scripts.py` also reports an item of the
+  `GAP-ANALYSIS.md` priority list that is marked `complete` or `completed`, the word the tables
+  of that file use for a finished row. It reported only an item marked done or one asking for
+  trust scoring, so an item ending in `(complete)` passed. "Complete" is not read as a mark where
+  it is the verb that opens an item's title, as it was in "Complete trust scoring".
 
 ## [1.2.0-draft] - 2026-10-06
 
