@@ -20,6 +20,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   Level 2, instead of saying it implements Level 2. Level 2 requires challenge-response
   verification (Section 5), which Appendix A.1 marks Partial because the reference backend does
   not serve the Section 5.1 exchange.
+- `AIP-SPEC.md`, `README.md` and `GAP-ANALYSIS.md` attribute draft-aip-agent-identity-protocol-00
+  as that draft does: James Cao (Montcao), Carlos Eduardo Arango Gutierrez (NVIDIA). They had
+  placed both authors at NVIDIA. The `GAP-ANALYSIS.md` comparison heading calls it the Cao/Arango
+  draft, and its prior-art table dates draft-singla-agent-identity-protocol-00 2026-04-16, the
+  datatracker submission date the other two files use, instead of 2026-04-17, the date printed on
+  the document.
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names

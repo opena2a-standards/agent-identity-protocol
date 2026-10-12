@@ -113,13 +113,13 @@ repository, use the fully qualified name **OpenA2A AIP**.
 
 | Draft | Author(s) | datatracker (initial) | Scope |
 |---|---|---|---|
-| draft-aip-agent-identity-protocol | Cao, Arango (NVIDIA) | -00, 2026-03-16 | Agent identity registry + enforcement proxy |
-| draft-singla-agent-identity-protocol | Singla | -00, 2026-04-17 | Agent identity + delegation |
+| draft-aip-agent-identity-protocol | James Cao (Montcao), Carlos Eduardo Arango Gutierrez (NVIDIA) | -00, 2026-03-16 | Agent identity registry + enforcement proxy |
+| draft-singla-agent-identity-protocol | Singla | -00, 2026-04-16 | Agent identity + delegation |
 | draft-aap-oauth-profile, "Agent Authorization Profile" | Cruz (independent) | -01, 2026-02-07 | OAuth 2.0 profile for agent-to-API authorization |
 | OpenA2A AIP (this spec) | OpenA2A | not yet filed | Identity, capabilities, verification, trust scoring, governance, lifecycle, audit |
 | OpenA2A AAP (companion) | OpenA2A | not yet filed | Authorization token model + broker/resolution layer |
 
-### OpenA2A AIP vs draft-aip-agent-identity-protocol (NVIDIA)
+### OpenA2A AIP vs draft-aip-agent-identity-protocol (Cao/Arango)
 
 The two specifications share a common spine — a Layer 1 agent-identity registry
 and a Layer 2 policy/enforcement proxy — and differ on what is built above it.

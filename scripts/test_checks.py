@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Regression tests for scripts/check_draft_sync.py, the README link lists and Quick Start.
+"""Regression tests for scripts/check_draft_sync.py, the README link lists and Quick Start,
+and the prior-art attribution in README.md, AIP-SPEC.md and GAP-ANALYSIS.md.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Runs on its own:
@@ -283,6 +284,34 @@ class LocalIdentityStatus(unittest.TestCase):
                 self.assertEqual(len(notes), 1, f"Section {heading} has no status note")
                 missing = [term for term in terms if term not in notes[0]]
                 self.assertEqual(missing, [], f"Section {heading} status note")
+
+
+PRIOR_ART_DOCS = ("README.md", "AIP-SPEC.md", "GAP-ANALYSIS.md")
+
+
+class PriorArtAttribution(unittest.TestCase):
+    # draft-aip-agent-identity-protocol-00 lists J. Cao of Montcao and C. Arango Gutierrez of
+    # NVIDIA; the datatracker records draft-singla-agent-identity-protocol-00 as submitted on
+    # 2026-04-16, though the document itself is dated 2026-04-17.
+    def test_each_author_has_their_own_affiliation(self):
+        for name in PRIOR_ART_DOCS:
+            text = (check_draft_sync.ROOT / name).read_text(encoding="utf-8")
+            with self.subTest(doc=name):
+                for author in ("James Cao (Montcao)", "Carlos Eduardo Arango Gutierrez (NVIDIA)"):
+                    self.assertTrue(author in text, f"{name} does not name {author!r}")
+                stray = [line for line in text.splitlines() if line.count("NVIDIA") > line.count("Arango Gutierrez (NVIDIA)")]
+                self.assertEqual(stray, [], f"{name} names NVIDIA other than as Arango Gutierrez's affiliation")
+
+    def test_singla_00_has_one_date(self):
+        gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
+        row = next(line for line in gap.splitlines() if line.startswith("| draft-singla-agent-identity-protocol |"))
+        self.assertIn("| -00, 2026-04-16 |", row)
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        claim = "draft-singla-agent-identity-protocol (Singla, first published 2026-04-16,"
+        self.assertTrue(claim in spec, f"AIP-SPEC.md does not say {claim!r}")
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        row = next(line for line in readme.splitlines() if "[draft-singla-agent-identity-protocol-00]" in line)
+        self.assertIn("| April 16, 2026", row)
 
 
 if __name__ == "__main__":
