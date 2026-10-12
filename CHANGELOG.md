@@ -107,8 +107,7 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   `identity verify --name`. The section now describes the trust-threshold step as a flow, shows
   `identity create --name deploy-agent` as the one step the CLI runs today, and states that no CLI
   command fails a job when the trust score is below a threshold. It says that the step as shown
-  does not register the identity with a provider, and that `identity create` with `--server <url>`
-  and `--api-key <key>` does so without `opena2a login`. A test in
+  does not register the identity with a provider. A test in
   `tests/test_check_scripts.py` fails when `AIP-SPEC.md` or `README.md` quotes an
   `opena2a-cli identity` subcommand or option outside the ones the CLI accepts, including a
   command quoted as `opena2a identity`, a short option and an option on a line continued with a

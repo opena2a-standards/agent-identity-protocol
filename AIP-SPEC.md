@@ -937,7 +937,7 @@ With `opena2a-cli` 0.10.13, the identity step is the one the CLI runs:
   run: npx opena2a-cli identity create --name deploy-agent
 ```
 
-As shown, without `opena2a login`, the identity is stored on the runner and is not registered with an identity provider. A pipeline that holds an API key for a provider registers the identity without a login: `opena2a-cli identity create --name deploy-agent --server <url> --api-key <key>` registers it with the provider at `<url>` and also stores it on the runner. The CLI has no command for the trust check: it has no `check-trust` subcommand and no `--min-score` option, so no CLI step fails a job when the score is below a threshold. `identity verify` checks a signature over supplied data (`--data`, `--signature`, `--public-key`) and does not look up an agent by name, and `identity create` has no `--type` option.
+As shown, without `opena2a login`, the identity is stored on the runner and is not registered with an identity provider. The CLI has no command for the trust check: it has no `check-trust` subcommand and no `--min-score` option, so no CLI step fails a job when the score is below a threshold. `identity verify` checks a signature over supplied data (`--data`, `--signature`, `--public-key`) and does not look up an agent by name, and `identity create` has no `--type` option.
 
 ---
 

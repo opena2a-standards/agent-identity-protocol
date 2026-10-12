@@ -428,9 +428,9 @@ class ImplementationStatusTrustScoring(unittest.TestCase):
 # `opena2a-cli identity` subcommands and the options each accepts, as of opena2a-cli 0.10.13.
 # `identity trust` also exists; add it with its options before a document quotes it. The
 # §9.1 status note quotes `identity log` without an option, so none of its options is listed;
-# add each one before a document quotes it. `create` takes `--server` and `--api-key` to register
-# the identity with a provider (handleServerCreate). The CLI registers no short option for
-# `identity`, so each one quoted is reported.
+# add each one before a document quotes it. `create` accepts `--server` and `--api-key`
+# (handleServerCreate). The CLI registers no short option for `identity`, so each one quoted
+# is reported.
 CLI_IDENTITY_OPTIONS = {
     "create": {"--name", "--server", "--api-key"},
     "verify": {"--data", "--signature", "--public-key"},
