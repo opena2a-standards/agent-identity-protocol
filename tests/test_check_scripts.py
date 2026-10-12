@@ -556,6 +556,8 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
 
     GAP = ROOT / "GAP-ANALYSIS.md"
     MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
+    # The common abbreviations of the month names, and the quarters of a year.
+    SHORT_DATES = "Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|Q[1-4]"
 
     @staticmethod
     def slug(heading: str) -> str:
@@ -581,23 +583,25 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         "complete" is no mark where an object follows it: a space and a word with a letter, as in
         "complete the depth limit enforcement", "a complete runtime protocol" and "complete
         in-browser key storage", or a space, a number, a space and such a word, as in "complete 3
-        remaining checks". That word is not and, but, or, as, at, by, for, in, on, since, with or
-        a month name, in any letter case. A word runs up to a space or to a punctuation mark that
-        no letter, digit or underscore follows, so "in-browser" and "802.1X" are each one word,
-        and neither "in-browser" nor "inside" is "in". Where "complete" opens the item's title, it
-        is also no mark where "and", a word and an object follow it, as in "Complete and publish
-        the DID resolver". So "complete" is still a mark at the end of an item and before
+        remaining checks". That word is not and, but, or, as, at, by, for, in, on, since, with, a
+        month name, the abbreviation of one (Jan to Dec, and Sept) or a quarter (Q1 to Q4), in any
+        letter case. A word runs up to a space or to a punctuation mark that no letter, digit or
+        underscore follows, so "in-browser", "802.1X" and "Octet" are each one word, and neither
+        "in-browser" nor "inside" is "in", nor is "Octet" "Oct". Where "complete" opens the item's
+        title, it is also no mark where "and", a word and an object follow it, as in "Complete and
+        publish the DID resolver". So "complete" is still a mark at the end of an item and before
         punctuation, one of those words or a word of digits and the punctuation marks between
-        them, as in "complete 2026-10", "complete and served", "(complete October 2026)" and
-        "(complete 3 October 2026)", and where it opens a title such as "Complete 2026-10" or
-        "Complete and served". A finished item worded "complete per Appendix A.1" or "complete
-        from 2026-10" is not reported.
+        them, as in "complete 2026-10", "complete and served", "(complete October 2026)",
+        "(complete Oct 2026)", "(complete Q4 2026)" and "(complete 3 October 2026)", and where it
+        opens a title such as "Complete 2026-10" or "Complete and served". A finished item worded
+        "complete per Appendix A.1" or "complete from 2026-10" is not reported.
         """
         # A word ends where neither a letter, digit or underscore nor a punctuation mark and one of
         # those follows.
         end = r"(?![^\w\s]?\w)"
         word = r"\w+(?:[^\w\s]\w+)*"
-        no_object = rf"(?:and|but|or|as|at|by|for|in|on|since|with|{cls.MONTHS}|\d+(?:[^\w\s]\d+)*){end}"
+        dates = rf"{cls.MONTHS}|{cls.SHORT_DATES}"
+        no_object = rf"(?:and|but|or|as|at|by|for|in|on|since|with|{dates}|\d+(?:[^\w\s]\d+)*){end}"
         obj = rf"\s+(?:\d+\s+)?(?!{no_object})\w"
         marks = re.compile(rf"\b(?:done|completed)\b|\bcomplete\b(?!{obj})|trust scoring", re.IGNORECASE)
         verb = re.compile(rf"^(\d+\. \**)complete(?=\s+and\s+{word}{obj})", re.IGNORECASE)
@@ -656,6 +660,11 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — declarative governance policies (complete October 2026)",
             "6. **YAML policy format** — declarative governance policies (complete 3 October 2026)",
             "6. **YAML policy format** — declarative governance policies, complete (October 2026)",
+            "6. **YAML policy format** — declarative governance policies (complete Oct 2026)",
+            "6. **YAML policy format** — declarative governance policies (complete Oct. 2026)",
+            "6. **YAML policy format** — declarative governance policies (complete Sept 2026)",
+            "6. **YAML policy format** — declarative governance policies (complete 3 Oct 2026)",
+            "6. **YAML policy format** — declarative governance policies (complete Q4 2026)",
             "6. **YAML policy format** — complete and served to every caller",
             # A title that opens with "Complete" and no object of it is a mark as well.
             "6. **Complete 2026-10** — YAML policy format",
@@ -668,10 +677,12 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "1. **Complete and publish, then x** — required for Level 3",
         ]
         # Each word finished() names, in each letter case, leaves "complete" a mark before it, and
-        # so does each month name.
+        # so does each month name, each abbreviation of one and each quarter.
         words = (
             "and", "but", "or", "as", "at", "by", "for", "in", "on", "since", "with", "January", "February",
             "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
+            "Jan", "Feb", "Mar", "Apr", "Jun", "Jul", "Aug", "Sep", "Sept", "Oct", "Nov", "Dec",
+            "Q1", "Q2", "Q3", "Q4",
         )
         for word in words:
             for case in (word.lower(), word.title(), word.upper()):
@@ -695,6 +706,10 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "4. **WebAuthn/FIDO2** — complete in-browser key storage",
             "3. **Delegation chains** — complete 3 remaining checks",
             "6. **YAML policy format** — complete inside the backend",
+            # A word that starts with an abbreviation or a quarter is not that abbreviation.
+            "4. **Content types** — complete Octet stream parsing",
+            "1. **Complete Decimal encoding** — required for Level 3",
+            "3. **Delegation chains** — complete Q42 conformance checks",
         ]
         self.assertEqual(self.finished(unfinished), [])
         # So a finished item worded that way is not reported either.
