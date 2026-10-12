@@ -589,8 +589,9 @@ def spec_when_draft_was_made(draft: str) -> str:
     """Return AIP-SPEC.md as of the last commit that changed the draft's txt.
 
     Skips the calling test (fails it in CI, see history_missing) without git, outside a checkout,
-    in a shallow clone, where that commit can be missing, or when no commit in the history changed
-    that file.
+    in a shallow clone, where that commit can be missing, when no commit in the history changed
+    that file, or when git fails inside a full checkout (as over the repository's ownership or
+    with GIT_DIR set elsewhere).
     """
     if shutil.which("git") is None:
         raise history_missing("git is not installed", INSTALL_GIT)
@@ -602,8 +603,11 @@ def spec_when_draft_was_made(draft: str) -> str:
         if result.returncode != 0:
             # git can fail with history present (over the repository's ownership, or with GIT_DIR
             # set elsewhere), so the reason quotes what git said and the remedy starts from it.
+            # git can write other lines first (GIT_TRACE writes trace lines), so the quote is the
+            # first line that starts with "fatal:" or "error:", or the first line where none does.
             said = result.stderr.strip().splitlines()
-            quoted = f", saying {said[0]!r}" if said else ""
+            error = next((line for line in said if line.startswith(("fatal:", "error:"))), said[0] if said else "")
+            quoted = f", saying {error!r}" if error else ""
             raise history_missing(
                 f"git {args[0]} failed here{quoted}, so the text the draft was made from is not available",
                 f"resolve what git reports, or {FULL_CLONE}",
@@ -874,6 +878,25 @@ class MissingDraftHistory(unittest.TestCase):
             with self.subTest(ci=ci, stderr=""):
                 self.assertIn("git rev-parse failed here, so", str(self.outcome(ci, "git fails", stderr="")))
 
+    def test_a_git_failure_quotes_git_s_error_after_lines_written_before_it(self):
+        # With GIT_TRACE set, git writes a trace line before its error, so the reason quotes the
+        # first line that starts with "fatal:" or "error:", and the first line where none does.
+        trace = "05:22:41.554242 git.c:502               trace: built-in: git rev-parse --is-shallow-repository\n"
+        cases = (
+            (trace + "fatal: not a git repository: '/nonexistent'\n", "fatal: not a git repository: '/nonexistent'"),
+            (trace + "error: object file is empty\nfatal: bad object HEAD\n", "error: object file is empty"),
+            ("warning: unable to access 'attributes'\nhint: check it\n", "warning: unable to access 'attributes'"),
+        )
+        for stderr, quoted in cases:
+            for ci, kind in ((None, unittest.SkipTest), ("true", AssertionError)):
+                with self.subTest(ci=ci, quoted=quoted):
+                    raised = self.outcome(ci, "git fails", stderr=stderr)
+                    self.assertIsInstance(raised, kind)
+                    self.assertIn(f"git rev-parse failed here, saying {quoted!r}, so", str(raised))
+                    self.assertNotIn("hint:", str(raised))
+                    self.assertNotIn("trace:", str(raised))
+                    self.assertNotIn("fatal: bad object", str(raised))
+
     def test_docs_say_how_ci_is_read_and_what_a_git_failure_reports(self):
         # history_missing strips CI before reading it, so " false " skips; the module docstring and
         # the CHANGELOG entry say so, as the history_missing docstring does. The entry also says a
@@ -881,7 +904,7 @@ class MissingDraftHistory(unittest.TestCase):
         entry = changelog_entry(HISTORY_ENTRY)
         for text in (" ".join(sys.modules[__name__].__doc__.split()), entry):
             self.assertIn("in any letter case or with surrounding spaces", text)
-        self.assertIn("the first line of git's message", entry)
+        self.assertIn("the first line of git's message that starts with `fatal:` or `error:`", entry)
 
 
 STATUSES = ("Specified", "Implemented", "Tested in conformance")

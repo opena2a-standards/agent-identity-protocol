@@ -220,8 +220,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   running them. A CI job that runs the file needs git and a full clone (`actions/checkout` with
   `fetch-depth: 0`). Elsewhere they still skip. The skip or failure reason names the remedy:
   install git where git is missing, and otherwise use a full clone. Where git runs and fails, the
-  reason also quotes the first line of git's message and the remedy starts with resolving it, since
-  git can fail where the history is present, as over the repository's ownership.
+  reason also quotes the first line of git's message that starts with `fatal:` or `error:`, or its
+  first line where none does, so a trace line that `GIT_TRACE` writes first is not quoted in place
+  of the error, and the remedy starts with resolving it, since git can fail where the history is
+  present, as over the repository's ownership.
 - `scripts/test_checks.py` does not report "one-way", "two-way", "one-time", "one-hour",
   "one-to-one" or "two-factor", in any letter case, or a number word that follows a hyphen, as in
   "non-zero", as a count outside a lead-in, so a sentence such as "after a one-way comparison" in
