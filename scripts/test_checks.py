@@ -599,7 +599,7 @@ def spec_when_draft_was_made(draft: str) -> str:
 
     def git(*args: str) -> str:
         # LC_ALL=C keeps git from translating its messages, so an error starts with "fatal:" or
-        # "error:" under any locale ("Schwerwiegend:" under de_DE.UTF-8 otherwise).
+        # "error:" under any locale ("Schwerwiegend:" or "Fehler:" under de_DE.UTF-8 otherwise).
         result = subprocess.run(
             ["git", *args], cwd=check_draft_sync.ROOT, capture_output=True, text=True, encoding="utf-8",
             env={**os.environ, "LC_ALL": "C"},
@@ -924,30 +924,38 @@ class MissingDraftHistory(unittest.TestCase):
                             self.assertNotIn(line, str(raised))
 
     def test_git_runs_with_lc_all_c_so_its_error_is_quoted_under_another_locale(self):
-        # git translates the "fatal:" and "error:" that start its messages ("Schwerwiegend:" under
-        # de_DE.UTF-8), so under such a locale no line would start with either and the trace line
-        # would be quoted. Each git command runs with LC_ALL=C, under which git does not
-        # translate, and with the rest of the environment as it is.
-        english = self.TRACE + "fatal: not a git repository: '/nonexistent'\n"
-        german = self.TRACE + "Schwerwiegend: Kein Git-Repository: '/nonexistent'\n"
-        for ci, kind in ((None, unittest.SkipTest), ("true", AssertionError)):
-            with self.subTest(ci=ci):
-                raised = self.outcome(ci, "git fails", stderr=english, translated=german)
-                self.assertIsInstance(raised, kind)
-                self.assertIn("""saying "fatal: not a git repository: '/nonexistent'", so""", str(raised))
-                self.assertNotIn("trace:", str(raised))
-        self.outcome("true", "draft unchanged", translated=german)
+        # git translates the "fatal:" and "error:" that start its messages ("Schwerwiegend:" and
+        # "Fehler:" under de_DE.UTF-8), so under such a locale no line would start with either and
+        # the trace line would be quoted. Each git command runs with LC_ALL=C, under which git does
+        # not translate, and with the rest of the environment as it is.
+        fatal = ("fatal: not a git repository: '/nonexistent'", "Schwerwiegend: Kein Git-Repository: '/nonexistent'")
+        error = (
+            "error: object file .git/objects/ab/cdef is empty", "Fehler: Objektdatei .git/objects/ab/cdef ist leer."
+        )
+        for english, german in (fatal, error):
+            for ci, kind in ((None, unittest.SkipTest), ("true", AssertionError)):
+                with self.subTest(ci=ci, english=english):
+                    raised = self.outcome(
+                        ci, "git fails", stderr=f"{self.TRACE}{english}\n", translated=f"{self.TRACE}{german}\n"
+                    )
+                    self.assertIsInstance(raised, kind)
+                    self.assertIn(f"saying {english!r}, so", str(raised))
+                    self.assertNotIn("trace:", str(raised))
+        self.outcome("true", "draft unchanged", translated=fatal[1])
         self.assertEqual(self.ran, [{**os.environ, "CI": "true", "LC_ALL": "C"}] * 2)
 
     def test_docs_say_how_ci_is_read_and_what_a_git_failure_reports(self):
         # history_missing strips CI before reading it, so " false " skips; the module docstring and
         # the CHANGELOG entry say so, as the history_missing docstring does. The entry also says a
-        # git failure quotes git, and that the two cases run git with LC_ALL=C.
+        # git failure quotes git, that the two cases run git with LC_ALL=C, and what a German
+        # locale would otherwise write in place of each of "fatal:" and "error:".
         entry = changelog_entry(HISTORY_ENTRY)
         for text in (" ".join(sys.modules[__name__].__doc__.split()), entry):
             self.assertIn("in any letter case or with surrounding spaces", text)
         self.assertIn("the first line of git's message that starts with `fatal:` or `error:`", entry)
         self.assertIn("run git with `LC_ALL=C`", entry)
+        self.assertIn('a `fatal:` line would otherwise start with "Schwerwiegend:"', entry)
+        self.assertIn('an `error:` line with "Fehler:"', entry)
 
 
 STATUSES = ("Specified", "Implemented", "Tested in conformance")

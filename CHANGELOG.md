@@ -225,8 +225,8 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   of the error, and the remedy starts with resolving it, since git can fail where the history is
   present, as over the repository's ownership. The two cases run git with `LC_ALL=C`, so its
   message is not translated and its error starts with `fatal:` or `error:` under any locale; under
-  a German locale it would otherwise start with "Schwerwiegend:", and a trace line written before
-  it would be quoted in its place.
+  a German locale a `fatal:` line would otherwise start with "Schwerwiegend:" and an `error:` line
+  with "Fehler:", and a trace line written before either would be quoted in its place.
 - `scripts/test_checks.py` does not report "one-way", "two-way", "one-time", "one-hour",
   "one-to-one" or "two-factor", in any letter case, or a number word that follows a hyphen, as in
   "non-zero", as a count outside a lead-in, so a sentence such as "after a one-way comparison" in
