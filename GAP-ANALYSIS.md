@@ -114,15 +114,16 @@ The rows below restate what the Google A2A and Anthropic MCP lines of the README
 ## Priority Implementation Order
 
 1. **DID resolution** — required for Level 3 and cross-platform identity
-2. **Complete trust scoring** — implement compliance, drift, feedback factors (done, *updated 2026-10*)
-3. **Verifiable Credentials** — trust scores as W3C VCs for portability
-4. **OpenID Connect ID token** — the backend serves an OAuth 2.0 token endpoint that returns a bearer access token (Verification table above); what is missing is an OpenID Connect ID token
-5. **WebAuthn/FIDO2** — browser-based key storage for Chrome integration
-6. **Capability negotiation** — runtime negotiation protocol between agents
-7. **YAML policy format** — declarative governance policies
+2. **Verifiable Credentials** — trust scores as W3C VCs for portability
+3. **OpenID Connect ID token** — the backend serves an OAuth 2.0 token endpoint that returns a bearer access token (Verification table above); what is missing is an OpenID Connect ID token
+4. **WebAuthn/FIDO2** — browser-based key storage for Chrome integration
+5. **Capability negotiation** — runtime negotiation protocol between agents
+6. **YAML policy format** — declarative governance policies
 
-The `/.well-known/aip` discovery endpoint, first in this list until 2026-10, is served (Discovery
-table above).
+A completed item leaves this list, and a sentence here says where its status is recorded. Two
+items left it in 2026-10. The `/.well-known/aip` discovery endpoint, first in this list until
+then, is served (Discovery table above). The compliance, drift and feedback trust scoring
+factors, third in this list until then, are implemented (Trust Scoring table above).
 
 ---
 

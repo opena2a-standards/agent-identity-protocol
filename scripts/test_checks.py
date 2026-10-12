@@ -648,7 +648,7 @@ def only_in(sections: list[tuple[bool, str]], others: list[tuple[bool, str]], to
     return [title for top, title in sections if (top or not top_level) and not has_counterpart(title, against)]
 
 
-FULL_CLONE ="use a full clone (in CI, actions/checkout with fetch-depth: 0)"
+FULL_CLONE = "use a full clone (in CI, actions/checkout with fetch-depth: 0)"
 INSTALL_GIT = "install git"
 
 

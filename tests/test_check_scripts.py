@@ -17,6 +17,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import tokenize
 import unittest
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta
@@ -529,6 +530,19 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         self.assertEqual([item for item in items if "well-known" in item], [])
         self.assertEqual([item.split(".")[0] for item in items], [str(n) for n in range(1, len(items) + 1)])
 
+    def test_priority_list_holds_no_completed_item_and_says_where_each_one_went(self) -> None:
+        # A completed item leaves the list, as the discovery endpoint did, instead of staying in
+        # it marked done, and the sentences under the list point to the table that records it.
+        priorities = self.gap().split("## Priority Implementation Order", 1)[1].split("\n---", 1)[0]
+        items = [line for line in priorities.splitlines() if re.match(r"\d+\. ", line)]
+        self.assertEqual([item for item in items if re.search(r"\bdone\b|trust scoring", item, re.IGNORECASE)], [])
+        note = " ".join(line for line in priorities.splitlines() if line and not re.match(r"\d+\. ", line))
+        self.assertIn("A completed item leaves this list", note)
+        self.assertIn("is served (Discovery table above)", note)
+        self.assertIn("trust scoring factors, third in this list until then, are implemented (Trust Scoring table above)", note)
+        for factor in ("Compliance", "Drift", "Feedback"):
+            self.assertTrue(self.status(f"{factor} factor").startswith("Complete"), factor)
+
     def test_links_to_appendix_a1(self) -> None:
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
         headings = re.findall(r"(?m)^### (A\.1 .+)$", spec)
@@ -624,6 +638,44 @@ class GitignoreSecrets(unittest.TestCase):
         for path in ("secrets.json", "secrets.local.json", "app.secrets.json", "credentials.json"):
             result = subprocess.run(["git", "check-ignore", "-q", path], cwd=ROOT)
             self.assertEqual(result.returncode, 0, f"{path} is not ignored")
+
+
+class OperatorSpacing(unittest.TestCase):
+    """The Python files in scripts/ and tests/ put whitespace on both sides of an operator.
+
+    This is the rule of pycodestyle E225 for assignment, augmented assignment and comparison
+    operators, checked with the standard library tokenizer so it runs without pycodestyle. An "="
+    inside brackets or an f-string replacement field passes a keyword argument, gives a parameter
+    default or asks for the "{name=}" form, takes no whitespace and is left out.
+    """
+
+    OPERATORS = {
+        "=", "+=", "-=", "*=", "/=", "//=", "%=", "**=", "|=", "&=", "^=", ">>=", "<<=", ":=",
+        "==", "!=", "<", ">", "<=", ">=", "->",
+    }
+
+    def unspaced(self, path: Path) -> list[str]:
+        found = []
+        with tokenize.open(path) as source:
+            tokens = [t for t in tokenize.generate_tokens(source.readline) if t.type != tokenize.COMMENT]
+        depth = 0
+        for before, token, after in zip(tokens, tokens[1:], tokens[2:]):
+            if token.type == tokenize.OP and token.string in "([{":
+                depth += 1
+            elif token.type == tokenize.OP and token.string in ")]}":
+                depth -= 1
+            if token.type != tokenize.OP or token.string not in self.OPERATORS:
+                continue
+            if token.string == "=" and depth > 0:
+                continue
+            if before.end == token.start or token.end == after.start:
+                found.append(f"{path.relative_to(ROOT)}:{token.start[0]}:{token.start[1] + 1}: {token.string}")
+        return found
+
+    def test_operators_have_whitespace_around_them(self) -> None:
+        paths = sorted([*SCRIPTS.glob("*.py"), *(ROOT / "tests").glob("*.py")])
+        self.assertIn(SCRIPTS / "test_checks.py", paths)
+        self.assertEqual([line for path in paths for line in self.unspaced(path)], [])
 
 
 if __name__ == "__main__":
