@@ -104,7 +104,7 @@ Four changes made to the specification since that revision are to a requirement 
 - §6.1 no longer says "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them", a statement that was in the specification when that revision was made and that Section 7.1 of the draft does not carry either. The statement applied until the reference implementation measured compliance, drift detection and user feedback, and it now has a scoring function for each.
 - §12.1 reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". This change is editorial.
 
-Twelve changes made since that revision are informative:
+Nine changes made since that revision are informative:
 
 - A version note above the abstract says the text is 1.2.0-draft with changes made after that version was dated, and names §3.1 and §5.4 as the changed requirements.
 - The naming note gives each author of draft-aip-agent-identity-protocol-00 their own affiliation, James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), where it had given both the second one. The draft cites that document in its Appendix A, Related Work, and its reference gives the authors as "Cao and Arango".
@@ -115,9 +115,13 @@ Twelve changes made since that revision are informative:
 - §9.1 carries a reference implementation status note, which Section 11.1 of the draft does not.
 - §14 lists RFC 3339, RFC 4648, RFC 6749, RFC 7523 and RFC 8785, which the text cites and the list had omitted. Section 15 of the draft lists RFC 3339, RFC 4648 and RFC 8785, and does not cite the other two, which only the OpenID Connect status line in the abstract cites.
 - Appendix A says the reference implementation targets Conformance Level 2 and does not meet it yet, where it had said the reference implementation was "at Conformance Level 2". The draft's appendices are Related Work, Document History and Acknowledgments, so it has no counterpart of Appendix A or of the A.1 table.
+
+Four more changes made since that revision are informative too, each to a row of the Appendix A.1 table:
+
 - Appendix A.1 marks its row for §5 Verification Partial, where it had Shipped, and says the §5.1 exchange is not served.
 - Appendix A.1 marks its row for §6 Trust Scoring Partial, where it had Shipped, and says the reference implementation is at algorithm version 1 and does not implement the unscored state or `algorithmVersion` of version 2.
 - Appendix A.1 says in its row for §3 Agent Identity that the provider assigns each agent a UUID and that `opena2a-cli identity create` derives the §3.1 agent ID.
+- Appendix A.1 dates its notes on §3 Hybrid PQC signing, §6.5 ATP integration and Local offline verification 2026-10-11. The §3 Hybrid PQC signing row says the reference implementation signs no credential and its issuance route asks the Registry to sign, where it had named an Ed25519-only issuer with no production callers. The §6.5 row marks ATP integration Partial, where it had Not yet integrated. The Local offline verification row names the TypeScript and Java SDK verifiers, where it had said none of the TypeScript, Python and Java SDKs ships one.
 
 One more change made since that revision is informative too, to an example that quoted commands the CLI does not have:
 

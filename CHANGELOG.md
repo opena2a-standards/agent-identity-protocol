@@ -31,6 +31,18 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` Appendix A.1 describes the reference implementation as it is, with each of three
+  notes dated. The hybrid signing row no longer names the removed `RealATCIssuer`: the reference
+  implementation signs no credential, and its `POST /api/v1/agents/{id}/atc` route asks the
+  Registry to sign. The §6.5 ATP row is Partial, not "Not yet integrated", matching
+  `GAP-ANALYSIS.md`, and cites ATP-SPEC 1.1.0-draft instead of calling v1.0.0-rc1 recent. The
+  local verification row names the TypeScript and Java SDK verifiers and leaves Python as the one
+  SDK without one. The lists under the README's Internet-Draft paragraph name the three rows in
+  one item. That item would be the thirteenth informative change in one list, and the count that
+  opens a lead-in is a number word no higher than twelve, so the four changes to Appendix A.1 rows
+  now have a list of their own, after the nine other informative changes.
+  `scripts/test_checks.py` checks each note, and fails if an item on an Appendix A.1 row sits in
+  another list.
 - `AIP-SPEC.md` Appendix A.1 marks "§6 Trust Scoring (9-factor)" Partial, not Shipped, and §6.1
   says the reference calculator implements algorithm version 1, not "the 9-factor algorithm
   above". Since 1.2.0-draft that algorithm includes the unscored state, which the reference
