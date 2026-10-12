@@ -223,7 +223,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   reason also quotes the first line of git's message that starts with `fatal:` or `error:`, or its
   first line where none does, so a trace line that `GIT_TRACE` writes first is not quoted in place
   of the error, and the remedy starts with resolving it, since git can fail where the history is
-  present, as over the repository's ownership.
+  present, as over the repository's ownership. The two cases run git with `LC_ALL=C`, so its
+  message is not translated and its error starts with `fatal:` or `error:` under any locale; under
+  a German locale it would otherwise start with "Schwerwiegend:", and a trace line written before
+  it would be quoted in its place.
 - `scripts/test_checks.py` does not report "one-way", "two-way", "one-time", "one-hour",
   "one-to-one" or "two-factor", in any letter case, or a number word that follows a hyphen, as in
   "non-zero", as a count outside a lead-in, so a sentence such as "after a one-way comparison" in
@@ -231,9 +234,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   other hyphenated compound that begins with a number word from zero to twelve is still reported,
   whether it states a count, as "a two-item list" and "the five-field form" do, or not, as
   "one-off" does. The check knows the number words from zero to twelve only, so a higher number
-  written as a word, as in "a twenty-item list" or "a thirteen-field form", is not reported. A
-  number word that follows a hyphen is not reported even where it is part of a count, as the
-  "five" of "a twenty-five-field form" is, so no part of that count is reported.
+  written as one word, as "twenty" is in "a twenty-item list" and "thirteen" in "a thirteen-field
+  form", is not reported. A number word that follows a hyphen is not reported even where it is
+  part of a count, as the "five" of "a twenty-five-field form" is, so no part of that count is
+  reported.
 - `test_changelog_entry_says_what_is_not_reported` and
   `test_docs_say_how_ci_is_read_and_what_a_git_failure_reports` in `scripts/test_checks.py` look
   their entry up in the whole of this file, not only under Unreleased, so they no longer end in a
