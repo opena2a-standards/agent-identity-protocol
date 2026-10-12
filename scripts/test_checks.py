@@ -7,14 +7,16 @@ the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, and the 
 AIP-SPEC.md carries while a change to a requirement is unreleased.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
-they do not depend on the repository's current pairing. One case reads the specification as of
-the commit that made the paired draft and is skipped where git or that history is missing.
+they do not depend on the repository's current pairing. Two cases read the specification as of
+the commit that made the paired draft and are skipped where git or that history is missing, or
+fail there when the environment sets CI, so a CI run needs a full clone.
 Runs on its own:
     python3 scripts/test_checks.py
 python3 standard library only.
 """
 from __future__ import annotations
 
+import os
 import re
 import shutil
 import subprocess
@@ -22,6 +24,7 @@ import sys
 import unittest
 from collections import Counter
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -357,7 +360,8 @@ class JwtAccessTokenLifetime(unittest.TestCase):
 NUMBER_WORDS = (
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
 )
-COUNT = re.compile(r"\b(%s)\b" % "|".join(NUMBER_WORDS), re.IGNORECASE)
+# A number word joined by a hyphen ("one-way", "two-factor", "non-zero") states no count.
+COUNT = re.compile(r"(?<![\w-])(%s)(?![\w-])" % "|".join(NUMBER_WORDS), re.IGNORECASE)
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
@@ -498,28 +502,40 @@ def row_section(cell: str) -> str:
     return numbered.group(0) if numbered else cell
 
 
+def history_missing(reason: str) -> Exception:
+    """Return what a case raises when the history it reads is missing: a skip, or in CI a failure.
+
+    A skip reports OK, so a CI run from a shallow or exported tree would pass without running the
+    case. Where the environment sets CI (to anything but "", "0" or "false"), it fails instead.
+    """
+    if os.environ.get("CI", "").strip().lower() not in ("", "0", "false"):
+        return AssertionError(f"{reason}; in CI this case needs a full clone (actions/checkout with fetch-depth: 0)")
+    return unittest.SkipTest(f"{reason}; a full clone runs this case")
+
+
 def spec_when_draft_was_made(draft: str) -> str:
     """Return AIP-SPEC.md as of the last commit that changed the draft's txt.
 
-    Skips the calling test without git, outside a checkout, in a shallow clone, where that commit
-    can be missing, or when no commit in the history changed that file.
+    Skips the calling test (fails it in CI, see history_missing) without git, outside a checkout,
+    in a shallow clone, where that commit can be missing, or when no commit in the history changed
+    that file.
     """
     if shutil.which("git") is None:
-        raise unittest.SkipTest("git is not installed")
+        raise history_missing("git is not installed")
 
     def git(*args: str) -> str:
         result = subprocess.run(
             ["git", *args], cwd=check_draft_sync.ROOT, capture_output=True, text=True, encoding="utf-8"
         )
         if result.returncode != 0:
-            raise unittest.SkipTest(f"git {args[0]} failed here, so the text the draft was made from is not available")
+            raise history_missing(f"git {args[0]} failed here, so the text the draft was made from is not available")
         return result.stdout
 
     if git("rev-parse", "--is-shallow-repository").strip() == "true":
-        raise unittest.SkipTest("shallow clone: the commit that made the draft can be missing")
+        raise history_missing("shallow clone: the commit that made the draft can be missing")
     commit = git("log", "-1", "--format=%H", "--", f"{draft}.txt").strip()
     if not commit:
-        raise unittest.SkipTest(f"no commit in this history changed {draft}.txt")
+        raise history_missing(f"no commit in this history changed {draft}.txt")
     return git("show", f"{commit}:{check_draft_sync.SPEC.name}")
 
 
@@ -561,6 +577,13 @@ class InternetDraftLists(unittest.TestCase):
         found = unchecked_counts(draft_disclosure(prose))
         self.assertEqual(len(found), 1, found)
         self.assertIn("'Three' in 'Three informative additions have been made too.'", found[0])
+
+    def test_a_number_word_inside_a_hyphenated_compound_is_not_a_count(self):
+        # "one-way" and "two-factor" state no count, so they are not reported; the same words
+        # standing alone are.
+        self.assertEqual(unchecked_counts("A one-way push after a two-factor login and a non-zero value."), [])
+        found = unchecked_counts("One push, one way.")
+        self.assertEqual(len(found), 2, found)
 
     def test_each_count_equals_the_items_listed_under_it(self):
         # Each lead-in opens with the number of items under it, so a count cannot be changed, or
@@ -649,6 +672,41 @@ class InternetDraftLists(unittest.TestCase):
             if not any(names_part(item, "Appendix A.1") and names_part(item, row_section(cell)) for item in items)
         ]
         self.assertEqual(unnamed, [], f"Appendix A.1 rows changed since {draft} that no Internet-Draft list item names")
+
+
+class MissingDraftHistory(unittest.TestCase):
+    """The two cases above read the history: without it they skip, and in CI they fail instead."""
+
+    def outcome(self, ci: str | None, git: str | None = "git") -> BaseException:
+        """Return what spec_when_draft_was_made raises in a shallow clone, with CI set to ci or unset."""
+        env = {name: value for name, value in os.environ.items() if name != "CI"}
+        if ci is not None:
+            env["CI"] = ci
+        shallow = subprocess.CompletedProcess(["git"], 0, stdout="true\n", stderr="")
+        with (
+            mock.patch.dict(os.environ, env, clear=True),
+            mock.patch.object(shutil, "which", return_value=git),
+            mock.patch.object(subprocess, "run", return_value=shallow),
+        ):
+            try:
+                spec_when_draft_was_made("draft-example-00")
+            except (unittest.SkipTest, AssertionError) as raised:
+                return raised
+        self.fail("a shallow clone returned the specification")
+
+    def test_missing_history_skips_outside_ci(self):
+        for ci in (None, "", "false", "0"):
+            with self.subTest(ci=ci):
+                self.assertIsInstance(self.outcome(ci), unittest.SkipTest)
+
+    def test_missing_history_fails_in_ci(self):
+        # A skip reports OK, so a CI run from a shallow checkout would pass without running either
+        # case. In CI the missing history fails and names the checkout depth the cases need.
+        for ci, git in (("true", "git"), ("1", "git"), ("true", None)):
+            with self.subTest(ci=ci, git=git):
+                raised = self.outcome(ci, git)
+                self.assertIsInstance(raised, AssertionError)
+                self.assertIn("fetch-depth: 0", str(raised))
 
 
 STATUSES = ("Specified", "Implemented", "Tested in conformance")

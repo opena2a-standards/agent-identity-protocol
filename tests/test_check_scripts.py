@@ -496,6 +496,11 @@ class PrePushReviewMarker(unittest.TestCase):
     def test_marker_does_not_deny_the_test_suite(self) -> None:
         self.assertIsNone(re.search(r"\bno\b[^.]*\btest suite\b", self.marker, re.IGNORECASE), self.marker)
 
+    def test_marker_names_no_slash_command(self) -> None:
+        # A slash command names a review workflow the repository does not contain, so a reader of
+        # the repository cannot run or find it. The commands the marker lists run from the root.
+        self.assertIsNone(re.search(r"(?<![\w./])/[A-Za-z][\w-]*", self.marker), self.marker)
+
     def test_marker_names_the_test_commands(self) -> None:
         self.assertTrue(sorted((ROOT / "tests").glob("test_*.py")))
         self.assertIn("python3 -m unittest discover -s tests", self.marker)
