@@ -596,10 +596,11 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         # A word ends where neither a letter, digit or underscore nor a punctuation mark and one of
         # those follows.
         end = r"(?![^\w\s]?\w)"
+        word = r"\w+(?:[^\w\s]\w+)*"
         no_object = rf"(?:and|but|or|as|at|by|for|in|on|since|with|{cls.MONTHS}|\d+(?:[^\w\s]\d+)*){end}"
         obj = rf"\s+(?:\d+\s+)?(?!{no_object})\w"
         marks = re.compile(rf"\b(?:done|completed)\b|\bcomplete\b(?!{obj})|trust scoring", re.IGNORECASE)
-        verb = re.compile(rf"^(\d+\. \**)complete(?=\s+and\s+\S+{obj})", re.IGNORECASE)
+        verb = re.compile(rf"^(\d+\. \**)complete(?=\s+and\s+{word}{obj})", re.IGNORECASE)
         return [item for item in items if marks.search(verb.sub(r"\1", item))]
 
     def test_challenge_response_row_is_partial_as_in_appendix_a1(self) -> None:
@@ -660,6 +661,11 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **Complete 2026-10** — YAML policy format",
             "6. **Complete and served** — YAML policy format",
             "6. **COMPLETE and served** — YAML policy format",
+            # The word after "and" ends before punctuation, so no object follows it here.
+            "6. **Complete and served**: YAML policy format",
+            "6. **Complete and served** YAML policy format",
+            "6. **Complete and served.** YAML policy format",
+            "1. **Complete and publish, then x** — required for Level 3",
         ]
         # Each word finished() names, in each letter case, leaves "complete" a mark before it, and
         # so does each month name.

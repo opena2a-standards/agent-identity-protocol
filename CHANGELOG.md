@@ -376,6 +376,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   item worded `(complete 2026-10)`, "(complete October 2026)", "(complete 3 October 2026)" or
   "complete and served" is reported, and so is an item whose title is "Complete 2026-10" or
   "Complete and served", whether it is finished or still to do.
+- In that priority list check, the word after "and" in a title that opens with "complete" now
+  runs up to a space or to a punctuation mark that no letter, digit or underscore follows, as the
+  entry above says. The check read it up to the next space, so it took the punctuation after the
+  word for part of it, and an item such as `6. **Complete and served**: YAML policy format` or
+  `1. **Complete and publish, then x** — required for Level 3` was not reported. Such an item is
+  now reported. An item whose title is "Complete and publish the DID resolver" still is not.
 - The tests of the operator check in `tests/test_check_scripts.py` now cover a comment that
   starts where an operator ends, as in `_Z = (1 ==# a comment`, and, on Python 3.14 and later,
   the `=` of a t-string replacement field, as in `t"{a=}"`, and a keyword argument after a
