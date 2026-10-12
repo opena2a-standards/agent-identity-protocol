@@ -410,13 +410,16 @@ class ChangelogEntryLookup(unittest.TestCase):
         self.assertEqual(str(raised.exception), "no CHANGELOG.md entry starts with 'A fix nobody made'")
 
 
+# The number words the checks know: zero to twelve only. A higher number written as a word, as in
+# "a twenty-item list" or "a thirteen-field form", is not read as a count and is not reported.
 NUMBER_WORDS = (
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
 )
 # A number word, with the hyphenated compound it begins. A number word right after a hyphen is not
 # matched, whether it ends a compound ("non-zero") or is part of a count, as the "five" of "a
-# twenty-five-field form" is, so that count is not reported.
-COUNT = re.compile(r"(?<![\w-])(%s)((?:-\w+)*)(?!\w)" % "|".join(NUMBER_WORDS), re.IGNORECASE)
+# twenty-five-field form" is; "twenty" is not a number word here either, so that count is not
+# reported.
+COUNT =re.compile(r"(?<![\w-])(%s)((?:-\w+)*)(?!\w)" % "|".join(NUMBER_WORDS), re.IGNORECASE)
 # Compounds that begin with a number word and are not reported. Every other compound that begins
 # with one is reported, whether it states a count ("a two-item list", "the five-field form") or
 # not ("one-off", "one-shot", "one-sided"); an entry here or a rewording clears one that does not.
@@ -679,6 +682,16 @@ class InternetDraftLists(unittest.TestCase):
         self.assertEqual([compound for compound in NO_COUNT if f'"{compound}"' not in entry], [])
         self.assertIn("a number word that follows a hyphen", entry)
         self.assertIn('as "one-off" does', entry)
+
+    def test_changelog_entry_names_the_number_words_the_check_knows(self):
+        # NUMBER_WORDS ends at "twelve", so a higher number written as a word is never reported; the
+        # entry says so, and names the range NUMBER_WORDS covers, so extending it fails here.
+        for text in ("A twenty-item list.", "A thirteen-field form.", "A twenty-five-field form."):
+            self.assertEqual(unchecked_counts(text), [], text)
+        entry = changelog_entry(COUNT_ENTRY)
+        self.assertIn(f"the number words from {NUMBER_WORDS[0]} to {NUMBER_WORDS[-1]} only", entry)
+        for example in ('"a twenty-item list"', '"a thirteen-field form"'):
+            self.assertIn(example, entry)
 
     def test_a_hyphenated_compound_that_states_a_count_is_reported(self):
         # "a two-item list" and "the five-field form" (AIP-SPEC.md uses "five-field", "seven-field"

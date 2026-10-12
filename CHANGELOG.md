@@ -226,10 +226,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   "one-to-one" or "two-factor", in any letter case, or a number word that follows a hyphen, as in
   "non-zero", as a count outside a lead-in, so a sentence such as "after a one-way comparison" in
   the README Internet-Draft section no longer fails `test_no_count_stands_outside_a_lead_in`. Any
-  other hyphenated compound that begins with a number word is still reported, whether it states a
-  count, as "a two-item list" and "the five-field form" do, or not, as "one-off" does. A number
-  word that follows a hyphen is not reported even where it is part of a count, as the "five" of "a
-  twenty-five-field form" is.
+  other hyphenated compound that begins with a number word from zero to twelve is still reported,
+  whether it states a count, as "a two-item list" and "the five-field form" do, or not, as
+  "one-off" does. The check knows the number words from zero to twelve only, so a higher number
+  written as a word, as in "a twenty-item list" or "a thirteen-field form", is not reported. A
+  number word that follows a hyphen is not reported even where it is part of a count, as the
+  "five" of "a twenty-five-field form" is, so no part of that count is reported.
 - `test_changelog_entry_says_what_is_not_reported` and
   `test_docs_say_how_ci_is_read_and_what_a_git_failure_reports` in `scripts/test_checks.py` look
   their entry up in the whole of this file, not only under Unreleased, so they no longer end in a
