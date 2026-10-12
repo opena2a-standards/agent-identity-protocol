@@ -1571,6 +1571,15 @@ class AppendixA1(unittest.TestCase):
         self.assertNotIn("v1.0.0-rc1 is recent", note)
         self.assertIn("1.1.0-draft", note)
 
+    def test_atp_row_says_what_the_registry_bridge_sends(self):
+        # buildOrgContribution, run when REGISTRY_BRIDGE_ENABLED is true, sends one event per agent
+        # and attested MCP server with the agent's own trust score as successRate; it averages none.
+        note = self.rows[ATP_ROW][1]
+        self.assertNotIn("averages", note)
+        self.assertIn("one event per agent and MCP server", note)
+        self.assertIn("trust score as `successRate`", note)
+        self.assertIn("`REGISTRY_BRIDGE_ENABLED=true`", note)
+
     def test_local_verify_row_names_python_as_the_sdk_without_one(self):
         # sdk/typescript/src/local/LocalVerifier.ts and sdk/java/.../atx/LocalAtxVerifier.java exist.
         note = self.rows[LOCAL_VERIFY_ROW][1]
