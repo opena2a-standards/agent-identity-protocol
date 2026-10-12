@@ -31,6 +31,19 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` Appendix A.1 describes the reference implementation as it is, with each of three
+  notes dated. The hybrid signing row says the Ed25519-only `RealATCIssuer` was removed, where it
+  called it an issuer with no active production callers, and that the reference implementation
+  signs no credential: its `POST /api/v1/agents/{id}/atc` route asks the
+  Registry to sign. The §6.5 ATP row is Partial, not "Not yet integrated", matching
+  `GAP-ANALYSIS.md`, and cites ATP-SPEC 1.1.0-draft instead of calling v1.0.0-rc1 recent. The
+  local verification row names the TypeScript and Java SDK verifiers and leaves Python as the one
+  SDK without one. The lists under the README's Internet-Draft paragraph name the three rows in
+  one item. That item would be the thirteenth informative change in one list, and the count that
+  opens a lead-in is a number word no higher than twelve, so the four changes to Appendix A.1 rows
+  now have a list of their own, after the nine other informative changes.
+  `scripts/test_checks.py` checks each note, and fails if an item on an Appendix A.1 row sits in
+  another list.
 - `AIP-SPEC.md` Appendix A.1 marks "§6 Trust Scoring (9-factor)" Partial, not Shipped, and §6.1
   says the reference calculator implements algorithm version 1, not "the 9-factor algorithm
   above". Since 1.2.0-draft that algorithm includes the unscored state, which the reference
@@ -64,9 +77,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   implementation. Google A2A, Anthropic MCP, OpenID Connect and ATP are implemented in part: the
   reference implementation serves an agent card that carries the agent's ID and registered public
   key in an `aim` extension, checks capabilities, serves an OAuth 2.0 token endpoint that accepts
-  the JWT-bearer grant type of RFC 7523 from a registered agent, and has a one-way push through
-  its registry bridge, and it does not serve the §5.1 exchange, return an OpenID Connect ID token
-  from that endpoint, or wire AIP trust scores into the ATP transparency log. Its A2A
+  the JWT-bearer grant type of RFC 7523 from a registered agent, has a one-way push through its
+  registry bridge, and has a credential issuance route that sends the agent's 9-factor behavioral
+  score to the OpenA2A Registry, which signs it into a credential and records the issuance in its
+  transparency log, and it does not serve the §5.1 exchange, return an OpenID Connect ID token
+  from that endpoint, or compute the §6.5 combined score. Its A2A
   verification service is not assessed. None of the six is tested in conformance. The statuses
   are informative, and `draft-fane-opena2a-aip-04` does not carry them; the README's
   Internet-Draft paragraph says so. The `GAP-ANALYSIS.md` row for OAuth 2.0 / OIDC, which said
@@ -84,6 +99,16 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   document advertises. The prior-art table names the two OpenA2A drafts,
   `draft-fane-opena2a-aip` and `draft-fane-opena2a-aap`, each first posted 2026-07-06, where it
   said "not yet filed".
+- `AIP-SPEC.md` §11.4 CI/CD Pipeline no longer quotes commands that `opena2a-cli` 0.10.13 does
+  not have: `identity check-trust`, its `--min-score` option, `identity create --type` and
+  `identity verify --name`. The section now describes the trust-threshold step as a flow, shows
+  `identity create --name deploy-agent` as the one step the CLI runs today, and states that no CLI
+  command fails a job when the trust score is below a threshold. A test in
+  `tests/test_check_scripts.py` fails when `AIP-SPEC.md` or `README.md` quotes an
+  `opena2a-cli identity` subcommand or option outside the ones the CLI accepts. The README's
+  Internet-Draft paragraph lists the change as an informative one, in a list of its own for a
+  change to an example that quoted commands the CLI does not have; `draft-fane-opena2a-aip-04`
+  has no section of integration patterns.
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names
@@ -250,8 +275,8 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   agent's signed JWT in `client_assertion`, with `client_id` and `client_assertion_type`, and the
   endpoint reads no `assertion` parameter, in which RFC 7523 Section 2.1 carries the JWT. They
   named the JWT-bearer grant type without its parameters.
-- The ATP status lines in `README.md` and the `AIP-SPEC.md` abstract cite Appendix A.1 for the
-  statement that AIP trust scores are not yet wired into the ATP transparency log. They cited
+- The ATP status lines in `README.md` and the `AIP-SPEC.md` abstract cite Appendix A.1 for what
+  they say of the transparency log. They cited
   §6.5, which specifies the combined score and names no transparency log; the Appendix A.1 row
   for §6.5 does.
 - `AIP-SPEC.md` §14 lists RFC 3339, RFC 4648, RFC 6749, RFC 7523 and RFC 8785, which the text

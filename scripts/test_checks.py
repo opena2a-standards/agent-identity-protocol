@@ -5,8 +5,8 @@ access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two l
 protocols AIP is designed to complement, the lists under the README's Internet-Draft paragraph,
 the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, the version note
 AIP-SPEC.md carries while a change to a requirement is unreleased, the trust factor status
-README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, and the reference provider identifier
-AIP-SPEC.md gives.
+README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, the reference provider identifier
+AIP-SPEC.md gives, and three AIP-SPEC.md Appendix A.1 notes on the reference implementation.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Two cases read the specification as of
@@ -807,6 +807,18 @@ class InternetDraftLists(unittest.TestCase):
         readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
         self.assertEqual(unchecked_counts(draft_disclosure(readme)), [])
 
+    def test_changes_to_appendix_a1_rows_have_a_list_of_their_own(self):
+        # A lead-in opens with a number word and NUMBER_WORDS ends at "twelve", so the informative
+        # changes are two lists: the changes to rows of the Appendix A.1 table, and the others.
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        lists = counted_lists(draft_disclosure(readme))
+        rows = [items for lead, items in lists if "row of the Appendix A.1 table" in lead]
+        self.assertEqual(len(rows), 1, "lead-ins that say their items are each to a row of the Appendix A.1 table")
+        opening = "- Appendix A.1 "
+        self.assertEqual([item for item in rows[0] if not item.startswith(opening)], [])
+        elsewhere = [item for _, items in lists if items is not rows[0] for item in items if item.startswith(opening)]
+        self.assertEqual(elsewhere, [], "items on an Appendix A.1 row outside the list of them")
+
     def test_specification_parts_are_named_as_the_readme_names_them(self):
         parts = spec_parts(PARTS_SPEC)
         self.assertEqual(
@@ -1280,6 +1292,18 @@ class ComplementedProtocols(unittest.TestCase):
                 self.assertTrue(cited, f"{citation.group(1)!r} names no part of AIP-SPEC.md")
                 self.assertEqual([part for part in cited if "transparency log" not in parts[part]], [])
 
+    def test_atp_lines_say_what_the_appendix_a1_row_says_of_the_transparency_log(self):
+        # The row for §6.5 says the Registry signs the agent's behavioral score into the credential
+        # and records the issuance in its transparency log, so neither line says it is not wired.
+        row = a1_rows(check_draft_sync.SPEC.read_text(encoding="utf-8"))[ATP_ROW]
+        claim = "records the issuance in its transparency log"
+        self.assertIn(claim, row)
+        for name, line in self.lines("ATP (Agent Trust Protocol)").items():
+            with self.subTest(doc=name):
+                self.assertIn(claim, line)
+                self.assertNotIn("not yet wired", line)
+                self.assertIn("combined score", line)
+
     def test_openid_connect_lines_name_the_oauth_token_endpoint(self):
         # The reference implementation serves an OAuth 2.0 token endpoint that accepts the
         # JWT-bearer grant type of RFC 7523 from a registered agent, so neither list nor the
@@ -1522,6 +1546,72 @@ class ReferenceProviderDid(unittest.TestCase):
         self.assertEqual(len(named), 1, "no Internet-Draft list item starts '- §3.2 '")
         for claim in ("Section 4.2 of the draft", "§10.1", "Section 12 of the draft"):
             self.assertTrue(claim in named[0], f"the §3.2 item does not say {claim!r}")
+
+
+HYBRID_ROW = "§3 Hybrid PQC signing (Ed25519 + ML-DSA-65)"
+ATP_ROW = "§6.5 ATP integration"
+LOCAL_VERIFY_ROW = "Local offline verification"
+
+
+def a1_cells(spec: str) -> dict[str, list[str]]:
+    """Return the status and notes cells of each Appendix A.1 row, keyed by its first cell."""
+    return {cell: [part.strip() for part in line.split("|")[2:-1]] for cell, line in a1_rows(spec).items()}
+
+
+class AppendixA1(unittest.TestCase):
+    # Measured on opena2a-org/agent-identity-management main at 8500bc98 and
+    # opena2a-standards/agent-trust-protocol main at b185db26.
+    def setUp(self):
+        self.rows = a1_cells(check_draft_sync.SPEC.read_text(encoding="utf-8"))
+
+    def test_notes_on_changed_code_are_dated(self):
+        for row in (HYBRID_ROW, ATP_ROW, LOCAL_VERIFY_ROW):
+            with self.subTest(row=row):
+                self.assertRegex(self.rows[row][1], r"\b20\d\d-\d\d-\d\d\b")
+
+    def test_hybrid_row_says_aim_delegates_signing(self):
+        # RealATCIssuer and atc_issuer.go are gone; AIM's issuance route asks the Registry to sign.
+        note = self.rows[HYBRID_ROW][1]
+        self.assertNotIn("no active production callers", note)
+        self.assertNotIn("atc_issuer.go", note)
+        self.assertIn("POST /api/v1/agents/{id}/atc", note)
+
+    def test_atp_row_cites_the_current_atp_version(self):
+        # ATP-SPEC.md reads "Version: 1.1.0-draft"; GAP-ANALYSIS.md marks the integration Partial.
+        status, note = self.rows[ATP_ROW]
+        self.assertEqual(status, "Partial")
+        self.assertNotIn("v1.0.0-rc1 is recent", note)
+        self.assertIn("1.1.0-draft", note)
+
+    def test_atp_row_says_what_the_registry_bridge_sends(self):
+        # buildOrgContribution, run when REGISTRY_BRIDGE_ENABLED is true, sends one event per agent
+        # and attested MCP server with the agent's own trust score as successRate; it averages none.
+        note = self.rows[ATP_ROW][1]
+        self.assertNotIn("averages", note)
+        self.assertIn("one event per agent and MCP server", note)
+        self.assertIn("trust score as `successRate`", note)
+        self.assertIn("`REGISTRY_BRIDGE_ENABLED=true`", note)
+
+    def test_local_verify_row_names_python_as_the_sdk_without_one(self):
+        # sdk/typescript/src/local/LocalVerifier.ts and sdk/java/.../atx/LocalAtxVerifier.java exist.
+        note = self.rows[LOCAL_VERIFY_ROW][1]
+        self.assertNotIn("TypeScript, Python, and Java", note)
+        self.assertIn("LocalVerifier.ts", note)
+        self.assertIn("LocalAtxVerifier.java", note)
+        self.assertIn("Python AIM SDK does not yet ship", note)
+
+    def test_cells_are_the_status_and_notes_of_each_row(self):
+        spec = PARTS_SPEC.replace("| §3 | Shipped |\n", "| Section | Status | Notes |\n|---|---|---|\n| §6 Trust | Partial | A note. |\n")
+        self.assertEqual(a1_cells(spec), {"§6 Trust": ["Partial", "A note."]})
+
+    def test_readme_names_the_three_dated_rows_in_one_item(self):
+        # InternetDraftLists checks that the changes to Appendix A.1 rows have a list of their own.
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        lists = counted_lists(draft_disclosure(readme))
+        own = [items for lead, items in lists if "row of the Appendix A.1 table" in lead]
+        self.assertEqual(len(own), 1, [lead for lead, _ in lists])
+        rows = ("§3 Hybrid PQC signing", ATP_ROW, LOCAL_VERIFY_ROW)
+        self.assertEqual(len([item for item in own[0] if all(row in item for row in rows)]), 1)
 
 
 if __name__ == "__main__":

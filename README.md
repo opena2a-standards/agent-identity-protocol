@@ -104,7 +104,7 @@ Four changes made to the specification since that revision are to a requirement 
 - §6.1 no longer says "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them", a statement that was in the specification when that revision was made and that Section 7.1 of the draft does not carry either. The statement applied until the reference implementation measured compliance, drift detection and user feedback, and it now has a scoring function for each.
 - §12.1 reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". This change is editorial.
 
-Twelve changes made since that revision are informative:
+Nine changes made since that revision are informative:
 
 - A version note above the abstract says the text is 1.2.0-draft with changes made after that version was dated, and names §3.1 and §5.4 as the changed requirements.
 - The naming note gives each author of draft-aip-agent-identity-protocol-00 their own affiliation, James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), where it had given both the second one. The draft cites that document in its Appendix A, Related Work, and its reference gives the authors as "Cao and Arango".
@@ -115,9 +115,17 @@ Twelve changes made since that revision are informative:
 - §9.1 carries a reference implementation status note, which Section 11.1 of the draft does not.
 - §14 lists RFC 3339, RFC 4648, RFC 6749, RFC 7523 and RFC 8785, which the text cites and the list had omitted. Section 15 of the draft lists RFC 3339, RFC 4648 and RFC 8785, and does not cite the other two, which only the OpenID Connect status line in the abstract cites.
 - Appendix A says the reference implementation targets Conformance Level 2 and does not meet it yet, where it had said the reference implementation was "at Conformance Level 2". The draft's appendices are Related Work, Document History and Acknowledgments, so it has no counterpart of Appendix A or of the A.1 table.
+
+Four more changes made since that revision are informative too, each to a row of the Appendix A.1 table:
+
 - Appendix A.1 marks its row for §5 Verification Partial, where it had Shipped, and says the §5.1 exchange is not served.
 - Appendix A.1 marks its row for §6 Trust Scoring Partial, where it had Shipped, and says the reference implementation is at algorithm version 1 and does not implement the unscored state or `algorithmVersion` of version 2.
 - Appendix A.1 says in its row for §3 Agent Identity that the provider assigns each agent a UUID and that `opena2a-cli identity create` derives the §3.1 agent ID.
+- Appendix A.1 dates its notes on §3 Hybrid PQC signing, §6.5 ATP integration and Local offline verification 2026-10-11. The §3 Hybrid PQC signing row says the reference implementation signs no credential and its issuance route asks the Registry to sign, where it had named an Ed25519-only issuer with no production callers. The §6.5 row marks ATP integration Partial, where it had Not yet integrated. The Local offline verification row names the TypeScript and Java SDK verifiers, where it had said none of the TypeScript, Python and Java SDKs ships one.
+
+One more change made since that revision is informative too, to an example that quoted commands the CLI does not have:
+
+- §11.4 describes the trust-threshold step of a CI/CD pipeline as a flow and shows `identity create --name deploy-agent` as the step the CLI runs, where it had quoted `identity check-trust`, its `--min-score` option, `identity create --type` and `identity verify --name`, which `opena2a-cli` 0.10.13 does not have. The draft has no section of integration patterns, so it has no counterpart of §11.4.
 
 ## Conformance Levels
 
@@ -136,7 +144,7 @@ AIP is designed to complement the six protocols below. Each line ends with a sta
 - [OpenID Connect](https://openid.net/connect/) — JWT tokens for machine-to-machine auth. **Implemented** in part: the reference implementation serves an OAuth 2.0 token endpoint (RFC 6749) that accepts the JWT-bearer grant type of RFC 7523, where a registered agent exchanges an assertion signed with its Ed25519 key for a bearer access token. The request carries that assertion in `client_assertion`, with `client_id` and `client_assertion_type`; the endpoint reads no `assertion` parameter, in which RFC 7523 Section 2.1 carries the JWT. That endpoint returns no OpenID Connect ID token, and Section 5.4 defines AIP's own JWT bearer tokens and no OAuth 2.0 or OpenID Connect flow.
 - [WebAuthn/FIDO2](https://www.w3.org/TR/webauthn-3/) — hardware key storage for browsers. **Specified** (Sections 11.1 and 12.1).
 - [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) — trust scores as VCs. **Specified** (Section 6.4).
-- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust. **Implemented** in part: the reference implementation has a one-way push through its registry bridge, and AIP trust scores are not yet wired into the ATP transparency log (AIP-SPEC Appendix A.1).
+- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust. **Implemented** in part: the reference implementation has a one-way push through its registry bridge, and its credential issuance route sends the agent's 9-factor behavioral score to the OpenA2A Registry, which signs it into a credential and records the issuance in its transparency log (AIP-SPEC Appendix A.1). The reference implementation does not compute the combined score of AIP-SPEC Section 6.5.
 
 The rows behind these statuses are in [GAP-ANALYSIS.md](GAP-ANALYSIS.md) (A2A agent card identity, MCP capability-based tool access, OAuth 2.0 / OIDC, WebAuthn/FIDO2, Verifiable Credential expression, ATP integration) and in AIP-SPEC Appendix A.1 (§4 Capabilities, §5 Verification, §6.5 ATP integration).
 
