@@ -179,5 +179,61 @@ class ReadmeQuickStart(unittest.TestCase):
         self.assertEqual(first_command_output(lines), ("run a", []))
 
 
+def unshipped_level_2_rows(spec: str) -> list[str]:
+    """Return the Appendix A.1 rows for a section Level 2 requires whose AIM status is not Shipped.
+
+    The Level 2 requirements in Section 2 cite their sections as "(Section N...)"; an A.1 row
+    belongs to one when its first cell starts with "§N " for the same top-level N.
+    """
+    level_2 = spec.split("### Level 2: Managed Identity", 1)[1].split("### Level 3", 1)[0]
+    sections = set(re.findall(r"\(Section (\d+)", level_2))
+    rows = []
+    for line in spec.split("### A.1 ", 1)[1].splitlines():
+        match = re.match(r"\| §(\d+) ([^|]*)\| ([^|]*)\|", line)
+        if match and match.group(1) in sections and not match.group(3).strip().startswith("Shipped"):
+            rows.append(f"§{match.group(1)} {match.group(2).strip()}")
+    return rows
+
+
+def level_2_claims(text: str) -> list[str]:
+    """Return the sentences that name a conformance level for the reference implementation."""
+    claims = []
+    for paragraph in re.split(r"\n\s*\n", text):
+        for sentence in re.split(r"(?<=[.!?])\s+", re.sub(r"\s+", " ", paragraph).strip()):
+            if "Level 2" in sentence and ("AIM" in sentence or "reference implementation" in sentence):
+                claims.append(sentence)
+    return claims
+
+
+LEVEL_2_SPEC = (
+    "### Level 2: Managed Identity\n\nRequirements:\n"
+    "- Challenge-response verification (Section 5)\n- Trust scoring (Section 6)\n\n"
+    "### Level 3: Federated Identity\n\n### A.1 Spec sections\n\n"
+    "| Section | AIM status | Notes |\n|---|---|---|\n"
+    "| §3 Agent Identity | Partial | Not a Level 2 section. |\n"
+    "| §5 Verification (challenge-response) | Partial | Not served. |\n"
+    "| §6 Trust Scoring | Shipped, with notes | Served. |\n"
+    "| §6.5 ATP integration | Not yet integrated | A subsection. |\n"
+)
+
+
+class ReferenceImplementationLevel(unittest.TestCase):
+    def test_unshipped_rows_are_the_level_2_sections_not_marked_shipped(self):
+        self.assertEqual(unshipped_level_2_rows(LEVEL_2_SPEC), ["§5 Verification (challenge-response)"])
+
+    def test_level_2_claims_say_targets_while_a_level_2_section_is_not_shipped(self):
+        # Level 2 requires every Level 2 section, so while Appendix A.1 marks one of them
+        # Partial the reference implementation targets Level 2 and does not implement it.
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        unshipped = unshipped_level_2_rows(spec)
+        if not unshipped:
+            self.skipTest("Appendix A.1 marks every Level 2 section Shipped")
+        for name in ("README.md", "AIP-SPEC.md"):
+            text = (check_draft_sync.ROOT / name).read_text(encoding="utf-8")
+            with self.subTest(file=name):
+                overclaims = [claim for claim in level_2_claims(text) if "targets" not in claim]
+                self.assertEqual(overclaims, [], f"Appendix A.1 marks {unshipped} not Shipped")
+
+
 if __name__ == "__main__":
     unittest.main()

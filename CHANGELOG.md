@@ -8,6 +8,10 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `README.md` and `AIP-SPEC.md` Appendix A say the reference implementation targets Conformance
+  Level 2, instead of saying it implements Level 2. Level 2 requires challenge-response
+  verification (Section 5), which Appendix A.1 marks Partial because the reference backend does
+  not serve the Section 5.1 exchange.
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names

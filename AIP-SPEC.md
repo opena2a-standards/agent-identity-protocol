@@ -971,7 +971,7 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 
 ## Appendix A: Reference Implementation
 
-The OpenA2A AIM platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation at Conformance Level 2.
+The OpenA2A AIM platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation and targets Conformance Level 2. It does not meet Level 2 yet: challenge-response verification (Section 5) is a Level 2 requirement, and A.1 below marks it Partial because the Section 5.1 exchange is not served.
 
 | Component | Implementation |
 |-----------|---------------|

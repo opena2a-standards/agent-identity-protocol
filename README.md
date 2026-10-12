@@ -107,7 +107,7 @@ AIP (identity + behavior)     ATP (code + provenance)
 
 ## Reference Implementation
 
-The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-management) implements AIP at Level 2.
+The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-management) is the reference implementation and targets AIP Level 2. It does not serve the Section 5.1 challenge-response exchange yet, which Level 2 requires; [AIP-SPEC.md Appendix A.1](AIP-SPEC.md#a1-spec-sections-currently-implemented-by-aim) lists the status of each section.
 
 ## Related Standards
 
