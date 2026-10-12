@@ -9,8 +9,8 @@ AIP-SPEC.md carries while a change to a requirement is unreleased.
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Two cases read the specification as of
 the commit that made the paired draft and are skipped where git or that history is missing, or
-fail there where CI is set to a value other than an empty string, 0 or false (in any letter case),
-so a CI run needs git and a full clone.
+fail there where CI is set to a value other than an empty string, 0 or false (in any letter case
+or with surrounding spaces), so a CI run needs git and a full clone.
 Runs on its own:
     python3 scripts/test_checks.py
 python3 standard library only.
@@ -361,13 +361,24 @@ class JwtAccessTokenLifetime(unittest.TestCase):
 NUMBER_WORDS = (
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
 )
-# A number word, with the hyphenated compound it begins. A number word that ends a compound
-# ("non-zero") is part of a word, not a count.
+# A number word, with the hyphenated compound it begins. A number word right after a hyphen is not
+# matched, whether it ends a compound ("non-zero") or is part of a count, as the "five" of "a
+# twenty-five-field form" is, so that count is not reported.
 COUNT = re.compile(r"(?<![\w-])(%s)((?:-\w+)*)(?!\w)" % "|".join(NUMBER_WORDS), re.IGNORECASE)
-# Compounds that begin with a number word and state no count. Any other ("a two-item list", "the
-# five-field form") states one.
+# Compounds that begin with a number word and are not reported. Every other compound that begins
+# with one is reported, whether it states a count ("a two-item list", "the five-field form") or
+# not ("one-off", "one-shot", "one-sided"); an entry here or a rewording clears one that does not.
 NO_COUNT = ("one-way", "two-way", "one-time", "one-hour", "one-to-one", "two-factor")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
+
+
+def unreleased_entry(start: str) -> str:
+    """Return the entry under the CHANGELOG's Unreleased heading that starts with start, on one line."""
+    changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
+    heading = changelog.index("## [Unreleased]")
+    unreleased = changelog[heading: changelog.index("\n## [", heading)]
+    entries = [" ".join(entry.split()) for entry in re.findall(r"^- .*(?:\n  .*)*", unreleased, flags=re.MULTILINE)]
+    return next(entry for entry in entries if entry.startswith("- " + start))
 
 
 def draft_disclosure(readme: str) -> str:
@@ -543,8 +554,13 @@ def spec_when_draft_was_made(draft: str) -> str:
             ["git", *args], cwd=check_draft_sync.ROOT, capture_output=True, text=True, encoding="utf-8"
         )
         if result.returncode != 0:
+            # git can fail with history present (over the repository's ownership, or with GIT_DIR
+            # set elsewhere), so the reason quotes what git said and the remedy starts from it.
+            said = result.stderr.strip().splitlines()
+            quoted = f", saying {said[0]!r}" if said else ""
             raise history_missing(
-                f"git {args[0]} failed here, so the text the draft was made from is not available", FULL_CLONE
+                f"git {args[0]} failed here{quoted}, so the text the draft was made from is not available",
+                f"resolve what git reports, or {FULL_CLONE}",
             )
         return result.stdout
 
@@ -596,12 +612,30 @@ class InternetDraftLists(unittest.TestCase):
         self.assertIn("'Three' in 'Three informative additions have been made too.'", found[0])
 
     def test_a_hyphenated_compound_that_states_no_count_is_not_reported(self):
-        # "one-way", "two-factor" and "one-hour" state no count, nor does a number word that ends
-        # a compound ("non-zero"), so they are not reported; the same words standing alone are.
-        prose = "A one-way push after a two-factor login, with a one-hour lifetime and a non-zero value."
+        # No NO_COUNT compound is reported, in any letter case ("One-way" opens the prose), nor is
+        # a number word right after a hyphen ("non-zero") or at the start of a longer word
+        # ("tenant", "ones", "zeros"); the same words standing alone are. The prose spells out
+        # every NO_COUNT entry, so dropping one from NO_COUNT fails here.
+        prose = (
+            "One-way pushes and two-way links follow a two-factor login, with a one-time code, a"
+            " one-hour lifetime, a one-to-one map and a non-zero value. A tenant stores ones and zeros."
+        )
+        self.assertEqual([entry for entry in NO_COUNT if entry not in prose.lower()], [])
         self.assertEqual(unchecked_counts(prose), [])
         found = unchecked_counts("One push, one way.")
         self.assertEqual(len(found), 2, found)
+
+    def test_a_compound_outside_no_count_is_reported_even_where_it_states_no_count(self):
+        # COUNT cannot tell "a one-off fix" from "a two-item list"; only NO_COUNT clears a compound.
+        self.assertEqual(unchecked_counts("A one-off fix."), ["'one' in 'A one-off fix.'"])
+
+    def test_changelog_entry_says_what_is_not_reported(self):
+        # The entry names each NO_COUNT compound, and says that a number word after any hyphen is
+        # skipped, not only one that ends a compound, and that "one-off" is still reported.
+        entry = unreleased_entry("`scripts/test_checks.py` does not report")
+        self.assertEqual([compound for compound in NO_COUNT if f'"{compound}"' not in entry], [])
+        self.assertIn("a number word that follows a hyphen", entry)
+        self.assertIn('as "one-off" does', entry)
 
     def test_a_hyphenated_compound_that_states_a_count_is_reported(self):
         # "a two-item list" and "the five-field form" (AIP-SPEC.md uses "five-field", "seven-field"
@@ -708,15 +742,21 @@ class MissingDraftHistory(unittest.TestCase):
     # draft's txt.
     HISTORIES = ("shallow", "git fails", "draft unchanged")
 
-    def outcome(self, ci: str | None, history: str = "shallow", git: str | None = "git") -> BaseException:
-        """Return what spec_when_draft_was_made raises where the history is missing, with CI set to ci or unset."""
+    def outcome(
+        self, ci: str | None, history: str = "shallow", git: str | None = "git",
+        stderr: str = "fatal: not a git repository\n",
+    ) -> BaseException:
+        """Return what spec_when_draft_was_made raises where the history is missing, with CI set to ci or unset.
+
+        Where history is "git fails", every git command exits 128 and prints stderr.
+        """
         env = {name: value for name, value in os.environ.items() if name != "CI"}
         if ci is not None:
             env["CI"] = ci
 
         def run(args: list[str], **_: object) -> subprocess.CompletedProcess:
             if history == "git fails":
-                return subprocess.CompletedProcess(args, 128, stdout="", stderr="fatal: not a git repository\n")
+                return subprocess.CompletedProcess(args, 128, stdout="", stderr=stderr)
             if args[1] == "rev-parse":
                 shallow = "true\n" if history == "shallow" else "false\n"
                 return subprocess.CompletedProcess(args, 0, stdout=shallow, stderr="")
@@ -734,8 +774,9 @@ class MissingDraftHistory(unittest.TestCase):
         self.fail(f"the specification was returned where the history is missing ({history})")
 
     def test_missing_history_skips_outside_ci(self):
-        # CI is read without regard to letter case, so "FALSE" skips as "false" does.
-        for ci in (None, "", "false", "0", "FALSE", " False "):
+        # CI is read without regard to letter case or surrounding spaces, so "FALSE" and " False "
+        # skip as "false" does, and " " as "" does.
+        for ci in (None, "", " ", "false", "0", "FALSE", " False "):
             for history in self.HISTORIES:
                 with self.subTest(ci=ci, history=history):
                     raised = self.outcome(ci, history)
@@ -760,6 +801,31 @@ class MissingDraftHistory(unittest.TestCase):
                 self.assertIsInstance(raised, kind)
                 self.assertIn("install git", str(raised))
                 self.assertNotIn("full clone", str(raised))
+
+    def test_a_git_failure_quotes_what_git_said(self):
+        # git can fail where the history is present, as over the repository's ownership or with
+        # GIT_DIR set elsewhere, and a full clone does not help there, so the reason quotes the
+        # first line of git's message and the remedy starts from it.
+        stderr = "fatal: detected dubious ownership in repository at '/repo'\nTo add an exception, call:\n"
+        for ci, kind in ((None, unittest.SkipTest), ("true", AssertionError)):
+            with self.subTest(ci=ci):
+                raised = self.outcome(ci, "git fails", stderr=stderr)
+                self.assertIsInstance(raised, kind)
+                self.assertIn("""saying "fatal: detected dubious ownership in repository at '/repo'",""", str(raised))
+                self.assertNotIn("To add an exception", str(raised))
+                self.assertIn("resolve what git reports, or use a full clone", str(raised))
+        for ci in (None, "true"):
+            with self.subTest(ci=ci, stderr=""):
+                self.assertIn("git rev-parse failed here, so", str(self.outcome(ci, "git fails", stderr="")))
+
+    def test_docs_say_how_ci_is_read_and_what_a_git_failure_reports(self):
+        # history_missing strips CI before reading it, so " false " skips; the module docstring and
+        # the CHANGELOG entry say so, as the history_missing docstring does. The entry also says a
+        # git failure quotes git.
+        entry = unreleased_entry("The two cases of `scripts/test_checks.py`")
+        for text in (" ".join(sys.modules[__name__].__doc__.split()), entry):
+            self.assertIn("in any letter case or with surrounding spaces", text)
+        self.assertIn("the first line of git's message", entry)
 
 
 STATUSES = ("Specified", "Implemented", "Tested in conformance")
