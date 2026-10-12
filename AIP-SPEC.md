@@ -6,6 +6,8 @@
 **Authors:** OpenA2A
 **Date:** October 2026 (first published March 2026)
 
+> **Version note.** This text is 1.2.0-draft, dated 2026-10-06, with later changes that no dated version carries yet. [CHANGELOG.md](./CHANGELOG.md) lists them under Unreleased, and those to §3.1 and §5.4 change a requirement. `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft as dated; the [repository README](./README.md#specification) lists where this text differs from that draft.
+
 > **Naming note.** As of 2026-09-30, at least three other Internet-Drafts use the abbreviation "AIP" for an agent identity protocol: draft-aip-agent-identity-protocol-00 (James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), first published 2026-03-16, expired 2026-09-17), draft-singla-agent-identity-protocol (Singla, first published 2026-04-16, active) and draft-prakash-aip (revision 01, 2026-08-19, active). When referenced outside this document, use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
 
 ---
@@ -28,10 +30,10 @@ AIP is designed to complement existing protocols and standards. Each line below 
 
 - **Google A2A** — AIP identity in the agent card. Agents verify each other via AIP before task delegation. *Status: implemented in part, for the agent card. The card the reference implementation serves carries the agent's ID and registered public key in an `aim` extension, and that ID is the UUID the provider assigns (§3.1). Appendix A lists the reference implementation's A2A verification service, which this status does not assess.*
 - **Anthropic MCP** — AIP capabilities map to MCP tool permissions. MCP servers verify connecting agents via AIP challenge-response. *Status: implemented in part. The reference implementation checks capabilities (§4, Appendix A.1) and does not serve the §5.1 exchange a server would use to verify a connecting agent (§5, Appendix A.1).*
-- **OpenID Connect** — AIP agent tokens extend OAuth 2.0 for machine-to-machine authentication. *Status: implemented in part. The reference implementation serves an OAuth 2.0 token endpoint (RFC 6749) that accepts the JWT-bearer grant type of RFC 7523, where a registered agent exchanges an assertion signed with its Ed25519 key for a bearer access token (GAP-ANALYSIS). That endpoint returns no OpenID Connect ID token, and §5.4 defines AIP's own JWT bearer tokens and no OAuth 2.0 or OpenID Connect flow.*
+- **OpenID Connect** — AIP agent tokens extend OAuth 2.0 for machine-to-machine authentication. *Status: implemented in part. The reference implementation serves an OAuth 2.0 token endpoint (RFC 6749) that accepts the JWT-bearer grant type of RFC 7523, where a registered agent exchanges an assertion signed with its Ed25519 key for a bearer access token (GAP-ANALYSIS). The request carries that assertion in `client_assertion`, with `client_id` and `client_assertion_type`; the endpoint reads no `assertion` parameter, in which RFC 7523 Section 2.1 carries the JWT. That endpoint returns no OpenID Connect ID token, and §5.4 defines AIP's own JWT bearer tokens and no OAuth 2.0 or OpenID Connect flow.*
 - **WebAuthn/FIDO2** — AIP key storage can use hardware authenticators for high-assurance agent identity. *Status: specified (§11.1, §12.1); not implemented by the reference implementation (GAP-ANALYSIS).*
 - **W3C Verifiable Credentials** — AIP trust scores expressed as VCs for cross-platform portability. *Status: specified (§6.4); not implemented by the reference implementation (GAP-ANALYSIS).*
-- **ATP (Agent Trust Protocol)** — AIP provides identity; ATP provides ecosystem-wide trust verification. They're complementary layers. *Status: implemented in part. The reference implementation has a one-way push through its registry bridge (GAP-ANALYSIS), and AIP trust scores are not yet wired into the ATP transparency log (§6.5, Appendix A.1).*
+- **ATP (Agent Trust Protocol)** — AIP provides identity; ATP provides ecosystem-wide trust verification. They're complementary layers. *Status: implemented in part. The reference implementation has a one-way push through its registry bridge (GAP-ANALYSIS), and AIP trust scores are not yet wired into the ATP transparency log (Appendix A.1).*
 
 This specification defines the protocol. The OpenA2A AIM (Agent Identity Management) platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation.
 
@@ -115,7 +117,7 @@ First 12 bytes, base64url:  PUAXw-hDiVqStwqn
 Agent ID:                   aim_PUAXw-hDiVqStwqn
 ```
 
-Revisions up to 1.2.0-draft specified the agent ID as "aim_" followed by the first 8 hexadecimal characters of SHA-256(public_key). Neither the reference CLI nor the reference provider produces that form, and identity files already created carry the form above, so this section specifies the form in use. For the key above the earlier rule gives `aim_39f713d0`, which is not a locally derived agent ID.
+The 1.2.0-draft text dated 2026-10-06, which `draft-fane-opena2a-aip-04` pairs with, and every earlier revision specified the agent ID as "aim_" followed by the first 8 hexadecimal characters of SHA-256(public_key). Neither the reference CLI nor the reference provider produces that form, and identity files already created carry the form above, so this section specifies the form in use. For the key above the earlier rule gives `aim_39f713d0`, which is not a locally derived agent ID.
 
 Implementations SHOULD also support hybrid Ed25519 + ML-DSA-65 (FIPS 204) for post-quantum readiness:
 
@@ -968,6 +970,11 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 - RFC 2119 — Key words for use in RFCs
 - RFC 8032 — Edwards-Curve Digital Signature Algorithm (Ed25519)
 - RFC 7519 — JSON Web Token (JWT)
+- RFC 3339 — Date and Time on the Internet: Timestamps
+- RFC 4648 — The Base16, Base32, and Base64 Data Encodings
+- RFC 6749 — The OAuth 2.0 Authorization Framework
+- RFC 7523 — JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants
+- RFC 8785 — JSON Canonicalization Scheme (JCS)
 - W3C DID Core — Decentralized Identifiers v1.0
 - W3C DID Extensions registry: `did:opena2a` method entry (w3c/did-extensions#717, merged 2026-07-04)
 - W3C CCG did:web Method Specification: the `did:web` method under which provider-scoped AIP identifiers are issued (§3.2)

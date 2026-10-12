@@ -33,7 +33,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 | Challenge-response (Ed25519) | Complete | `apps/backend/internal/application/verification_event_service.go` |
 | MCP verification flow | Complete | `mcp_service.go` |
 | A2A verification flow | Complete | `a2a_service.go` |
-| OAuth 2.0 / OIDC | Partial (*updated 2026-10*): the backend serves an OAuth 2.0 token endpoint, `POST /api/v1/oauth/token` (RFC 6749), that accepts the JWT-bearer grant type of RFC 7523 from a registered agent and returns a bearer access token, and a device authorization grant (RFC 8628) for CLI login. No code that issues an OpenID Connect ID token was found | `handlers/oauth_token_handler.go`, `handlers/device_auth_handler.go` |
+| OAuth 2.0 / OIDC | Partial (*updated 2026-10*): the backend serves an OAuth 2.0 token endpoint, `POST /api/v1/oauth/token` (RFC 6749), that accepts the JWT-bearer grant type of RFC 7523 from a registered agent and returns a bearer access token, and a device authorization grant (RFC 8628) for CLI login. The token request carries the agent's signed JWT in `client_assertion`, with `client_id` and `client_assertion_type`; the handler reads no `assertion` parameter, in which RFC 7523 Section 2.1 carries the JWT. No code that issues an OpenID Connect ID token was found | `handlers/oauth_token_handler.go`, `handlers/device_auth_handler.go` |
 | WebAuthn/FIDO2 | NOT IMPLEMENTED | - |
 | JWT tokens | Complete (custom, not standard OAuth) | `infrastructure/auth/jwt.go` |
 | API keys | Complete | `api_key_service.go` |
@@ -88,6 +88,15 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 |-----------------|----------------------|------|
 | /.well-known/aip | NOT IMPLEMENTED | - |
 
+### Integration Patterns (Section 11)
+
+The rows below restate what the Google A2A and Anthropic MCP lines of the README Interoperability list and of the AIP-SPEC abstract say as of 2026-10-11; they add no new reading of the source. The verification flows of both protocols have their own rows under Verification.
+
+| Spec Requirement | Implementation Status | File |
+|-----------------|----------------------|------|
+| A2A agent card identity | Partial (*updated 2026-10*): the agent card the backend serves carries the agent's ID and registered public key in an `aim` extension, and that ID is the UUID the provider assigns (AIP-SPEC §3.1), not an `aim_` agent ID | not recorded in this analysis |
+| MCP capability-based tool access | Partial (*updated 2026-10*): the backend checks an agent's capabilities server-side; it does not serve the §5.1 exchange an MCP server would use to verify a connecting agent (AIP-SPEC Appendix A.1, the §5 row) | `apps/backend/internal/application/capability_service.go` |
+
 ---
 
 ## Priority Implementation Order
@@ -96,7 +105,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 2. **DID resolution** — required for Level 3 and cross-platform identity
 3. **Complete trust scoring** — implement compliance, drift, feedback factors
 4. **Verifiable Credentials** — trust scores as W3C VCs for portability
-5. **OAuth 2.0 / OIDC** — re-add for standard machine-to-machine auth
+5. **OpenID Connect ID token** — the backend serves an OAuth 2.0 token endpoint that returns a bearer access token (Verification table above); what is missing is an OpenID Connect ID token
 6. **WebAuthn/FIDO2** — browser-based key storage for Chrome integration
 7. **Capability negotiation** — runtime negotiation protocol between agents
 8. **YAML policy format** — declarative governance policies
