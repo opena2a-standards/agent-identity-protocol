@@ -103,14 +103,19 @@ Every agent MUST have an Ed25519 keypair (RFC 8032).
 ```
 Private key: 64 bytes (generated via crypto/rand)
 Public key:  32 bytes (derived from private key)
-Agent ID:    "aim_" + first 8 hex chars of SHA-256(public_key)
+Agent ID:    "aim_" + base64url(first 12 bytes of public_key), 16 characters
 ```
 
-Example:
+The encoding is the URL and filename safe base64 alphabet of RFC 4648 Section 5. Twelve bytes encode to exactly 16 characters, so the agent ID carries no padding. A tool that creates an identity locally derives its agent ID this way, so anyone holding the public key can recompute it. An identity provider MAY instead assign its own identifier to an agent it registers: the reference provider assigns each agent a UUID and carries it in the agent's DID (§3.2). A verifier treats an agent ID of either kind as an opaque string bound to a key by its registration state (§3.2), and does not recompute it to authenticate the agent.
+
+Example, for the public key of the §5.1.2 `challenge-response-valid` fixture:
 ```
-Agent ID:    aim_7f3a9c2e
-Public Key:  ed25519:x8Kp2mN...4RqW (base64)
+Public key (base64):        PUAXw+hDiVqStwqnTRt+vJyYLM8uxJaMwM1V8Sr0Zgw
+First 12 bytes, base64url:  PUAXw-hDiVqStwqn
+Agent ID:                   aim_PUAXw-hDiVqStwqn
 ```
+
+Revisions up to 1.2.0-draft specified the agent ID as "aim_" followed by the first 8 hexadecimal characters of SHA-256(public_key). Neither the reference CLI nor the reference provider produces that form, and identity files already created carry the form above, so this section specifies the form in use. For the key above the earlier rule gives `aim_39f713d0`, which is not a locally derived agent ID.
 
 Implementations SHOULD also support hybrid Ed25519 + ML-DSA-65 (FIPS 204) for post-quantum readiness:
 
@@ -191,10 +196,10 @@ Identity file format:
 
 ```json
 {
-  "id": "aim_7f3a9c2e",
+  "id": "aim_PUAXw-hDiVqStwqn",
   "name": "my-agent",
   "type": "claude",
-  "publicKey": "ed25519:x8Kp2mN...4RqW",
+  "publicKey": "ed25519:PUAXw+hDiVqStwqn...Zgw",
   "encryptedPrivateKey": "aes-256-gcm:...",
   "capabilities": ["file:read", "api:call"],
   "declaredPurpose": {
@@ -500,7 +505,7 @@ Every verification attempt MUST be logged as a verification event:
 ```json
 {
   "id": "evt_abc123",
-  "agentId": "aim_7f3a9c2e",
+  "agentId": "aim_PUAXw-hDiVqStwqn",
   "protocol": "mcp",
   "verificationType": "identity",
   "status": "success",
@@ -678,7 +683,7 @@ Where α and β are configurable weights (default: α=0.5, β=0.5).
 Agent governance policies are expressed in YAML:
 
 ```yaml
-agent: aim_7f3a9c2e
+agent: aim_PUAXw-hDiVqStwqn
 policies:
   - name: "Require approval for file writes"
     capability: "file:write"
@@ -751,7 +756,7 @@ Agents SHOULD rotate keys periodically. The rotation protocol:
 
 ```json
 {
-  "agentId": "aim_7f3a9c2e",
+  "agentId": "aim_PUAXw-hDiVqStwqn",
   "currentKey": "ed25519:newKey...",
   "previousKey": "ed25519:oldKey...",
   "keyRotationGraceUntil": "2026-03-29T14:00:00Z"
@@ -796,9 +801,9 @@ Level 1 implementations MUST maintain a local append-only audit log:
 Each line is a JSON event:
 
 ```json
-{"type":"identity_created","agentId":"aim_7f3a9c2e","timestamp":"2026-03-22T10:00:00Z"}
-{"type":"verification_success","agentId":"aim_7f3a9c2e","protocol":"mcp","durationMs":42,"timestamp":"2026-03-22T10:01:00Z"}
-{"type":"capability_violation","agentId":"aim_7f3a9c2e","capability":"system:exec","severity":"critical","blocked":true,"timestamp":"2026-03-22T10:02:00Z"}
+{"type":"identity_created","agentId":"aim_PUAXw-hDiVqStwqn","timestamp":"2026-03-22T10:00:00Z"}
+{"type":"verification_success","agentId":"aim_PUAXw-hDiVqStwqn","protocol":"mcp","durationMs":42,"timestamp":"2026-03-22T10:01:00Z"}
+{"type":"capability_violation","agentId":"aim_PUAXw-hDiVqStwqn","capability":"system:exec","severity":"critical","blocked":true,"timestamp":"2026-03-22T10:02:00Z"}
 ```
 
 > **Reference implementation status (2026-10-11, the packages named in Section 3.3).** The CLI appends events to `~/.opena2a/aim-core/audit.jsonl` (aim-core `dist/audit.js:42`), but `opena2a-cli identity create` writes none, so the log holds no `identity_created` event. An event written by `opena2a-cli identity log` has the keys `timestamp`, `action`, `target`, `result` and `plugin`, not the `type` and `agentId` keys shown above. This revision specifies the target; it does not change the tool.
@@ -996,7 +1001,7 @@ The reference implementation's coverage is uneven and the gaps are tracked publi
 
 | AIP / AIP-adjacent section | AIM status | Notes |
 |---|---|---|
-| §3 Agent Identity (Ed25519 keypair, agent ID, DID) | Shipped | `crypto/keygen.go`, `domain/agent.go`. Server-side key generation; agent receives Ed25519 public key registered on its record. DID resolution serves the deprecated alias form only and rejects other prefixes (`handlers/aip_handler.go:68`); the `did:web` route of §3.2 is not implemented as of 2026-09-08. |
+| §3 Agent Identity (Ed25519 keypair, agent ID, DID) | Shipped | `crypto/keygen.go`, `domain/agent.go`. Server-side key generation; agent receives Ed25519 public key registered on its record. The provider identifies each agent by a UUID it assigns, as §3.1 permits, and derives no `aim_` agent ID; `opena2a-cli identity create` derives the §3.1 agent ID from the public key. DID resolution serves the deprecated alias form only and rejects other prefixes (`handlers/aip_handler.go:68`); the `did:web` route of §3.2 is not implemented as of 2026-09-08. |
 | §3 Hybrid PQC signing (Ed25519 + ML-DSA-65) | Shipped end to end on the registry path | Registry-side code paths below are in a private repository; the publicly checkable evidence for this row is the hybrid fixture in [`atx-conformance`](https://github.com/opena2a-standards/atx-conformance) (`fixtures/baseline-valid-hybrid.json`), which the Go reference verifier accepts on both algorithms. Registry-side `ATCService.IssueATC()` at `opena2a-registry/internal/application/atc_service.go` emits hybrid signatures in production: threshold Ed25519 plus one ML-DSA-65 signature from the hybrid keypair wired in at `cmd/server/main.go:682-685` (startup log: "ATC post-quantum hybrid signing enabled (Ed25519 + ML-DSA-65)"). The ML-DSA-65 signature `Value` is the raw 3309-byte `mldsa65.SignatureSize` blob as of opena2a-registry PR #215 (prior credentials carried a legacy combined Ed25519+ML-DSA blob; ATC TTL is 7 days, so the rollover is naturally complete one week after PR #215 ships). The standalone offline-verify package `opena2a-registry/pkg/atcverify` enforces the hybrid signing mandate as of opena2a-registry PR #214: when a credential declares an ML-DSA-65 signature, at least one ML-DSA-65 signature must verify in addition to at least one Ed25519 signature. A parallel AIM-side CBOR issuer (`agent-identity-management/apps/backend/internal/infrastructure/atc/atc_issuer.go` `RealATCIssuer`) signs Ed25519 only and has no active production callers today. |
 | §4 Capabilities | Shipped | `application/capability_service.go`, FGA engine at `application/fga_engine.go` with 5-step blocking enforcement (capability, attribute, context, chain, intent). |
 | §4 JIT capability grants with TTL | Partial | TTL exists for PAM (Privileged Access Management) emergency-escalation grants. Routine capability grants are static. |

@@ -6,6 +6,23 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ## [Unreleased]
 
+### Changed
+
+- `AIP-SPEC.md` §3.1 defines the agent ID as `aim_` followed by the base64url encoding (RFC 4648
+  Section 5) of the first 12 bytes of the public key, 16 characters, the form
+  `opena2a-cli identity create` prints and writes to identity files. It previously gave `aim_`
+  followed by the first 8 hexadecimal characters of SHA-256 of the public key, a form neither the
+  CLI nor the reference provider produces. §3.1 also says a provider MAY assign its own
+  identifier instead (the reference provider assigns a UUID) and that a verifier treats either
+  kind as opaque. Its example is now a vector: the public key of the §5.1.2
+  `challenge-response-valid` fixture and the agent ID derived from it, `aim_PUAXw-hDiVqStwqn`,
+  which replaces `aim_7f3a9c2e` in every example. Appendix A.1 and GAP-ANALYSIS.md say the CLI
+  derives the agent ID and the provider assigns a UUID. `draft-fane-opena2a-aip-04`, as
+  submitted, still gives the SHA-256 form in Section 4.1; README.md says so.
+- `tests/test_agent_id.py` derives the agent ID of the §3.1 example from its public key and checks
+  it, checks that every other `aim_` agent ID in `AIP-SPEC.md` has the §3.1 shape, and checks the
+  README Quick Start agent ID against the public key printed beside it.
+
 ### Fixed
 
 - `AIP-SPEC.md` Sections 3.3 and 9.1 carry a reference implementation status note, as Section

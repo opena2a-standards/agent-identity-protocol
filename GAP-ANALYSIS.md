@@ -10,7 +10,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 |-----------------|----------------------|------|
 | Ed25519 keypair generation | Complete | `apps/backend/internal/crypto/keygen.go` |
 | ML-DSA-65 hybrid signing | Complete | `apps/backend/internal/crypto/pqc/hybrid.go` |
-| Agent ID format (aim_XXXXXXXX) | Complete | `apps/backend/internal/domain/agent.go` |
+| Agent ID format (`aim_` + 16 base64url characters, AIP-SPEC §3.1) | Complete in the CLI (*updated 2026-10*): `opena2a-cli identity create` derives it from the public key. The provider assigns each agent a UUID instead and has no `aim_` derivation, which §3.1 permits | `apps/backend/internal/domain/agent.go` (UUID) |
 | DID resolution | Partial (*updated 2026-09*): the resolver answers the deprecated pre-1.1 alias form only; the `did:web` form and its `did.json` route (AIP-SPEC §3.2, 1.1.0-draft) are not implemented | `handlers/aip_handler.go` (ResolveDID), `domain/agent_did.go` |
 | DID Document generation | Complete (*updated 2026-07*) — W3C DID Document served by the resolver | `handlers/aip_handler.go` |
 | Local identity file format | Partial — SDK creates files but format not standardized | `sdk/typescript/` |
