@@ -24,14 +24,14 @@ AIP provides:
 6. **Lifecycle** — creation, rotation, suspension, and revocation of agent identities (Section 8)
 7. **Audit** — append-only event log for accountability (Section 9)
 
-AIP is designed to complement existing protocols and standards:
+AIP is designed to complement existing protocols and standards. Each line below ends with a status, as of 2026-10-11, for what that line describes, read against the reference implementation named after the list: *specified* (this document describes it and no code for it was found in the reference implementation), *implemented* (the reference implementation has code for it) or *tested in conformance* (a fixture in the [`aip-conformance`](https://github.com/opena2a-standards/aip-conformance) suite exercises it). None of the six is tested in conformance: that suite's fixtures cover the §5.1 challenge-response and the §6.1 trust-score composition. The statuses are informative.
 
-- **Google A2A** — AIP identity in the agent card. Agents verify each other via AIP before task delegation.
-- **Anthropic MCP** — AIP capabilities map to MCP tool permissions. MCP servers verify connecting agents via AIP challenge-response.
-- **OpenID Connect** — AIP agent tokens extend OAuth 2.0 for machine-to-machine authentication.
-- **WebAuthn/FIDO2** — AIP key storage can use hardware authenticators for high-assurance agent identity.
-- **W3C Verifiable Credentials** — AIP trust scores expressed as VCs for cross-platform portability.
-- **ATP (Agent Trust Protocol)** — AIP provides identity; ATP provides ecosystem-wide trust verification. They're complementary layers.
+- **Google A2A** — AIP identity in the agent card. Agents verify each other via AIP before task delegation. *Status: specified. No AIP identifier field was found in the reference implementation's agent card. Appendix A lists the reference implementation's A2A verification service, which this status does not assess.*
+- **Anthropic MCP** — AIP capabilities map to MCP tool permissions. MCP servers verify connecting agents via AIP challenge-response. *Status: implemented in part. The reference implementation checks capabilities (§4, Appendix A.1) and does not serve the §5.1 exchange a server would use to verify a connecting agent (§5, Appendix A.1).*
+- **OpenID Connect** — AIP agent tokens extend OAuth 2.0 for machine-to-machine authentication. *Status: specified, in this line only. §5.4 defines AIP's own JWT bearer tokens and no OAuth 2.0 or OpenID Connect flow, and the reference implementation removed its OAuth 2.0 and OIDC code (GAP-ANALYSIS).*
+- **WebAuthn/FIDO2** — AIP key storage can use hardware authenticators for high-assurance agent identity. *Status: specified (§11.1, §12.1); not implemented by the reference implementation (GAP-ANALYSIS).*
+- **W3C Verifiable Credentials** — AIP trust scores expressed as VCs for cross-platform portability. *Status: specified (§6.4); not implemented by the reference implementation (GAP-ANALYSIS).*
+- **ATP (Agent Trust Protocol)** — AIP provides identity; ATP provides ecosystem-wide trust verification. They're complementary layers. *Status: implemented in part. The reference implementation has a one-way push through its registry bridge (GAP-ANALYSIS), and AIP trust scores are not yet wired into the ATP transparency log (§6.5, Appendix A.1).*
 
 This specification defines the protocol. The OpenA2A AIM (Agent Identity Management) platform (`github.com/opena2a-org/agent-identity-management`) is the reference implementation.
 

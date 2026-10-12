@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Regression tests for scripts/check_draft_sync.py, the README link lists and Quick Start,
-the prior-art attribution in README.md, AIP-SPEC.md and GAP-ANALYSIS.md, and the JWT
-access-token lifetime in AIP-SPEC.md §5.4.
+the prior-art attribution in README.md, AIP-SPEC.md and GAP-ANALYSIS.md, the JWT
+access-token lifetime in AIP-SPEC.md §5.4, and the status on each line of the two lists of
+protocols AIP is designed to complement.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Runs on its own:
@@ -330,6 +331,77 @@ class JwtAccessTokenLifetime(unittest.TestCase):
         paragraph = next(p for p in re.split(r"\n\s*\n", readme) if p.startswith("**Internet-Draft.**"))
         for claim in ("§5.4", "Section 6.4 of the draft", '"a one-hour time-to-live"'):
             self.assertTrue(claim in paragraph, f"Internet-Draft paragraph does not say {claim!r}")
+
+
+STATUSES = ("Specified", "Implemented", "Tested in conformance")
+README_STATUS = re.compile(r"\*\*(%s)\*\*" % "|".join(STATUSES))
+SPEC_STATUS = re.compile(r"\*Status: (%s)\b" % "|".join(STATUSES).lower())
+# The protocols with a GAP-ANALYSIS.md row for what the list says of them: the name each list
+# uses, then the row.
+GAP_ROWS = {
+    "OpenID Connect": "OAuth 2.0 / OIDC",
+    "WebAuthn/FIDO2": "WebAuthn/FIDO2",
+    "W3C Verifiable Credentials": "Verifiable Credential expression",
+    "ATP (Agent Trust Protocol)": "ATP integration",
+}
+
+
+def complemented(text: str, end: str, bullet: str) -> list[str]:
+    """Return the list items between "AIP is designed to complement" and the line starting with end."""
+    lines = text.splitlines()
+    start = next(i for i, line in enumerate(lines) if line.startswith("AIP is designed to complement"))
+    stop = next(i for i, line in enumerate(lines) if i > start and line.startswith(end))
+    return [line for line in lines[start:stop] if line.startswith(bullet)]
+
+
+def statuses(items: list[str], pattern: re.Pattern[str]) -> dict[str, list[str]]:
+    """Map each item's protocol name to the statuses it carries, capitalised as in STATUSES."""
+    named = {}
+    for item in items:
+        name = re.match(r"- (?:\[|\*\*)([^\]*]+)", item).group(1)
+        named[name] = [found.capitalize() for found in pattern.findall(item)]
+    return named
+
+
+def gap_status(row: str) -> str:
+    """Return the status GAP-ANALYSIS.md gives a row: no code is Specified, some code is Implemented."""
+    gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
+    cell = next(line.split("|")[2].strip() for line in gap.splitlines() if line.startswith(f"| {row} |"))
+    return "Specified" if cell.startswith(("NOT IMPLEMENTED", "REMOVED")) else "Implemented"
+
+
+class ComplementedProtocols(unittest.TestCase):
+    """Each protocol AIP is designed to complement carries one status, in the README and in the spec."""
+
+    def setUp(self):
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        self.readme = statuses(complemented(readme, "## ", "- ["), README_STATUS)
+        self.spec = statuses(complemented(spec, "This specification defines", "- **"), SPEC_STATUS)
+
+    def test_each_readme_line_carries_one_status(self):
+        self.assertEqual(len(self.readme), 6, self.readme)
+        self.assertEqual({name: found for name, found in self.readme.items() if len(found) != 1}, {})
+
+    def test_each_spec_line_carries_one_status(self):
+        self.assertEqual(len(self.spec), 6, self.spec)
+        self.assertEqual({name: found for name, found in self.spec.items() if len(found) != 1}, {})
+
+    def test_readme_and_spec_give_each_protocol_the_same_status(self):
+        self.assertEqual(list(self.readme.values()), list(self.spec.values()))
+
+    def test_status_matches_the_gap_analysis_row(self):
+        # A protocol whose row says NOT IMPLEMENTED or REMOVED is Specified, and one whose row
+        # reports code is Implemented, so neither list can claim code the gap analysis denies.
+        for name, row in GAP_ROWS.items():
+            with self.subTest(protocol=name):
+                self.assertEqual(self.readme[name], [gap_status(row)])
+                self.assertEqual(self.spec[name], [gap_status(row)])
+
+    def test_readme_defines_each_status_before_the_list(self):
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        intro = next(line for line in readme.splitlines() if line.startswith("AIP is designed to complement"))
+        self.assertEqual([status for status in STATUSES if f"**{status}**" not in intro], [])
 
 
 if __name__ == "__main__":

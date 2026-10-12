@@ -31,6 +31,18 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   draft, and its prior-art table dates draft-singla-agent-identity-protocol-00 2026-04-16, the
   datatracker submission date the other two files use, instead of 2026-04-17, the date printed on
   the document.
+- The README Interoperability list and the list of protocols AIP is designed to complement in the
+  `AIP-SPEC.md` abstract end each of their six lines with a status as of 2026-10-11: specified,
+  implemented, or tested in conformance. Both lists stated all six without one. Google A2A identity
+  in the agent card, OpenID Connect, WebAuthn/FIDO2 and W3C Verifiable Credentials are specified,
+  with no code for them found in the reference implementation. Anthropic MCP and ATP are
+  implemented in part: the reference implementation checks capabilities and has a one-way push
+  through its registry bridge, and it does not serve the §5.1 exchange or wire AIP trust scores
+  into the ATP transparency log. None of the six is tested in conformance. The statuses are
+  informative, and `draft-fane-opena2a-aip-04` does not carry them; the README's Internet-Draft
+  paragraph says so. `scripts/test_checks.py` checks that each line of both lists carries one
+  status, that the two lists agree, and that the status matches the protocol's `GAP-ANALYSIS.md`
+  row.
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names

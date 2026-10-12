@@ -75,7 +75,7 @@ Why you can check this yourself: [`AIP-SPEC.md`](AIP-SPEC.md) and the Internet-D
 
 [AIP-SPEC.md](AIP-SPEC.md) — the full protocol specification.
 
-**Internet-Draft.** This specification is also published as the individual Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/). This repository's specification is 1.2.0-draft, and `draft-fane-opena2a-aip-04` carries it except for two statements of §6.1 that Section 7.1 of the draft lacks, both in the specification when that revision was made: "AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged" and "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them". Two changes have been made to the specification since that revision. One is editorial: §12.1 now reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". The other is in §5.4, which now says a JWT access token's lifetime SHOULD NOT exceed 2 hours, where Section 6.4 of the draft gives JWT bearer tokens "a one-hour time-to-live". That revision, submitted 2026-10-06, is the current datatracker revision. Its txt there matches the txt in this repository; the xml in this repository has since dropped its `submissionType` attribute and tags its BCP 14 keywords. The 1.2.0-draft entry in [CHANGELOG.md](CHANGELOG.md) lists what changed.
+**Internet-Draft.** This specification is also published as the individual Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/). This repository's specification is 1.2.0-draft, and `draft-fane-opena2a-aip-04` carries it except for two statements of §6.1 that Section 7.1 of the draft lacks, both in the specification when that revision was made: "AIP-conformant implementations MAY substitute their own per-factor scoring functions provided the factor set, weights, and 0.0-1.0 composite range remain unchanged" and "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them". Two changes have been made to the specification since that revision. One is editorial: §12.1 now reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". The other is in §5.4, which now says a JWT access token's lifetime SHOULD NOT exceed 2 hours, where Section 6.4 of the draft gives JWT bearer tokens "a one-hour time-to-live". One informative addition has been made too: each line of the abstract's list of protocols AIP is designed to complement ends with an implementation status, which Section 1 of the draft does not give. That revision, submitted 2026-10-06, is the current datatracker revision. Its txt there matches the txt in this repository; the xml in this repository has since dropped its `submissionType` attribute and tags its BCP 14 keywords. The 1.2.0-draft entry in [CHANGELOG.md](CHANGELOG.md) lists what changed.
 
 ## Conformance Levels
 
@@ -87,13 +87,16 @@ Why you can check this yourself: [`AIP-SPEC.md`](AIP-SPEC.md) and the Internet-D
 
 ## Interoperability
 
-AIP is designed to complement:
-- [Google A2A Protocol](https://github.com/a2aproject/A2A) — AIP identity in agent cards
-- [Anthropic MCP](https://modelcontextprotocol.io) — capability-based tool access control
-- [OpenID Connect](https://openid.net/connect/) — JWT tokens for machine-to-machine auth
-- [WebAuthn/FIDO2](https://www.w3.org/TR/webauthn-3/) — hardware key storage for browsers
-- [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) — trust scores as VCs
-- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust
+AIP is designed to complement the six protocols below. Each line ends with a status, as of 2026-10-11, for what that line describes. **Specified** means AIP-SPEC describes it and no code for it was found in the reference implementation. **Implemented** means the reference implementation has code for it. **Tested in conformance** means a fixture in [aip-conformance](https://github.com/opena2a-standards/aip-conformance) exercises it; none of the six is, because that suite's fixtures cover the Section 5.1 challenge-response and the Section 6.1 trust-score composition.
+
+- [Google A2A Protocol](https://github.com/a2aproject/A2A) — AIP identity in agent cards. **Specified**: no AIP identifier field was found in the reference implementation's agent card. Its A2A verification service (AIP-SPEC Appendix A) is not assessed here.
+- [Anthropic MCP](https://modelcontextprotocol.io) — capability-based tool access control. **Implemented** in part: the reference implementation checks an agent's capabilities server-side. Verifying a connecting agent by the Section 5.1 challenge-response is specified, and the reference implementation does not serve that exchange.
+- [OpenID Connect](https://openid.net/connect/) — JWT tokens for machine-to-machine auth. **Specified**, in the abstract only: Section 5.4 defines AIP's own JWT bearer tokens and no OAuth 2.0 or OpenID Connect flow, and the reference implementation removed its OAuth 2.0 and OIDC code.
+- [WebAuthn/FIDO2](https://www.w3.org/TR/webauthn-3/) — hardware key storage for browsers. **Specified** (Sections 11.1 and 12.1).
+- [W3C Verifiable Credentials](https://www.w3.org/TR/vc-data-model-2.0/) — trust scores as VCs. **Specified** (Section 6.4).
+- [ATP (Agent Trust Protocol)](https://github.com/opena2a-standards/agent-trust-protocol) — ecosystem trust. **Implemented** in part: the reference implementation has a one-way push through its registry bridge, and AIP trust scores are not yet wired into the ATP transparency log (Section 6.5).
+
+The rows behind these statuses are in [GAP-ANALYSIS.md](GAP-ANALYSIS.md) (OAuth 2.0 / OIDC, WebAuthn/FIDO2, Verifiable Credential expression, ATP integration) and in AIP-SPEC Appendix A.1 (§4 Capabilities, §5 Verification, §6.5 ATP integration).
 
 ## How AIP and ATP Work Together
 
