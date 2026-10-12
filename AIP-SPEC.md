@@ -522,7 +522,7 @@ Every verification attempt MUST be logged as a verification event:
 For programmatic access, AIP supports:
 
 - **API Keys** — SHA-256 hashed, stored server-side, base64-encoded for transport
-- **JWT Bearer Tokens** — HMAC-SHA256 signed, 1-hour TTL, containing agent ID and organization ID
+- **JWT Bearer Tokens** — HMAC-SHA256 signed, containing agent ID and organization ID; an access token's lifetime SHOULD NOT exceed 2 hours
 - **SDK Tokens** — scoped tokens for SDK operations (agent registration, verification)
 
 JWT claims:

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regression tests for scripts/check_draft_sync.py, the README link lists and Quick Start,
-and the prior-art attribution in README.md, AIP-SPEC.md and GAP-ANALYSIS.md.
+the prior-art attribution in README.md, AIP-SPEC.md and GAP-ANALYSIS.md, and the JWT
+access-token lifetime in AIP-SPEC.md §5.4.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Runs on its own:
@@ -312,6 +313,23 @@ class PriorArtAttribution(unittest.TestCase):
         readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
         row = next(line for line in readme.splitlines() if "[draft-singla-agent-identity-protocol-00]" in line)
         self.assertIn("| April 16, 2026", row)
+
+
+class JwtAccessTokenLifetime(unittest.TestCase):
+    # The reference implementation issues access tokens valid for 2 hours by default, and the
+    # lifetime is configurable, so §5.4 states a maximum instead of a fixed 1-hour TTL.
+    def test_spec_states_a_maximum_lifetime(self):
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        bullet = next(line for line in spec.splitlines() if line.startswith("- **JWT Bearer Tokens**"))
+        self.assertNotIn("1-hour", bullet)
+        self.assertNotIn("TTL", bullet)
+        self.assertIn("lifetime SHOULD NOT exceed 2 hours", bullet)
+
+    def test_readme_names_the_change_since_the_draft(self):
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        paragraph = next(p for p in re.split(r"\n\s*\n", readme) if p.startswith("**Internet-Draft.**"))
+        for claim in ("§5.4", "Section 6.4 of the draft", '"a one-hour time-to-live"'):
+            self.assertTrue(claim in paragraph, f"Internet-Draft paragraph does not say {claim!r}")
 
 
 if __name__ == "__main__":

@@ -20,6 +20,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   Level 2, instead of saying it implements Level 2. Level 2 requires challenge-response
   verification (Section 5), which Appendix A.1 marks Partial because the reference backend does
   not serve the Section 5.1 exchange.
+- `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
+  giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
+  valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,
+  as submitted, still gives "a one-hour time-to-live" in Section 6.4, and README.md now lists this
+  change beside the §12.1 one.
 - `AIP-SPEC.md`, `README.md` and `GAP-ANALYSIS.md` attribute draft-aip-agent-identity-protocol-00
   as that draft does: James Cao (Montcao), Carlos Eduardo Arango Gutierrez (NVIDIA). They had
   placed both authors at NVIDIA. The `GAP-ANALYSIS.md` comparison heading calls it the Cao/Arango
