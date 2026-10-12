@@ -214,13 +214,18 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   contain; it keeps the commands to run before a push and the sentence on what CI runs.
   `tests/test_check_scripts.py` checks that it names no slash command.
 - The two cases of `scripts/test_checks.py` that read `AIP-SPEC.md` as of the commit that made the
-  paired draft fail, instead of skipping, where the environment sets `CI` and git or that history
-  is missing, so a CI run from a shallow clone or an exported tree no longer reports OK without
-  running them. A CI job that runs the file needs a full clone (`actions/checkout` with
-  `fetch-depth: 0`). Elsewhere they still skip, and the skip reason says a full clone runs them.
-- `scripts/test_checks.py` does not report a number word joined by a hyphen, as in "one-way" or
-  "two-factor", as a count outside a lead-in, so a sentence such as "after a one-way comparison"
-  in the README Internet-Draft section no longer fails `test_no_count_stands_outside_a_lead_in`.
+  paired draft fail, instead of skipping, where `CI` is set to a value other than an empty
+  string, `0` or `false` (in any letter case) and git or that history is missing, so a CI run from
+  a shallow clone or an exported tree no longer reports OK without running them. A CI job that
+  runs the file needs git and a full clone (`actions/checkout` with `fetch-depth: 0`). Elsewhere
+  they still skip. The skip or failure reason names the remedy: install git where git is missing,
+  and otherwise use a full clone.
+- `scripts/test_checks.py` does not report "one-way", "two-way", "one-time", "one-hour",
+  "one-to-one" or "two-factor", or a number word that ends a hyphenated word, as in "non-zero", as
+  a count outside a lead-in, so a sentence such as "after a one-way comparison" in the README
+  Internet-Draft section no longer fails `test_no_count_stands_outside_a_lead_in`. A hyphenated
+  compound that states a count, such as "a two-item list" or "the five-field form", is still
+  reported.
 - The idnits sentence of the 1.2.0-draft pairing paragraph was corrected in place twice. It read
   "reports 0 errors and 6 warnings", with no date and no warning names. The first correction made
   it "0 errors and 6 warnings on 2026-10-06", named the six (`PREFER_BCP14_REF`, two
