@@ -3,8 +3,9 @@
 the prior-art attribution in README.md, AIP-SPEC.md and GAP-ANALYSIS.md, the JWT
 access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two lists of
 protocols AIP is designed to complement, the lists under the README's Internet-Draft paragraph,
-the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, and the version note
-AIP-SPEC.md carries while a change to a requirement is unreleased.
+the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, the version note
+AIP-SPEC.md carries while a change to a requirement is unreleased, and the trust factor status
+README.md, AIP-SPEC.md and GAP-ANALYSIS.md give.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Two cases read the specification as of
@@ -1224,6 +1225,65 @@ class UnreleasedRequirementChanges(unittest.TestCase):
         self.assertNotIn(f"specification is {self.version},", paragraph)
         self.assertIn(f"is {self.version} with later changes", paragraph)
         self.assertIn("lists them under Unreleased", paragraph)
+
+
+def paragraph(text: str, start: str) -> str:
+    """Return the paragraph of text that begins with start, up to the next blank line."""
+    lines = text.splitlines()
+    first = next(i for i, line in enumerate(lines) if line.startswith(start))
+    end = next((i for i in range(first, len(lines)) if not lines[i].strip()), len(lines))
+    return "\n".join(lines[first:end])
+
+
+class TrustFactorStatus(unittest.TestCase):
+    # The reference implementation has a scoring function for each of the nine trust factors:
+    # compliance, drift detection and user feedback are no longer stubs.
+
+    def test_spec_status_says_all_nine_factors_are_scored(self):
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        status = paragraph(spec, "**Per-factor implementation status")
+        self.assertNotIn("stub", status.lower())
+        self.assertIn("All nine factors have scoring functions", status)
+        self.assertNotIn("three proposed factors", spec)
+
+    def test_appendix_a1_row_names_no_stubbed_factor(self):
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        row = a1_rows(spec)["§6 Trust Scoring (9-factor)"]
+        self.assertNotIn("stub", row.lower())
+        self.assertIn("All nine factors have scoring functions", row)
+
+    def test_readme_lists_the_dropped_statement_as_a_change_since_the_draft(self):
+        # §6.1 dropped its SHOULD NOT on stubbed factors with the stubs. The README's list of
+        # statements the draft lacks quotes only what AIP-SPEC.md still says, and the dropped
+        # statement is named once, among the changes made since the draft.
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        dropped = "SHOULD NOT treat the stubbed factors as validated by the reference implementation"
+        self.assertNotIn(dropped, spec)
+        lists = counted_lists(draft_disclosure(readme))
+        lacking = [items for lead, items in lists if "not in Section 7.1 of the draft" in lead]
+        self.assertEqual(len(lacking), 1, [lead for lead, _ in lists])
+        self.assertEqual([item for item in lacking[0] if item[2:].strip('"') not in spec], [])
+        named = [item for _, items in lists for item in items if dropped in item]
+        self.assertEqual(len(named), 1, named)
+        self.assertTrue(named[0].startswith("- §6.1 no longer says"), named[0])
+
+    def test_readme_trust_use_case_names_no_stubbed_factor(self):
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        section = readme.split("### You run many agents", 1)[1].split("\n#", 1)[0]
+        stops = paragraph(section, "Where it stops today:")
+        self.assertNotIn("stub", stops.lower())
+        self.assertIn("all nine factors", stops)
+
+    def test_gap_analysis_lists_no_trust_factor_as_stub(self):
+        gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
+        table = gap.split("### Trust Scoring (Section 6)", 1)[1].split("\n#", 1)[0]
+        rows = [line.split("|")[1:3] for line in table.splitlines() if line.startswith("| ")]
+        status = {cells[0].strip(): cells[1].strip() for cells in rows}
+        factors = [name for name in status if re.fullmatch(r".+ factor \(\d+%\)", name)]
+        self.assertEqual(len(factors), 9, factors)
+        self.assertEqual([name for name in factors if not status[name].startswith("Complete")], [])
+        self.assertTrue(status["9-factor algorithm (spec §6.1)"].startswith("9 of 9"))
 
 
 if __name__ == "__main__":

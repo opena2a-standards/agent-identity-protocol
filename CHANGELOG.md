@@ -81,6 +81,22 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   what is served: `/api/v1/agents/{id}/authorize`, a fine-grained authorization decision endpoint
   that verifies no signed challenge, and the MCP server attestation challenge at
   `/api/v1/mcp-servers/{id}/challenge`.
+- `AIP-SPEC.md` §6.1 implementation status, README.md and GAP-ANALYSIS.md say the reference
+  implementation scores all nine trust factors, instead of six measured and compliance, drift
+  detection and user feedback stubbed. At `agent-identity-management` `main` (`ff53b8cc`,
+  2026-10-11) compliance is scored from the organization's compliance snapshot and user feedback
+  from the agent's feedback ratings, each excluded for an agent with no such data, and drift
+  detection from drift alerts, where none scores 1.0. The Appendix A.1 row for §6 says all nine
+  factors have scoring functions, instead of three stubbed. §6.1 no longer says implementers SHOULD
+  NOT treat the stubbed factors as validated by the reference implementation, and its unscored
+  example names compliance, drift detection and user feedback instead of "the three proposed
+  factors", as Section 7.1 of `draft-fane-opena2a-aip-04` does. The lists under the README's
+  Internet-Draft paragraph follow: one statement of §6.1 the draft lacks instead of two, and four
+  changes to a requirement or its wording instead of three, the fourth being the statement §6.1
+  dropped, which the draft does not carry either. `scripts/test_checks.py` fails if the §6.1
+  status paragraph, the Appendix A.1 row or the README's trust use case calls a factor stubbed, if
+  a GAP-ANALYSIS.md factor row is not Complete, or if the README lists the dropped statement as one
+  the draft lacks.
 - `scripts/check_draft_sync.py` matches each tracked term as a whole word, so a field renamed
   in the specification or in the draft (`behaviorTier` to `behaviorTierX`) is reported instead
   of passing as a substring.

@@ -2,7 +2,7 @@
 
 ## What Exists vs What the Spec Requires
 
-Based on source code review of `agent-identity-management` (March 2026; rows marked *updated 2026-07* re-verified against the current tree).
+Based on source code review of `agent-identity-management` (March 2026; rows marked *updated 2026-07* or *updated 2026-10* re-verified against the tree of that month).
 
 ### Identity (Section 3)
 
@@ -42,17 +42,17 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
-| 9-factor algorithm (spec §6.1) | 6 of 9 factors implemented (*updated 2026-07*; execution isolation measured; §6.1 exclusion + anti-gaming cap implemented) | `trust_calculator.go` |
+| 9-factor algorithm (spec §6.1) | 9 of 9 factors implemented (*updated 2026-10*; §6.1 exclusion + anti-gaming cap implemented; compliance and feedback are excluded for an agent with no such data) | `trust_calculator.go` |
 | Unscored state and algorithm version (spec §6.1, since 1.2.0-draft) | NOT IMPLEMENTED (*updated 2026-10*): a composite is published for every agent, including one with no verification events; no `algorithmVersion` or `scoreStatus` | `trust_calculator.go`, `domain/trust_score.go` |
 | Verification factor (25%) | Complete | `trust_calculator.go` |
 | Uptime factor (15%) | Complete | `trust_calculator.go` |
 | Success rate factor (15%) | Complete | `trust_calculator.go` |
 | Security alerts factor (15%) | Complete | `trust_calculator.go` |
-| Compliance factor (10%) | STUB (TODO comment) | `trust_calculator.go` |
+| Compliance factor (10%) | Complete (*updated 2026-10*) — scored from the organization's latest AIM compliance snapshot; excluded when it has none | `trust_calculator.go` |
 | Execution isolation factor (10%) | Complete (*updated 2026-07*) — measured in the composite; persistence of the stored breakdown column is a filed follow-up | `trust_calculator.go` |
 | Age factor (5%) | Complete | `trust_calculator.go` |
-| Drift factor (3%) | STUB (TODO comment) | `trust_calculator.go` |
-| Feedback factor (2%) | STUB (TODO comment) | `trust_calculator.go` |
+| Drift factor (3%) | Complete (*updated 2026-10*) — scored from configuration-drift and MCP-drift alerts of the last 30 days on the agent and its connected MCP servers; no alerts scores 1.0 | `trust_calculator.go` |
+| Feedback factor (2%) | Complete (*updated 2026-10*) — scored from the agent's feedback ratings, counted by sentiment; excluded when it has none | `trust_calculator.go` |
 | Verifiable Credential expression | NOT IMPLEMENTED | - |
 | ATP integration | Partial (one-way push via registry bridge) | `registry_bridge_service.go` |
 
@@ -103,7 +103,7 @@ The rows below restate what the Google A2A and Anthropic MCP lines of the README
 
 1. **/.well-known/aip discovery endpoint** — minimum for standard compliance
 2. **DID resolution** — required for Level 3 and cross-platform identity
-3. **Complete trust scoring** — implement compliance, drift, feedback factors
+3. **Complete trust scoring** — implement compliance, drift, feedback factors (done, *updated 2026-10*)
 4. **Verifiable Credentials** — trust scores as W3C VCs for portability
 5. **OpenID Connect ID token** — the backend serves an OAuth 2.0 token endpoint that returns a bearer access token (Verification table above); what is missing is an OpenID Connect ID token
 6. **WebAuthn/FIDO2** — browser-based key storage for Chrome integration
