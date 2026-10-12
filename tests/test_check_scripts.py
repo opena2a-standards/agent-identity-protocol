@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import math
 import re
 import shutil
 import subprocess
@@ -18,6 +19,7 @@ import tempfile
 import time
 import unittest
 import xml.etree.ElementTree as ET
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Callable
 
@@ -423,14 +425,31 @@ class ImplementationStatusTrustScoring(unittest.TestCase):
 
 
 class PairingIdnitsCount(unittest.TestCase):
-    def test_warning_count_names_the_day_it_was_measured(self) -> None:
-        # idnits adds DOC_DATE_IN_PAST once the document date is more than three days old, so
-        # the -04 txt reports 6 warnings on its render date and 7 from 2026-10-10 on.
+    def paragraph(self) -> str:
         changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
         section, _ = check_draft_sync.version_section(changelog, "1.2.0-draft")
-        _, paragraph = check_draft_sync.pairing_paragraph(section, "1.2.0-draft")
+        return check_draft_sync.pairing_paragraph(section, "1.2.0-draft")[1]
+
+    def test_warning_count_names_the_day_it_was_measured(self) -> None:
+        # idnits adds DOC_DATE_IN_PAST once it runs more than three and a half days after the
+        # start of the document date, so the -04 txt reports 6 warnings on its render date and
+        # 7 from the afternoon of 2026-10-09 on.
+        paragraph = self.paragraph()
         self.assertIn("0 errors and 6 warnings on 2026-10-06", paragraph)
         self.assertIn("a seventh, `DOC_DATE_IN_PAST`,", paragraph)
+
+    def test_seventh_warning_is_dated_by_the_idnits_rule(self) -> None:
+        # idnits 3.1.0 warns when Math.round(days from now back to local midnight of the document
+        # date) is below -3. Math.round rounds a half up, so -3.5 days is still -3 and the first
+        # minute that warns is 12:01 local on the third day after the document date.
+        day = 24 * 60
+        minutes = next(m for m in range(7 * day) if math.floor(-m / day + 0.5) < -3)
+        first = datetime(2026, 10, 6) + timedelta(minutes=minutes)
+        self.assertEqual(first, datetime(2026, 10, 9, 12, 1))
+        paragraph = self.paragraph()
+        self.assertIn("more than three and a half days after the start of the document date", paragraph)
+        self.assertIn(f"from the afternoon of {first.date().isoformat()} on", paragraph)
+        self.assertNotIn("2026-10-10", paragraph)
 
 
 class FirstUseMissingFile(unittest.TestCase):
