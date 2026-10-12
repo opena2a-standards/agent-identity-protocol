@@ -210,6 +210,17 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   one instead of four, and README.md names the six rows. The priority list of `GAP-ANALYSIS.md`
   asks for an OpenID Connect ID token instead of saying to re-add OAuth 2.0 / OIDC, which its
   OAuth 2.0 / OIDC row says the backend serves.
+- `.pre-push-review-not-required` no longer names a review workflow the repository does not
+  contain; it keeps the commands to run before a push and the sentence on what CI runs.
+  `tests/test_check_scripts.py` checks that it names no slash command.
+- The two cases of `scripts/test_checks.py` that read `AIP-SPEC.md` as of the commit that made the
+  paired draft fail, instead of skipping, where the environment sets `CI` and git or that history
+  is missing, so a CI run from a shallow clone or an exported tree no longer reports OK without
+  running them. A CI job that runs the file needs a full clone (`actions/checkout` with
+  `fetch-depth: 0`). Elsewhere they still skip, and the skip reason says a full clone runs them.
+- `scripts/test_checks.py` does not report a number word joined by a hyphen, as in "one-way" or
+  "two-factor", as a count outside a lead-in, so a sentence such as "after a one-way comparison"
+  in the README Internet-Draft section no longer fails `test_no_count_stands_outside_a_lead_in`.
 
 ## [1.2.0-draft] - 2026-10-06
 
