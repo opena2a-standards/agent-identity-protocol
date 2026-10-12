@@ -9,7 +9,8 @@ AIP-SPEC.md carries while a change to a requirement is unreleased.
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Two cases read the specification as of
 the commit that made the paired draft and are skipped where git or that history is missing, or
-fail there when the environment sets CI, so a CI run needs a full clone.
+fail there where CI is set to a value other than an empty string, 0 or false (in any letter case),
+so a CI run needs git and a full clone.
 Runs on its own:
     python3 scripts/test_checks.py
 python3 standard library only.
@@ -360,8 +361,12 @@ class JwtAccessTokenLifetime(unittest.TestCase):
 NUMBER_WORDS = (
     "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
 )
-# A number word joined by a hyphen ("one-way", "two-factor", "non-zero") states no count.
-COUNT = re.compile(r"(?<![\w-])(%s)(?![\w-])" % "|".join(NUMBER_WORDS), re.IGNORECASE)
+# A number word, with the hyphenated compound it begins. A number word that ends a compound
+# ("non-zero") is part of a word, not a count.
+COUNT = re.compile(r"(?<![\w-])(%s)((?:-\w+)*)(?!\w)" % "|".join(NUMBER_WORDS), re.IGNORECASE)
+# Compounds that begin with a number word and state no count. Any other ("a two-item list", "the
+# five-field form") states one.
+NO_COUNT = ("one-way", "two-way", "one-time", "one-hour", "one-to-one", "two-factor")
 SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
@@ -424,8 +429,13 @@ def unchecked_counts(text: str) -> list[str]:
         leads_a_list = index + 1 < len(parts) and parts[index + 1].startswith("- ")
         if leads_a_list and count_word(sentences[-1]) is not None:
             sentences[-1] = sentences[-1].split(" ", 1)[1] if " " in sentences[-1] else ""
-        found += [f"{word!r} in {sentence!r}" for sentence in sentences for word in COUNT.findall(sentence)]
+        found += [f"{word!r} in {sentence!r}" for sentence in sentences for word in counts(sentence)]
     return found
+
+
+def counts(sentence: str) -> list[str]:
+    """Return the number words in sentence that state a count: all but those that begin a NO_COUNT compound."""
+    return [word for word, rest in COUNT.findall(sentence) if (word + rest).lower() not in NO_COUNT]
 
 
 FRONT_LABEL = re.compile(r"(?:> )?\*\*([^*]+?)[.:]\*\*")
@@ -502,15 +512,20 @@ def row_section(cell: str) -> str:
     return numbered.group(0) if numbered else cell
 
 
-def history_missing(reason: str) -> Exception:
+FULL_CLONE = "use a full clone (in CI, actions/checkout with fetch-depth: 0)"
+INSTALL_GIT = "install git"
+
+
+def history_missing(reason: str, remedy: str) -> Exception:
     """Return what a case raises when the history it reads is missing: a skip, or in CI a failure.
 
     A skip reports OK, so a CI run from a shallow or exported tree would pass without running the
-    case. Where the environment sets CI (to anything but "", "0" or "false"), it fails instead.
+    case. Where CI is set to a value other than "", "0" or "false" (read without regard to letter
+    case or surrounding spaces), it fails instead. remedy says what to do to run the case.
     """
     if os.environ.get("CI", "").strip().lower() not in ("", "0", "false"):
-        return AssertionError(f"{reason}; in CI this case needs a full clone (actions/checkout with fetch-depth: 0)")
-    return unittest.SkipTest(f"{reason}; a full clone runs this case")
+        return AssertionError(f"{reason}; CI is set, so this case fails instead of skipping; to run it, {remedy}")
+    return unittest.SkipTest(f"{reason}; to run this case, {remedy}")
 
 
 def spec_when_draft_was_made(draft: str) -> str:
@@ -521,21 +536,23 @@ def spec_when_draft_was_made(draft: str) -> str:
     that file.
     """
     if shutil.which("git") is None:
-        raise history_missing("git is not installed")
+        raise history_missing("git is not installed", INSTALL_GIT)
 
     def git(*args: str) -> str:
         result = subprocess.run(
             ["git", *args], cwd=check_draft_sync.ROOT, capture_output=True, text=True, encoding="utf-8"
         )
         if result.returncode != 0:
-            raise history_missing(f"git {args[0]} failed here, so the text the draft was made from is not available")
+            raise history_missing(
+                f"git {args[0]} failed here, so the text the draft was made from is not available", FULL_CLONE
+            )
         return result.stdout
 
     if git("rev-parse", "--is-shallow-repository").strip() == "true":
-        raise history_missing("shallow clone: the commit that made the draft can be missing")
+        raise history_missing("shallow clone: the commit that made the draft can be missing", FULL_CLONE)
     commit = git("log", "-1", "--format=%H", "--", f"{draft}.txt").strip()
     if not commit:
-        raise history_missing(f"no commit in this history changed {draft}.txt")
+        raise history_missing(f"no commit in this history changed {draft}.txt", FULL_CLONE)
     return git("show", f"{commit}:{check_draft_sync.SPEC.name}")
 
 
@@ -578,12 +595,21 @@ class InternetDraftLists(unittest.TestCase):
         self.assertEqual(len(found), 1, found)
         self.assertIn("'Three' in 'Three informative additions have been made too.'", found[0])
 
-    def test_a_number_word_inside_a_hyphenated_compound_is_not_a_count(self):
-        # "one-way" and "two-factor" state no count, so they are not reported; the same words
-        # standing alone are.
-        self.assertEqual(unchecked_counts("A one-way push after a two-factor login and a non-zero value."), [])
+    def test_a_hyphenated_compound_that_states_no_count_is_not_reported(self):
+        # "one-way", "two-factor" and "one-hour" state no count, nor does a number word that ends
+        # a compound ("non-zero"), so they are not reported; the same words standing alone are.
+        prose = "A one-way push after a two-factor login, with a one-hour lifetime and a non-zero value."
+        self.assertEqual(unchecked_counts(prose), [])
         found = unchecked_counts("One push, one way.")
         self.assertEqual(len(found), 2, found)
+
+    def test_a_hyphenated_compound_that_states_a_count_is_reported(self):
+        # "a two-item list" and "the five-field form" (AIP-SPEC.md uses "five-field", "seven-field"
+        # and "eleven-field") each state a count that can go stale outside a lead-in.
+        found = unchecked_counts("The draft adds a two-item list and keeps the Five-field form.")
+        self.assertEqual(len(found), 2, found)
+        self.assertIn("'two' in ", found[0])
+        self.assertIn("'Five' in ", found[1])
 
     def test_each_count_equals_the_items_listed_under_it(self):
         # Each lead-in opens with the number of items under it, so a count cannot be changed, or
@@ -677,36 +703,63 @@ class InternetDraftLists(unittest.TestCase):
 class MissingDraftHistory(unittest.TestCase):
     """The two cases above read the history: without it they skip, and in CI they fail instead."""
 
-    def outcome(self, ci: str | None, git: str | None = "git") -> BaseException:
-        """Return what spec_when_draft_was_made raises in a shallow clone, with CI set to ci or unset."""
+    # How the history can be missing where git is installed: a shallow clone, git exiting non-zero
+    # (as in a tree exported with git archive, outside any checkout), or no commit that changed the
+    # draft's txt.
+    HISTORIES = ("shallow", "git fails", "draft unchanged")
+
+    def outcome(self, ci: str | None, history: str = "shallow", git: str | None = "git") -> BaseException:
+        """Return what spec_when_draft_was_made raises where the history is missing, with CI set to ci or unset."""
         env = {name: value for name, value in os.environ.items() if name != "CI"}
         if ci is not None:
             env["CI"] = ci
-        shallow = subprocess.CompletedProcess(["git"], 0, stdout="true\n", stderr="")
+
+        def run(args: list[str], **_: object) -> subprocess.CompletedProcess:
+            if history == "git fails":
+                return subprocess.CompletedProcess(args, 128, stdout="", stderr="fatal: not a git repository\n")
+            if args[1] == "rev-parse":
+                shallow = "true\n" if history == "shallow" else "false\n"
+                return subprocess.CompletedProcess(args, 0, stdout=shallow, stderr="")
+            return subprocess.CompletedProcess(args, 0, stdout="", stderr="")
+
         with (
             mock.patch.dict(os.environ, env, clear=True),
             mock.patch.object(shutil, "which", return_value=git),
-            mock.patch.object(subprocess, "run", return_value=shallow),
+            mock.patch.object(subprocess, "run", side_effect=run),
         ):
             try:
                 spec_when_draft_was_made("draft-example-00")
             except (unittest.SkipTest, AssertionError) as raised:
                 return raised
-        self.fail("a shallow clone returned the specification")
+        self.fail(f"the specification was returned where the history is missing ({history})")
 
     def test_missing_history_skips_outside_ci(self):
-        for ci in (None, "", "false", "0"):
-            with self.subTest(ci=ci):
-                self.assertIsInstance(self.outcome(ci), unittest.SkipTest)
+        # CI is read without regard to letter case, so "FALSE" skips as "false" does.
+        for ci in (None, "", "false", "0", "FALSE", " False "):
+            for history in self.HISTORIES:
+                with self.subTest(ci=ci, history=history):
+                    raised = self.outcome(ci, history)
+                    self.assertIsInstance(raised, unittest.SkipTest)
+                    self.assertIn("use a full clone", str(raised))
 
     def test_missing_history_fails_in_ci(self):
-        # A skip reports OK, so a CI run from a shallow checkout would pass without running either
-        # case. In CI the missing history fails and names the checkout depth the cases need.
-        for ci, git in (("true", "git"), ("1", "git"), ("true", None)):
-            with self.subTest(ci=ci, git=git):
-                raised = self.outcome(ci, git)
-                self.assertIsInstance(raised, AssertionError)
-                self.assertIn("fetch-depth: 0", str(raised))
+        # A skip reports OK, so a CI run from a shallow or exported tree would pass without running
+        # either case. In CI the missing history fails and names the checkout depth the cases need.
+        for ci in ("true", "1", "TRUE"):
+            for history in self.HISTORIES:
+                with self.subTest(ci=ci, history=history):
+                    raised = self.outcome(ci, history)
+                    self.assertIsInstance(raised, AssertionError)
+                    self.assertIn("fetch-depth: 0", str(raised))
+
+    def test_missing_git_names_git_as_the_remedy(self):
+        # Without git a full clone does not help, so the reason says to install git.
+        for ci, kind in ((None, unittest.SkipTest), ("true", AssertionError)):
+            with self.subTest(ci=ci):
+                raised = self.outcome(ci, git=None)
+                self.assertIsInstance(raised, kind)
+                self.assertIn("install git", str(raised))
+                self.assertNotIn("full clone", str(raised))
 
 
 STATUSES = ("Specified", "Implemented", "Tested in conformance")
