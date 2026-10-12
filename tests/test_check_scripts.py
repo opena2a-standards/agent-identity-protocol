@@ -470,6 +470,27 @@ class IsolatedMode(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
 
 
+class PrePushReviewMarker(unittest.TestCase):
+    def setUp(self) -> None:
+        self.marker = (ROOT / ".pre-push-review-not-required").read_text(encoding="utf-8")
+
+    def test_marker_does_not_deny_the_test_suite(self) -> None:
+        self.assertIsNone(re.search(r"\bno\b[^.]*\btest suite\b", self.marker, re.IGNORECASE), self.marker)
+
+    def test_marker_names_the_test_commands(self) -> None:
+        self.assertTrue(sorted((ROOT / "tests").glob("test_*.py")))
+        self.assertIn("python3 -m unittest discover -s tests", self.marker)
+        self.assertTrue((SCRIPTS / "test_checks.py").exists())
+        self.assertIn("python3 scripts/test_checks.py", self.marker)
+
+    def test_marker_names_every_script_ci_runs(self) -> None:
+        workflow = (ROOT / ".github" / "workflows" / "validate.yml").read_text(encoding="utf-8")
+        commands = re.findall(r"^\s*run:\s*(python3 scripts/\S.*?)\s*$", workflow, re.MULTILINE)
+        self.assertTrue(commands, "validate.yml runs no script")
+        for command in commands:
+            self.assertIn(command, self.marker)
+
+
 class GitignoreSecrets(unittest.TestCase):
     def test_secret_shaped_files_are_ignored(self) -> None:
         if shutil.which("git") is None:

@@ -91,6 +91,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   run (`python3 -I` or `-P`) finds the sibling check scripts as a plain run does.
 - `.gitignore` ignores secret-shaped files (`secrets.json`, `secrets.*.json`, `*.secrets.json`,
   `credentials.json`, `secrets/`, `credentials/`).
+- `.pre-push-review-not-required` lists the Python check scripts and regression tests the
+  repository holds and the four commands to run before a push, which include the two CI runs. It
+  said the repository had no test suite or runnable artifacts. `tests/test_check_scripts.py`
+  checks that the file does not deny the test suite and names both test commands and every
+  script `.github/workflows/validate.yml` runs.
 - `draft-fane-opena2a-aip-04.xml` no longer sets `submissionType="IETF"` on its `rfc` element.
   The draft is an individual submission with no stream on the datatracker, so `npx
   @ietf-tools/idnits@3.1.0` on the xml reported the attribute as a `SUBMISSION_TYPE_UNEXPECTED`
