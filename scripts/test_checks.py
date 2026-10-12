@@ -1292,6 +1292,18 @@ class ComplementedProtocols(unittest.TestCase):
                 self.assertTrue(cited, f"{citation.group(1)!r} names no part of AIP-SPEC.md")
                 self.assertEqual([part for part in cited if "transparency log" not in parts[part]], [])
 
+    def test_atp_lines_say_what_the_appendix_a1_row_says_of_the_transparency_log(self):
+        # The row for §6.5 says the Registry signs the agent's behavioral score into the credential
+        # and records the issuance in its transparency log, so neither line says it is not wired.
+        row = a1_rows(check_draft_sync.SPEC.read_text(encoding="utf-8"))[ATP_ROW]
+        claim = "records the issuance in its transparency log"
+        self.assertIn(claim, row)
+        for name, line in self.lines("ATP (Agent Trust Protocol)").items():
+            with self.subTest(doc=name):
+                self.assertIn(claim, line)
+                self.assertNotIn("not yet wired", line)
+                self.assertIn("combined score", line)
+
     def test_openid_connect_lines_name_the_oauth_token_endpoint(self):
         # The reference implementation serves an OAuth 2.0 token endpoint that accepts the
         # JWT-bearer grant type of RFC 7523 from a registered agent, so neither list nor the

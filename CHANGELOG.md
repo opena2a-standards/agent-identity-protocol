@@ -76,9 +76,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   implementation. Google A2A, Anthropic MCP, OpenID Connect and ATP are implemented in part: the
   reference implementation serves an agent card that carries the agent's ID and registered public
   key in an `aim` extension, checks capabilities, serves an OAuth 2.0 token endpoint that accepts
-  the JWT-bearer grant type of RFC 7523 from a registered agent, and has a one-way push through
-  its registry bridge, and it does not serve the §5.1 exchange, return an OpenID Connect ID token
-  from that endpoint, or wire AIP trust scores into the ATP transparency log. Its A2A
+  the JWT-bearer grant type of RFC 7523 from a registered agent, has a one-way push through its
+  registry bridge, and has a credential issuance route that sends the agent's 9-factor behavioral
+  score to the OpenA2A Registry, which signs it into a credential and records the issuance in its
+  transparency log, and it does not serve the §5.1 exchange, return an OpenID Connect ID token
+  from that endpoint, or compute the §6.5 combined score. Its A2A
   verification service is not assessed. None of the six is tested in conformance. The statuses
   are informative, and `draft-fane-opena2a-aip-04` does not carry them; the README's
   Internet-Draft paragraph says so. The `GAP-ANALYSIS.md` row for OAuth 2.0 / OIDC, which said
@@ -272,8 +274,8 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   agent's signed JWT in `client_assertion`, with `client_id` and `client_assertion_type`, and the
   endpoint reads no `assertion` parameter, in which RFC 7523 Section 2.1 carries the JWT. They
   named the JWT-bearer grant type without its parameters.
-- The ATP status lines in `README.md` and the `AIP-SPEC.md` abstract cite Appendix A.1 for the
-  statement that AIP trust scores are not yet wired into the ATP transparency log. They cited
+- The ATP status lines in `README.md` and the `AIP-SPEC.md` abstract cite Appendix A.1 for what
+  they say of the transparency log. They cited
   §6.5, which specifies the combined score and names no transparency log; the Appendix A.1 row
   for §6.5 does.
 - `AIP-SPEC.md` §14 lists RFC 3339, RFC 4648, RFC 6749, RFC 7523 and RFC 8785, which the text
