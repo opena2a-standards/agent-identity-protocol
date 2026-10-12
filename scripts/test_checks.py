@@ -4,8 +4,9 @@ the prior-art attribution in README.md, AIP-SPEC.md and GAP-ANALYSIS.md, the JWT
 access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two lists of
 protocols AIP is designed to complement, the lists under the README's Internet-Draft paragraph,
 the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, the version note
-AIP-SPEC.md carries while a change to a requirement is unreleased, and the trust factor status
-README.md, AIP-SPEC.md and GAP-ANALYSIS.md give.
+AIP-SPEC.md carries while a change to a requirement is unreleased, the trust factor status
+README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, and the reference provider identifier
+AIP-SPEC.md gives.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Two cases read the specification as of
@@ -1284,6 +1285,38 @@ class TrustFactorStatus(unittest.TestCase):
         self.assertEqual(len(factors), 9, factors)
         self.assertEqual([name for name in factors if not status[name].startswith("Complete")], [])
         self.assertTrue(status["9-factor algorithm (spec §6.1)"].startswith("9 of 9"))
+
+
+class ReferenceProviderDid(unittest.TestCase):
+    # The reference provider still issues did:aip:aim_<uuid> and its discovery document reports
+    # providerDid did:aip:provider_opena2a, so the spec states the did:web form as its target.
+
+    def setUp(self):
+        self.spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+
+    def test_spec_section_3_2_says_the_reference_implementation_will_issue_did_web(self):
+        profile = paragraph(self.spec, "where `<provider-host>` is the DNS name")
+        self.assertNotIn("The reference implementation (AIM) issues `did:web:", profile)
+        self.assertNotIn("identifies itself as `did:web:aim.opena2a.org`", profile)
+        self.assertIn("will issue `did:web:aim.opena2a.org:agents:<uuid>`", profile)
+        self.assertIn("`did:aip:provider_opena2a`", profile)
+
+    def test_spec_section_10_1_says_its_sample_is_the_target_form(self):
+        discovery = self.spec.split("### 10.1 Well-Known Endpoint", 1)[1].split("\n#", 1)[0]
+        self.assertIn("\nThe sample shows the target form", discovery)
+        note = paragraph(discovery, "The sample shows the target form")
+        self.assertIn("`did:aip:provider_opena2a`", note)
+        self.assertIn("no `publicKey`", note)
+
+    def test_readme_names_the_change_since_the_draft(self):
+        # Section 4.2 of draft -04 still says the reference implementation issues the did:web
+        # form, and its Section 12 carries the discovery sample without the note.
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        items = [item for _, listed in counted_lists(draft_disclosure(readme)) for item in listed]
+        named = [item for item in items if item.startswith("- §3.2 ")]
+        self.assertEqual(len(named), 1, "no Internet-Draft list item starts '- §3.2 '")
+        for claim in ("Section 4.2 of the draft", "§10.1", "Section 12 of the draft"):
+            self.assertTrue(claim in named[0], f"the §3.2 item does not say {claim!r}")
 
 
 if __name__ == "__main__":

@@ -97,6 +97,18 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   status paragraph, the Appendix A.1 row or the README's trust use case calls a factor stubbed, if
   a GAP-ANALYSIS.md factor row is not Complete, or if the README lists the dropped statement as one
   the draft lacks.
+- `AIP-SPEC.md` §3.2 says the reference implementation will issue
+  `did:web:aim.opena2a.org:agents:<uuid>` and identify itself as `did:web:aim.opena2a.org`,
+  instead of saying it does. On 2026-10-11 its discovery document at
+  `https://aim.opena2a.org/.well-known/aip` reported `providerDid` as `did:aip:provider_opena2a`
+  with no `publicKey`, and its resolver answers only the deprecated `did:aip:aim_<uuid>` form, as
+  the §3.2 status note already said. §10.1 says its discovery sample is the target form and gives
+  the reference provider's dated reading. `draft-fane-opena2a-aip-04`, as submitted, still says in
+  Section 4.2 that the reference implementation issues the `did:web` form and carries the sample
+  in Section 12 without the note; the README's Internet-Draft lists name both in one item, the
+  twelfth informative change. `scripts/test_checks.py` fails if §3.2 says the reference
+  implementation issues the `did:web` form, if §10.1 drops the note, or if the README item does
+  not name both sections of the draft.
 - `scripts/check_draft_sync.py` matches each tracked term as a whole word, so a field renamed
   in the specification or in the draft (`behaviorTier` to `behaviorTierX`) is reported instead
   of passing as a substring.

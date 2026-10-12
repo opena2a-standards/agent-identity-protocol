@@ -139,7 +139,7 @@ At Level 3, agents are identified by DIDs conforming to W3C DID Core. Two DID me
 did:web:<provider-host>[:<path>]:agents:<id>
 ```
 
-where `<provider-host>` is the DNS name of the issuing provider, `<path>` is zero or more colon-separated path segments under which the provider publishes DID Documents, and `<id>` is the provider-assigned identifier. The provider identifies itself as `did:web:<provider-host>`. Resolution follows the `did:web` method: the DID Document is fetched over HTTPS from the host the identifier names, at `https://<provider-host>/<path>/agents/<id>/did.json` for an agent and `https://<provider-host>/.well-known/did.json` for the provider, so the identifier needs no method registration of its own and any resolver that speaks `did:web` resolves it. The provider's `didResolve` endpoint, advertised in `/.well-known/aip` (§10.1), serves the same document under the provider's API path. The reference implementation (AIM) issues `did:web:aim.opena2a.org:agents:<uuid>` and identifies itself as `did:web:aim.opena2a.org`. A provider MUST reject resolution requests for identifiers it did not issue.
+where `<provider-host>` is the DNS name of the issuing provider, `<path>` is zero or more colon-separated path segments under which the provider publishes DID Documents, and `<id>` is the provider-assigned identifier. The provider identifies itself as `did:web:<provider-host>`. Resolution follows the `did:web` method: the DID Document is fetched over HTTPS from the host the identifier names, at `https://<provider-host>/<path>/agents/<id>/did.json` for an agent and `https://<provider-host>/.well-known/did.json` for the provider, so the identifier needs no method registration of its own and any resolver that speaks `did:web` resolves it. The provider's `didResolve` endpoint, advertised in `/.well-known/aip` (§10.1), serves the same document under the provider's API path. The reference implementation (AIM) will issue `did:web:aim.opena2a.org:agents:<uuid>` and identify itself as `did:web:aim.opena2a.org`; until then it issues the deprecated alias form (below), and on 2026-10-11 its discovery document reported `providerDid` as `did:aip:provider_opena2a` (reference implementation status, below). A provider MUST reject resolution requests for identifiers it did not issue.
 
 Example:
 ```
@@ -871,6 +871,8 @@ GET /.well-known/aip
 ```
 
 `providerDid` is the provider's `did:web` self-identifier (§3.2). The `didResolve` endpoint answers for the identifiers the provider issued, including deprecated aliases during their migration window; the same DID Document is also published at the `did:web` path derived from the identifier.
+
+The sample shows the target form, not the reference provider's current document. On 2026-10-11 `https://aim.opena2a.org/.well-known/aip` reported `providerDid` as `did:aip:provider_opena2a` and carried no `publicKey`; check the current state with `curl https://aim.opena2a.org/.well-known/aip`.
 
 ---
 
