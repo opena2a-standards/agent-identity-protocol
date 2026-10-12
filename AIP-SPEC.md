@@ -922,15 +922,22 @@ Agent A wants to delegate to Agent B
 
 ### 11.4 CI/CD Pipeline
 
-```yaml
-- name: Register agent identity
-  run: npx opena2a-cli identity create --name deploy-agent --type custom
-
-- name: Verify agent before deployment
-  run: |
-    npx opena2a-cli identity verify --name deploy-agent
-    npx opena2a-cli identity check-trust --name deploy-agent --min-score 0.7
 ```
+Pipeline starts a deployment job
+  → Job uses the deploying agent's AIP identity
+  → Job reads the agent's trust score from the provider's trustScore endpoint (Section 10)
+  → Job fails if the score is below the pipeline's threshold (for example 0.7)
+  → Deployment runs only after that check passes
+```
+
+With `opena2a-cli` 0.10.13, the identity step is the one the CLI runs:
+
+```yaml
+- name: Create agent identity
+  run: npx opena2a-cli identity create --name deploy-agent
+```
+
+Without `opena2a login`, the identity is stored on the runner and is not registered with an identity provider. The CLI has no command for the trust check: it has no `check-trust` subcommand and no `--min-score` option, so no CLI step fails a job when the score is below a threshold. `identity verify` checks a signature over supplied data (`--data`, `--signature`, `--public-key`) and does not look up an agent by name, and `identity create` has no `--type` option.
 
 ---
 

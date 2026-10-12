@@ -84,6 +84,16 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   document advertises. The prior-art table names the two OpenA2A drafts,
   `draft-fane-opena2a-aip` and `draft-fane-opena2a-aap`, each first posted 2026-07-06, where it
   said "not yet filed".
+- `AIP-SPEC.md` §11.4 CI/CD Pipeline no longer quotes commands that `opena2a-cli` 0.10.13 does
+  not have: `identity check-trust`, its `--min-score` option, `identity create --type` and
+  `identity verify --name`. The section now describes the trust-threshold step as a flow, shows
+  `identity create --name deploy-agent` as the one step the CLI runs today, and states that no CLI
+  command fails a job when the trust score is below a threshold. A test in
+  `tests/test_check_scripts.py` fails when `AIP-SPEC.md` or `README.md` quotes an
+  `opena2a-cli identity` subcommand or option outside the ones the CLI accepts. The README's
+  Internet-Draft paragraph lists the change as an informative one, in a list of its own for a
+  change to an example that quoted commands the CLI does not have; `draft-fane-opena2a-aip-04`
+  has no section of integration patterns.
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names

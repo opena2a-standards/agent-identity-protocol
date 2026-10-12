@@ -425,6 +425,49 @@ class ImplementationStatusTrustScoring(unittest.TestCase):
         self.assertTrue(status.startswith("NOT IMPLEMENTED"), status)
 
 
+# `opena2a-cli identity` subcommands and the options each accepts, as of opena2a-cli 0.10.13.
+# `identity trust` also exists; add it with its options before a document quotes it. The
+# §9.1 status note quotes `identity log` without an option, so none of its options is listed;
+# add each one before a document quotes it.
+CLI_IDENTITY_OPTIONS = {
+    "create": {"--name"},
+    "verify": {"--data", "--signature", "--public-key"},
+    "log": set(),
+}
+
+
+def unknown_cli_usage(text: str) -> list[str]:
+    """Return each subcommand or option of a quoted `opena2a-cli identity` command the CLI lacks."""
+    problems = []
+    for sub, rest in re.findall(r"opena2a-cli identity ([a-z-]+)([^\n`]*)", text):
+        if sub not in CLI_IDENTITY_OPTIONS:
+            problems.append(f"identity {sub}")
+            continue
+        options = re.findall(r"(?<!\S)--[a-z][a-z-]*", rest)
+        problems += [f"identity {sub} {option}" for option in options if option not in CLI_IDENTITY_OPTIONS[sub]]
+    return problems
+
+
+class CliCommandsInDocs(unittest.TestCase):
+    def test_spec_and_readme_quote_only_commands_the_cli_has(self) -> None:
+        for path in (check_draft_sync.SPEC, check_draft_sync.README):
+            text = path.read_text(encoding="utf-8")
+            self.assertIn("opena2a-cli identity create --name", text, path.name)
+            self.assertEqual(unknown_cli_usage(text), [], path.name)
+
+    def test_unknown_subcommand_and_option_are_reported(self) -> None:
+        text = (
+            "npx opena2a-cli identity create --name a --type custom\n"
+            "npx opena2a-cli identity verify --name a\n"
+            "npx opena2a-cli identity check-trust --name a --min-score 0.7\n"
+            "npx opena2a-cli identity verify --data d --signature s --public-key k\n"
+        )
+        self.assertEqual(
+            unknown_cli_usage(text),
+            ["identity create --type", "identity verify --name", "identity check-trust"],
+        )
+
+
 class PairingIdnitsCount(unittest.TestCase):
     def paragraph(self) -> str:
         changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")

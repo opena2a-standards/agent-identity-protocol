@@ -119,6 +119,10 @@ Twelve changes made since that revision are informative:
 - Appendix A.1 marks its row for §6 Trust Scoring Partial, where it had Shipped, and says the reference implementation is at algorithm version 1 and does not implement the unscored state or `algorithmVersion` of version 2.
 - Appendix A.1 says in its row for §3 Agent Identity that the provider assigns each agent a UUID and that `opena2a-cli identity create` derives the §3.1 agent ID.
 
+One more change made since that revision is informative too, to an example that quoted commands the CLI does not have:
+
+- §11.4 describes the trust-threshold step of a CI/CD pipeline as a flow and shows `identity create --name deploy-agent` as the step the CLI runs, where it had quoted `identity check-trust`, its `--min-score` option, `identity create --type` and `identity verify --name`, which `opena2a-cli` 0.10.13 does not have. The draft has no section of integration patterns, so it has no counterpart of §11.4.
+
 ## Conformance Levels
 
 | Level | Name | What It Means |
