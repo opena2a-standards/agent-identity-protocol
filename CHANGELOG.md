@@ -75,6 +75,15 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   the two lists agree, that the status matches the protocol's `GAP-ANALYSIS.md` row, that the
   OpenID Connect lines and that row name the token endpoint, and that the Google A2A lines name
   the `aim` extension.
+- `GAP-ANALYSIS.md` points to Appendix A.1 of `AIP-SPEC.md` as the current record of
+  implementation status and says Appendix A.1 prevails where a row of its own tables differs. Two
+  rows contradicted Appendix A.1 and the README, and now agree with them: `/.well-known/aip`,
+  recorded as not implemented and first in the priority order, is Complete, with a command to
+  check it, and leaves the priority order; the challenge-response row, recorded as Complete, is
+  Partial, because the backend registers no route for the §5.1 challenge endpoint its discovery
+  document advertises. The prior-art table names the two OpenA2A drafts,
+  `draft-fane-opena2a-aip` and `draft-fane-opena2a-aap`, each first posted 2026-07-06, where it
+  said "not yet filed".
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names

@@ -483,6 +483,74 @@ class PairingIdnitsCount(unittest.TestCase):
         self.assertTrue(recorded, f"no entry above the 1.2.0-draft heading names all of {terms}")
 
 
+class GapAnalysisDefersToAppendix(unittest.TestCase):
+    """GAP-ANALYSIS.md points to Appendix A.1 as the current status record and agrees with it."""
+
+    GAP = ROOT / "GAP-ANALYSIS.md"
+    MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
+
+    @staticmethod
+    def slug(heading: str) -> str:
+        return re.sub(r"[^a-z0-9 _-]", "", heading.strip().lower()).replace(" ", "-")
+
+    def gap(self) -> str:
+        return self.GAP.read_text(encoding="utf-8")
+
+    def row(self, name: str) -> str:
+        for line in self.gap().splitlines():
+            if line.startswith(f"| {name}"):
+                return line
+        self.fail(f"GAP-ANALYSIS.md has no {name} row")
+
+    def status(self, name: str) -> str:
+        return self.row(name).strip().strip("|").split("|")[1].strip()
+
+    def test_challenge_response_row_is_partial_as_in_appendix_a1(self) -> None:
+        # Appendix A.1 marks the §5 row Partial because the backend registers no route for the
+        # challenge endpoint the discovery document advertises; the gap analysis row agrees.
+        status = self.status("Challenge-response (Ed25519) |")
+        self.assertTrue(status.startswith("Partial"), status)
+        self.assertIn("`/api/v1/agents/{agentId}/challenge`", status)
+        self.assertIn("registers no such route", status)
+
+    def test_discovery_row_says_the_endpoint_is_served_as_the_readme_does(self) -> None:
+        readme = check_draft_sync.README.read_text(encoding="utf-8")
+        self.assertIn("`https://aim.opena2a.org/.well-known/aip`", readme)
+        self.assertIn("answered HTTP 200", readme)
+        status = self.status("/.well-known/aip |")
+        self.assertTrue(status.startswith("Complete"), status)
+        self.assertIn("answered HTTP 200", status)
+        self.assertIn("curl -s -o /dev/null -w '%{http_code}\\n' https://aim.opena2a.org/.well-known/aip", self.gap())
+
+    def test_priority_list_does_not_ask_for_the_served_discovery_endpoint(self) -> None:
+        priorities = self.gap().split("## Priority Implementation Order", 1)[1].split("\n---", 1)[0]
+        items = [line for line in priorities.splitlines() if re.match(r"\d+\. ", line)]
+        self.assertTrue(items, "the priority list has no items")
+        self.assertEqual([item for item in items if "well-known" in item], [])
+        self.assertEqual([item.split(".")[0] for item in items], [str(n) for n in range(1, len(items) + 1)])
+
+    def test_links_to_appendix_a1(self) -> None:
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        headings = re.findall(r"(?m)^### (A\.1 .+)$", spec)
+        self.assertEqual(len(headings), 1, headings)
+        link = f"](AIP-SPEC.md#{self.slug(headings[0])})"
+        self.assertTrue(link in self.gap(), f"GAP-ANALYSIS.md has no link ending {link!r}")
+
+    def test_openA2A_aip_row_names_the_filed_draft_and_its_first_date(self) -> None:
+        header = (ROOT / "draft-fane-opena2a-aip-00.txt").read_text(encoding="utf-8")
+        found = re.search(rf"\b(\d{{1,2}}) ({self.MONTHS}) (\d{{4}})\b", header)
+        self.assertIsNotNone(found, "draft-fane-opena2a-aip-00.txt carries no date")
+        day, month, year = found.groups()
+        first = f"{year}-{self.MONTHS.split('|').index(month) + 1:02d}-{int(day):02d}"
+        row = self.row("OpenA2A AIP")
+        self.assertIn("`draft-fane-opena2a-aip`", row)
+        self.assertIn(f"-00, {first}", row)
+
+    def test_openA2A_rows_do_not_say_not_yet_filed(self) -> None:
+        self.assertIn("`draft-fane-opena2a-aap`", self.row("OpenA2A AAP"))
+        self.assertNotIn("not yet filed", self.gap())
+
+
 class FirstUseMissingFile(unittest.TestCase):
     def test_missing_file_is_a_counted_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
