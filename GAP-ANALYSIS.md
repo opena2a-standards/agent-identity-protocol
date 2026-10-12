@@ -2,7 +2,12 @@
 
 ## What Exists vs What the Spec Requires
 
-Based on source code review of `agent-identity-management` (March 2026; rows marked *updated 2026-07* re-verified against the current tree).
+Based on source code review of `agent-identity-management` (March 2026; a row marked *updated* with a month was revised in that month).
+
+The status of each specification section in the reference implementation is kept in
+[Appendix A.1 of the specification](AIP-SPEC.md#a1-spec-sections-currently-implemented-by-aim).
+The tables below break those sections into finer requirements; where a row here and Appendix
+A.1 differ, Appendix A.1 is the current record.
 
 ### Identity (Section 3)
 
@@ -30,7 +35,7 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
-| Challenge-response (Ed25519) | Complete | `apps/backend/internal/application/verification_event_service.go` |
+| Challenge-response (Ed25519) | Partial (*updated 2026-10*): the discovery document advertises the §5.1 challenge endpoint `/api/v1/agents/{agentId}/challenge`, but the backend registers no such route, so the §5.1 exchange is not served (AIP-SPEC Appendix A.1, the §5 row) | `apps/backend/internal/application/verification_event_service.go`, `handlers/aip_handler.go` |
 | MCP verification flow | Complete | `mcp_service.go` |
 | A2A verification flow | Complete | `a2a_service.go` |
 | OAuth 2.0 / OIDC | Partial (*updated 2026-10*): the backend serves an OAuth 2.0 token endpoint, `POST /api/v1/oauth/token` (RFC 6749), that accepts the JWT-bearer grant type of RFC 7523 from a registered agent and returns a bearer access token, and a device authorization grant (RFC 8628) for CLI login. The token request carries the agent's signed JWT in `client_assertion`, with `client_id` and `client_assertion_type`; the handler reads no `assertion` parameter, in which RFC 7523 Section 2.1 carries the JWT. No code that issues an OpenID Connect ID token was found | `handlers/oauth_token_handler.go`, `handlers/device_auth_handler.go` |
@@ -42,17 +47,17 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
-| 9-factor algorithm (spec §6.1) | 6 of 9 factors implemented (*updated 2026-07*; execution isolation measured; §6.1 exclusion + anti-gaming cap implemented) | `trust_calculator.go` |
+| 9-factor algorithm (spec §6.1) | 9 of 9 factors implemented (*updated 2026-10*; §6.1 exclusion + anti-gaming cap implemented; compliance and feedback are excluded for an agent with no such data) | `trust_calculator.go` |
 | Unscored state and algorithm version (spec §6.1, since 1.2.0-draft) | NOT IMPLEMENTED (*updated 2026-10*): a composite is published for every agent, including one with no verification events; no `algorithmVersion` or `scoreStatus` | `trust_calculator.go`, `domain/trust_score.go` |
 | Verification factor (25%) | Complete | `trust_calculator.go` |
 | Uptime factor (15%) | Complete | `trust_calculator.go` |
 | Success rate factor (15%) | Complete | `trust_calculator.go` |
 | Security alerts factor (15%) | Complete | `trust_calculator.go` |
-| Compliance factor (10%) | STUB (TODO comment) | `trust_calculator.go` |
+| Compliance factor (10%) | Complete (*updated 2026-10*) — scored from the organization's latest AIM compliance snapshot; excluded when it has none | `trust_calculator.go` |
 | Execution isolation factor (10%) | Complete (*updated 2026-07*) — measured in the composite; persistence of the stored breakdown column is a filed follow-up | `trust_calculator.go` |
 | Age factor (5%) | Complete | `trust_calculator.go` |
-| Drift factor (3%) | STUB (TODO comment) | `trust_calculator.go` |
-| Feedback factor (2%) | STUB (TODO comment) | `trust_calculator.go` |
+| Drift factor (3%) | Complete (*updated 2026-10*) — scored from configuration-drift and MCP-drift alerts of the last 30 days on the agent and its connected MCP servers; no alerts scores 1.0 | `trust_calculator.go` |
+| Feedback factor (2%) | Complete (*updated 2026-10*) — scored from the agent's feedback ratings, counted by sentiment; excluded when it has none | `trust_calculator.go` |
 | Verifiable Credential expression | NOT IMPLEMENTED | - |
 | ATP integration | Partial (one-way push via registry bridge) | `registry_bridge_service.go` |
 
@@ -86,7 +91,14 @@ Based on source code review of `agent-identity-management` (March 2026; rows mar
 
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
-| /.well-known/aip | NOT IMPLEMENTED | - |
+| /.well-known/aip | Complete (*updated 2026-10*): the provider serves its discovery document; on 2026-09-02 both `https://aim.opena2a.org/.well-known/aip` and `https://api.aim.opena2a.org/.well-known/aip` answered HTTP 200 (README Quick Start) | `handlers/aip_handler.go` |
+
+To check the discovery endpoint yourself, fetch the provider's discovery document; an HTTP 200
+means it is served:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://aim.opena2a.org/.well-known/aip
+```
 
 ### Integration Patterns (Section 11)
 
@@ -101,14 +113,16 @@ The rows below restate what the Google A2A and Anthropic MCP lines of the README
 
 ## Priority Implementation Order
 
-1. **/.well-known/aip discovery endpoint** — minimum for standard compliance
-2. **DID resolution** — required for Level 3 and cross-platform identity
-3. **Complete trust scoring** — implement compliance, drift, feedback factors
-4. **Verifiable Credentials** — trust scores as W3C VCs for portability
-5. **OpenID Connect ID token** — the backend serves an OAuth 2.0 token endpoint that returns a bearer access token (Verification table above); what is missing is an OpenID Connect ID token
-6. **WebAuthn/FIDO2** — browser-based key storage for Chrome integration
-7. **Capability negotiation** — runtime negotiation protocol between agents
-8. **YAML policy format** — declarative governance policies
+1. **DID resolution** — required for Level 3 and cross-platform identity
+2. **Complete trust scoring** — implement compliance, drift, feedback factors (done, *updated 2026-10*)
+3. **Verifiable Credentials** — trust scores as W3C VCs for portability
+4. **OpenID Connect ID token** — the backend serves an OAuth 2.0 token endpoint that returns a bearer access token (Verification table above); what is missing is an OpenID Connect ID token
+5. **WebAuthn/FIDO2** — browser-based key storage for Chrome integration
+6. **Capability negotiation** — runtime negotiation protocol between agents
+7. **YAML policy format** — declarative governance policies
+
+The `/.well-known/aip` discovery endpoint, first in this list until 2026-10, is served (Discovery
+table above).
 
 ---
 
@@ -126,8 +140,11 @@ repository, use the fully qualified name **OpenA2A AIP**.
 | draft-aip-agent-identity-protocol | James Cao (Montcao), Carlos Eduardo Arango Gutierrez (NVIDIA) | -00, 2026-03-16 | Agent identity registry + enforcement proxy |
 | draft-singla-agent-identity-protocol | Singla | -00, 2026-04-16 | Agent identity + delegation |
 | draft-aap-oauth-profile, "Agent Authorization Profile" | Cruz (independent) | -01, 2026-02-07 | OAuth 2.0 profile for agent-to-API authorization |
-| OpenA2A AIP (this spec) | OpenA2A | not yet filed | Identity, capabilities, verification, trust scoring, governance, lifecycle, audit |
-| OpenA2A AAP (companion) | OpenA2A | not yet filed | Authorization token model + broker/resolution layer |
+| OpenA2A AIP (this spec), `draft-fane-opena2a-aip` | OpenA2A | -00, 2026-07-06 | Identity, capabilities, verification, trust scoring, governance, lifecycle, audit |
+| OpenA2A AAP (companion), `draft-fane-opena2a-aap` | OpenA2A | -00, 2026-07-06 | Authorization token model + broker/resolution layer |
+
+The two OpenA2A rows were updated on 2026-10-11; the other rows record the datatracker as of
+June 2026. The README names the current revision of `draft-fane-opena2a-aip`.
 
 ### OpenA2A AIP vs draft-aip-agent-identity-protocol (Cao/Arango)
 

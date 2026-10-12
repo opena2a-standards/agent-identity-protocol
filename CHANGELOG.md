@@ -75,12 +75,49 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   the two lists agree, that the status matches the protocol's `GAP-ANALYSIS.md` row, that the
   OpenID Connect lines and that row name the token endpoint, and that the Google A2A lines name
   the `aim` extension.
+- `GAP-ANALYSIS.md` points to Appendix A.1 of `AIP-SPEC.md` as the current record of
+  implementation status and says Appendix A.1 prevails where a row of its own tables differs. Two
+  rows contradicted Appendix A.1 and the README, and now agree with them: `/.well-known/aip`,
+  recorded as not implemented and first in the priority order, is Complete, with a command to
+  check it, and leaves the priority order; the challenge-response row, recorded as Complete, is
+  Partial, because the backend registers no route for the §5.1 challenge endpoint its discovery
+  document advertises. The prior-art table names the two OpenA2A drafts,
+  `draft-fane-opena2a-aip` and `draft-fane-opena2a-aap`, each first posted 2026-07-06, where it
+  said "not yet filed".
 - `AIP-SPEC.md` Appendix A.1 marks "§5 Verification (challenge-response)" Partial, not Shipped,
   matching the README. The reference provider's discovery document advertises
   `/api/v1/agents/{agentId}/challenge`, but its backend registers no such route. The row now names
   what is served: `/api/v1/agents/{id}/authorize`, a fine-grained authorization decision endpoint
   that verifies no signed challenge, and the MCP server attestation challenge at
   `/api/v1/mcp-servers/{id}/challenge`.
+- `AIP-SPEC.md` §6.1 implementation status, README.md and GAP-ANALYSIS.md say the reference
+  implementation scores all nine trust factors, instead of six measured and compliance, drift
+  detection and user feedback stubbed. At `agent-identity-management` `main` (`ff53b8cc`,
+  2026-10-11) compliance is scored from the organization's compliance snapshot and user feedback
+  from the agent's feedback ratings, each excluded for an agent with no such data, and drift
+  detection from drift alerts, where none scores 1.0. The Appendix A.1 row for §6 says all nine
+  factors have scoring functions, instead of three stubbed. §6.1 no longer says implementers SHOULD
+  NOT treat the stubbed factors as validated by the reference implementation, and its unscored
+  example names compliance, drift detection and user feedback instead of "the three proposed
+  factors", as Section 7.1 of `draft-fane-opena2a-aip-04` does. The lists under the README's
+  Internet-Draft paragraph follow: one statement of §6.1 the draft lacks instead of two, and four
+  changes to a requirement or its wording instead of three, the fourth being the statement §6.1
+  dropped, which the draft does not carry either. `scripts/test_checks.py` fails if the §6.1
+  status paragraph, the Appendix A.1 row or the README's trust use case calls a factor stubbed, if
+  a GAP-ANALYSIS.md factor row is not Complete, or if the README lists the dropped statement as one
+  the draft lacks.
+- `AIP-SPEC.md` §3.2 says the reference implementation will issue
+  `did:web:aim.opena2a.org:agents:<uuid>` and identify itself as `did:web:aim.opena2a.org`,
+  instead of saying it does. On 2026-10-11 its discovery document at
+  `https://aim.opena2a.org/.well-known/aip` reported `providerDid` as `did:aip:provider_opena2a`
+  with no `publicKey`, and its resolver answers only the deprecated `did:aip:aim_<uuid>` form, as
+  the §3.2 status note already said. §10.1 says its discovery sample is the target form and gives
+  the reference provider's dated reading. `draft-fane-opena2a-aip-04`, as submitted, still says in
+  Section 4.2 that the reference implementation issues the `did:web` form and carries the sample
+  in Section 12 without the note; the README's Internet-Draft lists name both in one item, the
+  twelfth informative change. `scripts/test_checks.py` fails if §3.2 says the reference
+  implementation issues the `did:web` form, if §10.1 drops the note, or if the README item does
+  not name both sections of the draft.
 - `scripts/check_draft_sync.py` matches each tracked term as a whole word, so a field renamed
   in the specification or in the draft (`behaviorTier` to `behaviorTierX`) is reported instead
   of passing as a substring.
@@ -187,6 +224,21 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   each count equals the items listed under it, that no other count stands in those paragraphs,
   and, where git history is available, that an item names every part of `AIP-SPEC.md` changed
   since the commit that made the paired draft.
+- README.md also lists, under its Internet-Draft paragraph, the parts that only one of the two
+  documents has. Four parts of the specification have no counterpart in
+  `draft-fane-opena2a-aip-04`, and none of them carries a BCP 14 keyword: §2.1, §11 Integration
+  Patterns, Appendix A and Appendix B. Six parts of the draft have no counterpart in the
+  specification: its Introduction, Section 8 (Portable Credential and Transparency Log), Section
+  13.5 and its Related Work, Document History and Acknowledgments appendices. Section 8 states a
+  requirement the specification does not, which the README quotes, and the MUST NOT statements of
+  Section 13.5 restate rules of §3.3 and §3.4. The lists said only that the draft has no
+  counterpart of Appendix A, inside the item on another change. `scripts/test_checks.py` checks
+  that the two lists name every top-level section or appendix only one document has, that each
+  item names a section the other document lacks, that the parts of the specification carry no
+  BCP 14 keyword while the lead-in says so, that an item on a part of the draft names a keyword
+  when that part carries one and none when it does not, and that what such an item quotes is in
+  the draft and not in the specification. An item of these two lists does not count as naming a
+  part of `AIP-SPEC.md` changed since the draft.
 - `AIP-SPEC.md` carries a version note above the abstract: the text is 1.2.0-draft, dated
   2026-10-06, with later changes that no dated version carries yet, and those to §3.1 and §5.4
   change a requirement. §3.1 attributes the earlier agent ID rule to "The 1.2.0-draft text dated
