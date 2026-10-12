@@ -422,6 +422,17 @@ class ImplementationStatusTrustScoring(unittest.TestCase):
         self.assertTrue(status.startswith("NOT IMPLEMENTED"), status)
 
 
+class PairingIdnitsCount(unittest.TestCase):
+    def test_warning_count_names_the_day_it_was_measured(self) -> None:
+        # idnits adds DOC_DATE_IN_PAST once the document date is more than three days old, so
+        # the -04 txt reports 6 warnings on its render date and 7 from 2026-10-10 on.
+        changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
+        section, _ = check_draft_sync.version_section(changelog, "1.2.0-draft")
+        _, paragraph = check_draft_sync.pairing_paragraph(section, "1.2.0-draft")
+        self.assertIn("0 errors and 6 warnings on 2026-10-06", paragraph)
+        self.assertIn("a seventh, `DOC_DATE_IN_PAST`,", paragraph)
+
+
 class FirstUseMissingFile(unittest.TestCase):
     def test_missing_file_is_a_counted_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
