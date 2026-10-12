@@ -438,13 +438,27 @@ class PairingIdnitsCount(unittest.TestCase):
         self.assertIn("0 errors and 6 warnings on 2026-10-06", paragraph)
         self.assertIn("a seventh, `DOC_DATE_IN_PAST`,", paragraph)
 
-    def test_seventh_warning_is_dated_by_the_idnits_rule(self) -> None:
+    @staticmethod
+    def warns(at: datetime) -> bool:
         # idnits 3.1.0 warns when Math.round(days from now back to local midnight of the document
-        # date) is below -3. Math.round rounds a half up, so -3.5 days is still -3 and the first
-        # minute that warns is 12:01 local on the third day after the document date.
+        # date) is below -3. Math.round rounds a half up, so exactly -3.5 days is still -3.
+        days = (datetime(2026, 10, 6) - at) / timedelta(days=1)
+        return math.floor(days + 0.5) < -3
+
+    def test_first_instant_that_warns_is_one_millisecond_after_noon(self) -> None:
+        # The first instant that warns is 12:00:00.001 local on the third day after the
+        # document date, not the first whole minute after noon.
+        noon = datetime(2026, 10, 9, 12)
+        self.assertFalse(self.warns(noon))
+        self.assertTrue(self.warns(noon + timedelta(milliseconds=1)))
+
+    def test_seventh_warning_is_dated_by_the_idnits_rule(self) -> None:
+        # Stepping in whole minutes, the first whole minute that warns is 12:01 local on the
+        # third day after the document date.
         day = 24 * 60
-        minutes = next(m for m in range(7 * day) if math.floor(-m / day + 0.5) < -3)
-        first = datetime(2026, 10, 6) + timedelta(minutes=minutes)
+        start = datetime(2026, 10, 6)
+        minutes = next(m for m in range(7 * day) if self.warns(start + timedelta(minutes=m)))
+        first = start + timedelta(minutes=minutes)
         self.assertEqual(first, datetime(2026, 10, 9, 12, 1))
         paragraph = self.paragraph()
         self.assertIn("more than three and a half days after the start of the document date", paragraph)
