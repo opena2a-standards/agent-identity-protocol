@@ -362,11 +362,15 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   of that file use for a finished row. It reported only an item marked done or one asking for
   trust scoring, so an item ending in `(complete)` passed. "Complete" is not read as a mark where
   it is the verb that opens an item's title, as it was in "Complete trust scoring".
-- That priority list check no longer reports an item still to do that uses "complete" after its
-  title, as a verb in "complete the depth limit enforcement" or before a noun in "needs a complete
-  runtime protocol". "Complete" is now no mark wherever a word it governs follows it, and is still
-  a mark where it stands alone or before a date, a conjunction or a preposition, as in
-  `(complete 2026-10)` and "complete and served".
+- In that priority list check, "complete" that is not the verb opening an item's title is now no
+  mark where a space and a word with a letter follow it, unless that word is and, but, or, as, at,
+  by, for, in, on, since or with, in any letter case. A word is read up to its first punctuation
+  mark. So an item still to do worded "complete the depth limit enforcement" or "needs a complete
+  runtime protocol" is no longer reported, and neither is a finished item worded "complete per
+  Appendix A.1" or "(complete October 2026)". Such a "complete" is still a mark at the end of an
+  item and before punctuation, one of those words or a word with no letter, so an item worded
+  `(complete 2026-10)`, "complete and served", "complete in-browser key storage" or "complete 3
+  remaining checks" is still reported, whether it is finished or still to do.
 - The tests of the operator check in `tests/test_check_scripts.py` now cover a comment that
   starts where an operator ends, as in `_Z = (1 ==# a comment`, and, on Python 3.14 and later,
   the `=` of a t-string replacement field, as in `t"{a=}"`. `flake8 --select=E225` reports

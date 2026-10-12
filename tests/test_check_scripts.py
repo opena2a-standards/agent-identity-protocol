@@ -577,15 +577,20 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
     def finished(items: list[str]) -> list[str]:
         """Return each priority list item that is marked finished or asks for trust scoring.
 
-        "done", "complete" and "completed" mark an item as finished. "Complete" is no mark where a
-        word it governs follows it, as a verb, as in "Complete the DID resolver" or "complete the
-        depth limit enforcement", or before a noun, as in "a complete runtime protocol". A date, a
-        conjunction or a preposition is no such word, as in "complete 2026-10" or "complete and
-        served", so "complete" before one is a mark.
+        "done", "complete" and "completed" mark an item as finished. "Complete" is no mark where it
+        is the verb that opens the item's title, as in "Complete trust scoring". Elsewhere it is no
+        mark where a space and a word with a letter follow it, as in "complete the depth limit
+        enforcement" and "a complete runtime protocol", unless that word is and, but, or, as, at,
+        by, for, in, on, since or with, in any letter case. A word is read up to its first
+        punctuation mark. So "complete" is still a mark at the end of an item and before
+        punctuation, one of those words or a word with no letter, as in "complete 2026-10",
+        "complete and served", "complete in-browser key storage" and "complete 3 remaining checks",
+        and a finished item worded "complete per Appendix A.1" or "(complete October 2026)" is not
+        reported.
         """
         word = r"\s+(?!(?:and|but|or|as|at|by|for|in|on|since|with)\b)\w*[^\W\d_]"
         marks = re.compile(rf"\b(?:done|completed)\b|\bcomplete\b(?!{word})|trust scoring", re.IGNORECASE)
-        return [item for item in items if marks.search(item)]
+        return [item for item in items if marks.search(re.sub(r"^(\d+\. \**)Complete (?=\w)", r"\1", item))]
 
     def test_challenge_response_row_is_partial_as_in_appendix_a1(self) -> None:
         # Appendix A.1 marks the §5 row Partial because the backend registers no route for the
@@ -637,18 +642,32 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — declarative governance policies (complete 2026-10)",
             "6. **YAML policy format** — complete and served by the backend",
             "6. **YAML policy format** — declarative governance policies, complete since 2026-10",
+            # It is a mark in an item still to do as well where one of the words finished() names
+            # or a word with no letter follows it, read up to its first punctuation mark.
+            "4. **WebAuthn/FIDO2** — complete in-browser key storage",
+            "3. **Delegation chains** — complete 3 remaining checks",
         ]
         self.assertEqual(self.finished(marked), marked)
-        # It is no mark where it is a verb with an object, in the title of an item still to do or
-        # after it, or where it stands before a noun.
+        # It is no mark where it is the verb that opens the title of an item still to do, or where a
+        # space and a word with a letter follow it that is not one of the words finished() names.
         unfinished = [
             "1. **Complete the DID resolver** — required for Level 3 and cross-platform identity",
             "1. **Complete 2FA support** — required for Level 3",
+            "4. **Complete in-browser key storage** — WebAuthn/FIDO2 for Chrome integration",
+            "1. **Complete and publish the DID resolver** — required for Level 3",
+            "1. **Complete 802.1X support** — required for Level 3",
             "3. **Delegation chains** — complete the depth limit enforcement",
             "2. **Capability negotiation** — needs a complete runtime protocol",
             "5. **Capability negotiation** — the runtime negotiation protocol between agents is incomplete",
         ]
         self.assertEqual(self.finished(unfinished), [])
+        # So a finished item worded that way is not reported either.
+        unreported = [
+            "6. **YAML policy format** — complete per Appendix A.1",
+            "6. **YAML policy format** — complete from 2026-10",
+            "6. **YAML policy format** — declarative governance policies (complete October 2026)",
+        ]
+        self.assertEqual(self.finished(unreported), [])
 
     def test_links_to_appendix_a1(self) -> None:
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
