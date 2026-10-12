@@ -25,6 +25,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` Appendix A.1 marks "§6 Trust Scoring (9-factor)" Partial, not Shipped, and §6.1
+  says the reference calculator implements algorithm version 1, not "the 9-factor algorithm
+  above". Since 1.2.0-draft that algorithm includes the unscored state, which the reference
+  calculator does not implement: it publishes a composite for every agent, including one with no
+  verification events, and carries no `algorithmVersion` or `scoreStatus`. §6.1 gains a
+  composition implementation status paragraph and `GAP-ANALYSIS.md` a row for the gap.
 - `AIP-SPEC.md` Sections 3.3 and 9.1 carry a reference implementation status note, as Section
   3.2 does. The published CLI (`opena2a-cli` 0.10.13 with `@opena2a/aim-core` 0.2.0) stores one
   identity in `~/.opena2a/aim-core/identity.json`, not under `identities/`, with `agentId` and

@@ -394,6 +394,34 @@ class ImplementationStatusChallenge(unittest.TestCase):
         self.assertIn("registers no such route", note)
 
 
+class ImplementationStatusTrustScoring(unittest.TestCase):
+    def line(self, path: Path, prefix: str) -> str:
+        for line in path.read_text(encoding="utf-8").splitlines():
+            if line.startswith(prefix):
+                return line
+        self.fail(f"{path.name} has no line starting with {prefix}")
+
+    def test_section_6_1_scopes_the_reference_calculator_to_algorithm_version_1(self) -> None:
+        paragraph = self.line(check_draft_sync.SPEC, "**Reference implementation.**")
+        self.assertNotIn("The 9-factor algorithm above is implemented", paragraph)
+        self.assertIn("algorithm version 1", paragraph)
+        status = self.line(check_draft_sync.SPEC, "**Composition implementation status (reference implementation,")
+        self.assertIn("does not implement the unscored state", status)
+        self.assertIn("`algorithmVersion`", status)
+
+    def test_row_is_partial_and_names_the_unscored_state(self) -> None:
+        row = self.line(check_draft_sync.SPEC, "| §6 Trust Scoring (9-factor) |")
+        _, status, note = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        self.assertEqual(status, "Partial")
+        self.assertIn("algorithm version 1", note)
+        self.assertIn("unscored state", note)
+
+    def test_gap_analysis_tracks_the_unscored_state(self) -> None:
+        row = self.line(ROOT / "GAP-ANALYSIS.md", "| Unscored state and algorithm version (spec §6.1")
+        _, status, _ = [cell.strip() for cell in row.strip().strip("|").split("|")]
+        self.assertTrue(status.startswith("NOT IMPLEMENTED"), status)
+
+
 class FirstUseMissingFile(unittest.TestCase):
     def test_missing_file_is_a_counted_failure(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
