@@ -8,6 +8,14 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` Sections 3.3 and 9.1 carry a reference implementation status note, as Section
+  3.2 does. The published CLI (`opena2a-cli` 0.10.13 with `@opena2a/aim-core` 0.2.0) stores one
+  identity in `~/.opena2a/aim-core/identity.json`, not under `identities/`, with `agentId` and
+  `agentName` where Section 3.3 has `id` and `name`, no `type`, `capabilities` or `status`, and the
+  Ed25519 secret key in plain base64 protected only by file mode 0600, so it is not encrypted at
+  rest. `identity create` writes no `identity_created` audit event, and an event written by
+  `identity log` has `timestamp`, `action`, `target`, `result` and `plugin` instead of the `type`
+  and `agentId` keys in Section 9.1. The notes describe the gap; the requirements are unchanged.
 - `README.md` and `AIP-SPEC.md` Appendix A say the reference implementation targets Conformance
   Level 2, instead of saying it implements Level 2. Level 2 requires challenge-response
   verification (Section 5), which Appendix A.1 marks Partial because the reference backend does

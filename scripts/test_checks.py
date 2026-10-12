@@ -235,5 +235,55 @@ class ReferenceImplementationLevel(unittest.TestCase):
                 self.assertEqual(overclaims, [], f"Appendix A.1 marks {unshipped} not Shipped")
 
 
+def status_notes(spec: str, heading: str) -> list[str]:
+    """Return the "Reference implementation status" notes in one numbered subsection.
+
+    A subsection runs from its "### <heading>" line to the next "## " or "### " heading; a note
+    is a blockquote paragraph that opens with "> **Reference implementation status".
+    """
+    body = ("\n" + spec).split(f"\n### {heading}\n", 1)[1]
+    body = re.split(r"\n#{2,3} ", body, maxsplit=1)[0]
+    return [
+        re.sub(r"\s+", " ", paragraph).strip()
+        for paragraph in re.split(r"\n\s*\n", body)
+        if paragraph.strip().startswith("> **Reference implementation status")
+    ]
+
+
+STATUS_SPEC = (
+    "### 3.3 Identity File Format\n\nPrivate keys MUST be encrypted at rest.\n\n"
+    "> **Reference implementation status (date).** The tool writes\n> `identity.json`.\n\n"
+    "### 3.4 Agent Types\n\n> **Reference implementation status (date).** Another section.\n"
+)
+
+# What the published CLI writes, which Sections 3.3 and 9.1 specify differently. A section's
+# note must name each of these until the tool follows that section.
+LOCAL_IDENTITY_GAPS = {
+    "3.3 Identity File Format": ["identity.json", "secretKey", "0600", "not encrypted at rest"],
+    "9.1 Local Audit Log": ["identity_created", "`action`", "`target`", "`result`", "`plugin`"],
+}
+
+
+class LocalIdentityStatus(unittest.TestCase):
+    def test_status_notes_are_read_from_their_own_subsection(self):
+        self.assertEqual(
+            status_notes(STATUS_SPEC, "3.3 Identity File Format"),
+            ["> **Reference implementation status (date).** The tool writes > `identity.json`."],
+        )
+        self.assertEqual(status_notes(STATUS_SPEC, "3.4 Agent Types")[0][-16:], "Another section.")
+
+    def test_local_identity_sections_say_what_the_cli_writes(self):
+        # The CLI stores one identity in identity.json with its private key in plain base64 and
+        # writes no identity_created event, so Sections 3.3 and 9.1 carry a status note that
+        # says so, as Section 3.2 does for the resolver.
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        for heading, terms in LOCAL_IDENTITY_GAPS.items():
+            with self.subTest(section=heading):
+                notes = status_notes(spec, heading)
+                self.assertEqual(len(notes), 1, f"Section {heading} has no status note")
+                missing = [term for term in terms if term not in notes[0]]
+                self.assertEqual(missing, [], f"Section {heading} status note")
+
+
 if __name__ == "__main__":
     unittest.main()

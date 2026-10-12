@@ -216,6 +216,8 @@ Private keys MUST be encrypted at rest. The default encryption is AES-256-GCM wi
 
 `declaredPurpose` is **optional**: a structured declaration of what the agent is *for* (`category`, `taskScopes`, `capabilityJustification`, `autonomy`, and the optional `dataScopes` / `egressScopes`). It is an identity and attestation property plus an offline detection signal — it MUST NOT be used as an authorization input, and a verifier MUST NOT reject an identity for lacking it. Its full vocabulary and semantics are defined in [`atx-spec` core.md §1.5](https://github.com/opena2a-standards/atx-spec); when carried in an ATX it is covered by the v1.1 signed payload. At the DID layer, declared purpose is surfaced only as a `PurposeAttestation` service-endpoint pointer, never inline in the DID Document body.
 
+> **Reference implementation status (2026-10-11, published packages `opena2a-cli` 0.10.13 and `@opena2a/aim-core` 0.2.0, the latest of each).** The CLI's local identity does not follow this section. `opena2a-cli identity create` keeps one identity per data directory, in `~/.opena2a/aim-core/identity.json` (aim-core `dist/identity.js:44`), not in a per-agent file under `identities/`. The file holds `agentId`, `agentName`, `publicKey`, `secretKey` and `createdAt`: the agent ID and name sit under different keys from `id` and `name` above, `publicKey` is plain base64 without the `ed25519:` prefix, and there is no `type`, `capabilities` or `status`. `secretKey` is the Ed25519 secret key in plain base64 (`dist/identity.js:62`), protected only by file mode 0600 (`dist/identity.js:71`), so the private key is not encrypted at rest as this section and Section 12.1 require. This revision specifies the target; it does not change the tool.
+
 ### 3.4 Agent Types
 
 AIP defines a standard vocabulary for agent types:
@@ -798,6 +800,8 @@ Each line is a JSON event:
 {"type":"verification_success","agentId":"aim_7f3a9c2e","protocol":"mcp","durationMs":42,"timestamp":"2026-03-22T10:01:00Z"}
 {"type":"capability_violation","agentId":"aim_7f3a9c2e","capability":"system:exec","severity":"critical","blocked":true,"timestamp":"2026-03-22T10:02:00Z"}
 ```
+
+> **Reference implementation status (2026-10-11, the packages named in Section 3.3).** The CLI appends events to `~/.opena2a/aim-core/audit.jsonl` (aim-core `dist/audit.js:42`), but `opena2a-cli identity create` writes none, so the log holds no `identity_created` event. An event written by `opena2a-cli identity log` has the keys `timestamp`, `action`, `target`, `result` and `plugin`, not the `type` and `agentId` keys shown above. This revision specifies the target; it does not change the tool.
 
 ### 9.2 Server Audit Log
 
