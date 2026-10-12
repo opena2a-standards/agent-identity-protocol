@@ -19,6 +19,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   which replaces `aim_7f3a9c2e` in every example. Appendix A.1 and GAP-ANALYSIS.md say the CLI
   derives the agent ID and the provider assigns a UUID. `draft-fane-opena2a-aip-04`, as
   submitted, still gives the SHA-256 form in Section 4.1; README.md says so.
+- `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
+  giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
+  valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,
+  as submitted, still gives "a one-hour time-to-live" in Section 6.4, and README.md now lists this
+  change beside the §12.1 one. This entry was filed under Fixed; it changes a requirement, as the
+  §3.1 entry above does.
 - `tests/test_agent_id.py` derives the agent ID of the §3.1 example from its public key and checks
   it, checks that every other `aim_` agent ID in `AIP-SPEC.md` has the §3.1 shape, and checks the
   README Quick Start agent ID against the public key printed beside it.
@@ -45,11 +51,6 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   Level 2, instead of saying it implements Level 2. Level 2 requires challenge-response
   verification (Section 5), which Appendix A.1 marks Partial because the reference backend does
   not serve the Section 5.1 exchange.
-- `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
-  giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
-  valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,
-  as submitted, still gives "a one-hour time-to-live" in Section 6.4, and README.md now lists this
-  change beside the §12.1 one.
 - `AIP-SPEC.md`, `README.md` and `GAP-ANALYSIS.md` attribute draft-aip-agent-identity-protocol-00
   as that draft does: James Cao (Montcao), Carlos Eduardo Arango Gutierrez (NVIDIA). They had
   placed both authors at NVIDIA. The `GAP-ANALYSIS.md` comparison heading calls it the Cao/Arango
@@ -169,6 +170,41 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   element's text segments are trimmed and joined, so a paragraph whose "in this document" or
   keywords follow a child element such as `<xref/>` is not the boilerplate paragraph. Run
   `python3 -m unittest discover -s tests`.
+- README.md gives the differences between the specification and `draft-fane-opena2a-aip-04` as
+  lists under its Internet-Draft paragraph, each introduced by the number of items in it: the two
+  statements of §6.1 the draft lacks, the three changes to a requirement or its wording (§3.1,
+  §5.4, §12.1) and eleven informative changes. The paragraph counted three changes and three
+  informative additions and left out six edits made to `AIP-SPEC.md` since the draft was made:
+  the naming note's attribution, the Appendix A sentence on Conformance Level 2, the Appendix A.1
+  rows for §3, §5 and §6, and the §6.1 statement of the algorithm version the reference calculator
+  implements, with its composition implementation status paragraph. The §3.1 item also names the
+  sections whose examples carry an agent ID of the §3.1 form. `scripts/test_checks.py` checks that
+  each count equals the items listed under it, that no other count stands in those paragraphs,
+  and, where git history is available, that an item names every part of `AIP-SPEC.md` changed
+  since the commit that made the paired draft.
+- `AIP-SPEC.md` carries a version note above the abstract: the text is 1.2.0-draft, dated
+  2026-10-06, with later changes that no dated version carries yet, and those to §3.1 and §5.4
+  change a requirement. §3.1 attributes the earlier agent ID rule to "The 1.2.0-draft text dated
+  2026-10-06 ... and every earlier revision" instead of "Revisions up to 1.2.0-draft", which read
+  as naming the present text, and README.md says `AIP-SPEC.md` is 1.2.0-draft with later changes
+  instead of saying the specification is 1.2.0-draft. The version number is unchanged.
+- The OpenID Connect status lines in `README.md` and the `AIP-SPEC.md` abstract, and the OAuth 2.0
+  / OIDC row of `GAP-ANALYSIS.md`, name the parameters of the token request: it carries the
+  agent's signed JWT in `client_assertion`, with `client_id` and `client_assertion_type`, and the
+  endpoint reads no `assertion` parameter, in which RFC 7523 Section 2.1 carries the JWT. They
+  named the JWT-bearer grant type without its parameters.
+- The ATP status lines in `README.md` and the `AIP-SPEC.md` abstract cite Appendix A.1 for the
+  statement that AIP trust scores are not yet wired into the ATP transparency log. They cited
+  §6.5, which specifies the combined score and names no transparency log; the Appendix A.1 row
+  for §6.5 does.
+- `AIP-SPEC.md` §14 lists RFC 3339, RFC 4648, RFC 6749, RFC 7523 and RFC 8785, which the text
+  cites and the list omitted.
+- `GAP-ANALYSIS.md` gains an Integration Patterns table with a row for the A2A agent card and a
+  row for MCP capability-based tool access. Both restate the Google A2A and Anthropic MCP status
+  lines, so each of the six statuses has a row, `scripts/test_checks.py` checks all six against
+  one instead of four, and README.md names the six rows. The priority list of `GAP-ANALYSIS.md`
+  asks for an OpenID Connect ID token instead of saying to re-add OAuth 2.0 / OIDC, which its
+  OAuth 2.0 / OIDC row says the backend serves.
 
 ## [1.2.0-draft] - 2026-10-06
 
