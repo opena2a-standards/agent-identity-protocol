@@ -556,8 +556,10 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
 
     GAP = ROOT / "GAP-ANALYSIS.md"
     MONTHS = "January|February|March|April|May|June|July|August|September|October|November|December"
-    # The common abbreviations of the month names, and the quarters and halves of a year.
-    SHORT_DATES = "Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec|Q[1-4]|H[12]"
+    # The common abbreviations of the month names.
+    ABBREVIATIONS = "Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec"
+    # The quarters and halves of a year.
+    PERIODS = "Q[1-4]|H[12]"
 
     @staticmethod
     def slug(heading: str) -> str:
@@ -590,28 +592,35 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         space between each two: a part is a month name, the abbreviation of one (Jan to Dec, and
         Sept), a quarter (Q1 to Q4), a half-year (H1 or H2) or a number, in any letter case, so
         "Oct", "Q4 2026", "Q4-2026", "2026-Q4", "Q4/2026", "Oct-2026", "2026-Oct", "3-Oct-2026",
-        "Oct. 2026" and "October 3, 2026" are dates. A date takes every part that follows it, so
-        "complete Oct. 2026 conformance checks" holds the date "Oct. 2026", which a word follows,
-        and no date "Oct" before a full stop. A word runs up to a space or to a punctuation mark
-        that no letter, digit or underscore follows, so "in-browser", "802.1X", "Octet" and
-        "Q4-based" are each one word, and neither "in-browser" nor "inside" is "in", nor is
-        "Octet" "Oct" or "Q4-based" a date. Where "complete" opens the item's title, it is also no
-        mark where "and", a word and an object follow it, as in "Complete and publish the DID
-        resolver". So "complete" is still a mark at the end of an item and before punctuation, one
-        of those words or such a date, as in "complete 2026-10", "complete and served", "(complete
-        October 2026)", "(complete Oct 2026)", "(complete Q4 2026)", "(complete Q4-2026)",
-        "(complete H2 2026)" and "(complete 3 October 2026)", and where it opens a title such as
-        "Complete 2026-10" or "Complete and served". It is no mark before a date that a word
-        follows, as in "complete Q4-2026 conformance checks" and "complete Oct the backend". A
-        finished item worded "complete per Appendix A.1", "complete from 2026-10" or "complete Q4
-        2026 and served" is not reported, and neither is one dated "complete 2026Q4": with nothing
-        between the year and the quarter, that is one word with a letter.
+        "Oct. 2026" and "October 3, 2026" are dates. An abbreviation takes the full stop right
+        after it into the date, where no letter, digit or underscore follows that full stop, so
+        "complete Sept. conformance checks" holds the date "Sept.", which a word follows, and no
+        date "Sept" before a full stop. A full stop after a month name, a quarter, a half-year or
+        a number is a punctuation mark. A date takes every part that follows it, so "complete Oct.
+        2026 conformance checks" holds the date "Oct. 2026", which a word follows, and no date
+        "Oct" before a full stop. A word runs up to a space or to a punctuation mark that no
+        letter, digit or underscore follows, so "in-browser", "802.1X", "Octet" and "Q4-based" are
+        each one word, and neither "in-browser" nor "inside" is "in", nor is "Octet" "Oct" or
+        "Q4-based" a date. Where "complete" opens the item's title, it is also no mark where
+        "and", a word and an object follow it, as in "Complete and publish the DID resolver". So
+        "complete" is still a mark at the end of an item and before punctuation, one of those
+        words or such a date, as in "complete 2026-10", "complete and served", "(complete October
+        2026)", "(complete Oct 2026)", "(complete Sept.)", "(complete Q4 2026)", "(complete
+        Q4-2026)", "(complete H2 2026)" and "(complete 3 October 2026)", and where it opens a
+        title such as "Complete 2026-10" or "Complete and served". It is no mark before a date
+        that a word follows, as in "complete Q4-2026 conformance checks" and "complete Oct the
+        backend". A finished item worded "complete per Appendix A.1", "complete from 2026-10",
+        "complete Q4 2026 and served" or "complete Sept. Served by the backend" is not reported,
+        and neither is one dated "complete 2026Q4": with nothing between the year and the quarter,
+        that is one word with a letter.
         """
         # A word ends where neither a letter, digit or underscore nor a punctuation mark and one of
         # those follows.
         end = r"(?![^\w\s]?\w)"
         word = r"\w+(?:[^\w\s]\w+)*"
-        part = rf"(?:{cls.MONTHS}|{cls.SHORT_DATES}|\d+)"
+        # The full stop right after an abbreviation belongs to it, unless a letter, digit or
+        # underscore follows: there it is the punctuation mark before the next part or word.
+        part = rf"(?:{cls.MONTHS}|(?:{cls.ABBREVIATIONS})(?:\.(?!\w))?|{cls.PERIODS}|\d+)"
         # A date takes every part it can and gives none back, so "Oct. 2026 conformance" holds no
         # date "Oct" that a full stop follows.
         date = rf"(?>{part}(?:(?:[.,]\s|[^\w\s]|\s){part})*)"
@@ -779,6 +788,42 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — declarative governance policies (complete 2026Q4)",
         ]
         self.assertEqual(self.finished(unreported), [])
+
+    def test_full_stop_right_after_a_month_abbreviation_is_part_of_the_date(self) -> None:
+        # The full stop that ends an abbreviation is no punctuation mark after the date, so a word
+        # after it is an object of "complete" and the item is still to do.
+        unfinished = [
+            "3. **Delegation chains** — complete Sept. conformance checks",
+            "3. **Delegation chains** — complete 3 Sept. conformance checks",
+            "3. **Delegation chains** — complete 2026-Sept. conformance checks",
+            "1. **Complete Sept. conformance checks** — required for Level 3",
+            "1. **Complete and publish Sept. conformance checks** — required for Level 3",
+        ]
+        marked = [
+            # With its full stop, the date still stands before a punctuation mark here.
+            "6. **YAML policy format** — declarative governance policies, complete Sept., served by the backend",
+            "6. **YAML policy format** — complete Sept. — served by the backend",
+            "6. **Complete Sept.** — YAML policy format",
+            # A part follows the full stop here, after a space, a punctuation mark or nothing, and
+            # the date takes it.
+            "6. **YAML policy format** — declarative governance policies (complete Sept. 2026)",
+            "6. **YAML policy format** — declarative governance policies (complete Sept.-2026)",
+            "6. **YAML policy format** — declarative governance policies (complete Sept.2026)",
+            # A full stop after a number or a month name is a punctuation mark after the date.
+            "6. **YAML policy format** — complete Sept. 2026. Served by the backend",
+            "6. **YAML policy format** — complete Q4 2026. Served by the backend",
+            "6. **YAML policy format** — complete October. Served by the backend",
+        ]
+        abbreviations = ("Jan", "Feb", "Mar", "Apr", "Jun", "Jul", "Aug", "Sep", "Sept", "Oct", "Nov", "Dec")
+        for abbreviation in abbreviations:
+            for case in (abbreviation.lower(), abbreviation.title(), abbreviation.upper()):
+                unfinished.append(f"3. **Delegation chains** — complete {case}. conformance checks")
+                marked.append(f"6. **YAML policy format** — declarative governance policies (complete {case}.)")
+                marked.append(f"6. **YAML policy format** — declarative governance policies, complete {case}.")
+        self.assertEqual(self.finished(unfinished), [])
+        self.assertEqual(self.finished(marked), marked)
+        # So a finished item is not reported where a sentence starts right after the abbreviation.
+        self.assertEqual(self.finished(["6. **YAML policy format** — complete Sept. Served by the backend"]), [])
 
     def test_links_to_appendix_a1(self) -> None:
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")

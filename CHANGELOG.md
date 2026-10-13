@@ -370,25 +370,30 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   quarter (Q1 to Q4), a half-year (H1 or H2) or a number, in any letter case, or several of these
   with a space, a punctuation mark, or a full stop or comma and a space between each two, as in
   "Q4 2026", "Q4-2026", "2026-Q4", "Q4/2026", "Oct-2026", "2026-Oct", "Oct. 2026" and "October 3,
-  2026". A date takes every part that follows it, so "Oct. 2026 conformance checks" holds the
-  date "Oct. 2026", which a word follows, and no date "Oct" before a full stop. A word runs up to
-  a space or to a punctuation mark that no letter, digit or underscore follows, so "in-browser"
-  is one word and is not "in", "Octet" is not "Oct" and "Q4-based" is no date. Where "complete"
-  opens an item's title, in any letter case, it is also no mark where "and", a word and an object
-  follow it. So an item still to do worded "complete the depth limit enforcement", "needs a
-  complete runtime protocol", "complete in-browser key storage", "complete 3 remaining checks",
-  "complete Q4-2026 conformance checks" or "complete Q4 2026 conformance checks", or one whose
+  2026". An abbreviation takes the full stop right after it into the date, where no letter, digit
+  or underscore follows that full stop, so "Sept. conformance checks" holds the date "Sept.",
+  which a word follows, and no date "Sept" before a full stop. A full stop after a month name, a
+  quarter, a half-year or a number is a punctuation mark. A date takes every part that follows
+  it, so "Oct. 2026 conformance checks" holds the date "Oct. 2026", which a word follows, and no
+  date "Oct" before a full stop. A word runs up to a space or to a punctuation mark that no
+  letter, digit or underscore follows, so "in-browser" is one word and is not "in", "Octet" is
+  not "Oct" and "Q4-based" is no date. Where "complete" opens an item's title, in any letter
+  case, it is also no mark where "and", a word and an object follow it. So an item still to do
+  worded "complete the depth limit enforcement", "needs a complete runtime protocol", "complete
+  in-browser key storage", "complete 3 remaining checks", "complete Q4-2026 conformance checks",
+  "complete Q4 2026 conformance checks" or "complete Sept. conformance checks", or one whose
   title is "complete and publish the DID resolver" or "COMPLETE and publish the DID resolver", is
-  no longer reported, and neither is a finished item worded "complete per Appendix A.1" or
-  "complete Q4 2026 and served by the backend". "complete" is still a mark at the end of an item
-  and before punctuation, one of those words or such a date, so an item worded `(complete
-  2026-10)`, "(complete October 2026)", "(complete Oct 2026)", "(complete Sept 2026)", "(complete
-  Q4 2026)", "(complete Q4-2026)", "(complete 2026-Q4)", "(complete Oct-2026)", "(complete H2
-  2026)", "(complete 3 October 2026)", "complete Q4 2026, served by the backend" or "complete and
-  served" is reported, and so is an item whose title is "Complete 2026-10" or "Complete and
-  served", whether it is finished or still to do. A finished item dated with nothing between a
-  year and its quarter or half-year, as in "(complete 2026Q4)", is not reported: that is one word
-  with a letter.
+  no longer reported, and neither is a finished item worded "complete per Appendix A.1",
+  "complete Q4 2026 and served by the backend" or "complete Sept. Served by the backend".
+  "complete" is still a mark at the end of an item and before punctuation, one of those words or
+  such a date, so an item worded `(complete 2026-10)`, "(complete October 2026)", "(complete Oct
+  2026)", "(complete Sept 2026)", "(complete Sept.)", "(complete Q4 2026)", "(complete Q4-2026)",
+  "(complete 2026-Q4)", "(complete Oct-2026)", "(complete H2 2026)", "(complete 3 October 2026)",
+  "complete Q4 2026, served by the backend", "complete Q4 2026. Served by the backend" or
+  "complete and served" is reported, and so is an item whose title is "Complete 2026-10" or
+  "Complete and served", whether it is finished or still to do. A finished item dated with
+  nothing between a year and its quarter or half-year, as in "(complete 2026Q4)", is not
+  reported: that is one word with a letter.
 - In that priority list check, the word after "and" in a title that opens with "complete" now
   runs up to a space or to a punctuation mark that no letter, digit or underscore follows, as the
   entry above says. The check read it up to the next space, so it took the punctuation after the
@@ -404,7 +409,8 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   word, and each month name, each abbreviation of one, each quarter and each half-year at the end
   of an item, before a closing parenthesis and before a word, in lower, title and upper case, and
   an item worded "complete inside the backend", "complete Octet stream parsing" or
-  "complete Q4-based conformance checks".
+  "complete Q4-based conformance checks". They give each abbreviation with its full stop in the
+  same three places and letter cases.
 
 ## [1.2.0-draft] - 2026-10-06
 
