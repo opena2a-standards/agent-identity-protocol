@@ -586,37 +586,47 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         "complete the depth limit enforcement", "a complete runtime protocol" and "complete
         in-browser key storage", or a space, a number, a space and such a word, as in "complete 3
         remaining checks". That word is not and, but, or, as, at, by, for, in, on, since or with,
-        in any letter case, and it does not start a date that ends the item, stands before a
-        punctuation mark, after a space or not, that no letter, digit or underscore follows, or
-        stands before a space and an opening parenthesis or square bracket, which opens an aside
-        and not an object, whatever follows the parenthesis or bracket. A date is one or more
-        parts with a space, a punctuation mark, or a full stop or comma and a space between each
-        two: a part is a month name, the abbreviation of one (Jan to Dec, and Sept), a quarter
-        (Q1 to Q4), a half-year (H1 or H2) or a number, in any letter case, so
-        "Oct", "Q4 2026", "Q4-2026", "2026-Q4", "Q4/2026", "Oct-2026", "2026-Oct", "3-Oct-2026",
-        "Oct. 2026" and "October 3, 2026" are dates. An abbreviation takes the full stop right
-        after it into the date, where no letter, digit or underscore follows that full stop, so
-        "complete Sept. conformance checks" holds the date "Sept.", which a word follows, and no
-        date "Sept" before a full stop. A full stop after a month name, a quarter, a half-year or
-        a number is a punctuation mark. A date takes every part that follows it, so "complete Oct.
-        2026 conformance checks" holds the date "Oct. 2026", which a word follows, and no date
-        "Oct" before a full stop. A word runs up to a space or to a punctuation mark that no
-        letter, digit or underscore follows, so "in-browser", "802.1X", "Octet" and "Q4-based" are
-        each one word, and neither "in-browser" nor "inside" is "in", nor is "Octet" "Oct" or
-        "Q4-based" a date. Where "complete" opens the item's title, it is also no mark where
-        "and", a word and an object follow it, as in "Complete and publish the DID resolver". So
-        "complete" is still a mark at the end of an item and before punctuation, one of those
-        words or such a date, as in "complete 2026-10", "complete and served", "(complete October
-        2026)", "(complete Oct 2026)", "(complete Sept.)", "(complete Q4 2026)", "(complete
-        Q4-2026)", "(complete H2 2026)", "(complete 3 October 2026)" and "complete Q4-2026
-        (Discovery table above)", and where it opens a title such as "Complete 2026-10" or
-        "Complete and served". It is no mark before a date that a word follows, as in "complete
-        Q4-2026 conformance checks" and "complete Oct the backend". A finished item worded
-        "complete per Appendix A.1", "complete from 2026-10", "complete Q4 2026 and served" or
-        "complete Sept. Served by the backend" is not reported, and neither is one dated
-        "complete 2026Q4": with nothing between the year and the quarter, that is one word with a
-        letter. Nor is "complete Q4-2026(Discovery table above)": with no space before it, the
-        parenthesis that a letter follows joins the date and "Discovery" into one word.
+        in any letter case, and it does not start a date that, with the closed asides after it,
+        ends the item, stands before a punctuation mark, after a space or not, that no letter,
+        digit or underscore follows, or stands before a space and an opening parenthesis or square
+        bracket, that of an aside that is not closed, whatever follows it. An aside is no object.
+        It is closed where a closing parenthesis follows its opening parenthesis with no other
+        parenthesis in between, or a closing square bracket its opening square bracket with no
+        other square bracket in between, and a date takes every closed aside that follows it, each
+        after a space. So "complete 3 (of 5) remaining checks" and "complete Q4-2026 [1]
+        conformance checks" hold a date and a closed aside that a word follows, and "complete" is
+        no mark there. A date before an aside that is not closed leaves "complete" a mark: an
+        aside with no closing parenthesis or bracket, as in "complete Q4-2026 (Discovery table
+        above", or one that holds a parenthesis or bracket of its own kind, as in "complete
+        Q4-2026 (see (a) and (b)) conformance checks". A date is one or more parts with a space, a
+        punctuation mark, or a full stop or comma and a space between each two: a part is a month
+        name, the abbreviation of one (Jan to Dec, and Sept), a quarter (Q1 to Q4), a half-year
+        (H1 or H2) or a number, in any letter case, so "Oct", "Q4 2026", "Q4-2026", "2026-Q4",
+        "Q4/2026", "Oct-2026", "2026-Oct", "3-Oct-2026", "Oct. 2026" and "October 3, 2026" are
+        dates. An abbreviation takes the full stop right after it into the date, where no letter,
+        digit or underscore follows that full stop, so "complete Sept. conformance checks" holds
+        the date "Sept.", which a word follows, and no date "Sept" before a full stop. A full stop
+        after a month name, a quarter, a half-year or a number is a punctuation mark. A date takes
+        every part that follows it, so "complete Oct. 2026 conformance checks" holds the date
+        "Oct. 2026", which a word follows, and no date "Oct" before a full stop. A word runs up to
+        a space or to a punctuation mark that no letter, digit or underscore follows, so
+        "in-browser", "802.1X", "Octet" and "Q4-based" are each one word, and neither "in-browser"
+        nor "inside" is "in", nor is "Octet" "Oct" or "Q4-based" a date. Where "complete" opens
+        the item's title, it is also no mark where "and", a word and an object follow it, as in
+        "Complete and publish the DID resolver". So "complete" is still a mark at the end of an
+        item and before punctuation, one of those words or such a date, as in "complete 2026-10",
+        "complete and served", "(complete October 2026)", "(complete Oct 2026)", "(complete
+        Sept.)", "(complete Q4 2026)", "(complete Q4-2026)", "(complete H2 2026)", "(complete 3
+        October 2026)" and "complete Q4-2026 (Discovery table above)", and where it opens a title
+        such as "Complete 2026-10" or "Complete and served". It is no mark before a date that a
+        word follows, as in "complete Q4-2026 conformance checks" and "complete Oct the backend".
+        A finished item worded "complete per Appendix A.1", "complete from 2026-10", "complete Q4
+        2026 and served" or "complete Sept. Served by the backend" is not reported, and neither is
+        one dated "complete 2026Q4": with nothing between the year and the quarter, that is one
+        word with a letter. Nor is "complete Q4-2026(Discovery table above)": with no space before
+        it, the parenthesis that a letter follows joins the date and "Discovery" into one word.
+        Nor is "complete Q4-2026 (Discovery table above) and served by the backend": a word
+        follows the closed aside.
         """
         # A word ends where neither a letter, digit or underscore nor a punctuation mark and one of
         # those follows.
@@ -628,10 +638,16 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         # A date takes every part it can and gives none back, so "Oct. 2026 conformance" holds no
         # date "Oct" that a full stop follows.
         date = rf"(?>{part}(?:(?:[.,]\s|[^\w\s]|\s){part})*)"
-        # A date leaves "complete" a mark only where it ends the item, stands before a punctuation
-        # mark, after a space or not, that no letter, digit or underscore follows, or stands before
-        # a space and an opening parenthesis or square bracket, which opens an aside, not an object.
-        dated = rf"{date}(?=\s*(?:[^\w\s](?!\w)|$)|\s+[(\[])"
+        # A closed aside: a space, an opening parenthesis or square bracket and the closing one of
+        # its kind, with no other of that kind in between.
+        aside = r"\s+(?:\([^()]*\)|\[[^\[\]]*\])"
+        # A date takes every closed aside after it and gives none back, so "Q4-2026 [1]
+        # conformance" holds no date that stands before a space and an opening bracket. With those
+        # asides, a date leaves "complete" a mark only where it ends the item, stands before a
+        # punctuation mark, after a space or not, that no letter, digit or underscore follows, or
+        # stands before a space and an opening parenthesis or square bracket, that of an aside
+        # that is not closed.
+        dated = rf"{date}(?>(?:{aside})*)(?=\s*(?:[^\w\s](?!\w)|$)|\s+[(\[])"
         no_object = rf"(?:(?:and|but|or|as|at|by|for|in|on|since|with){end}|{dated})"
         obj = rf"\s+(?:\d+\s+)?(?!{no_object})\w"
         marks = re.compile(rf"\b(?:done|completed)\b|\bcomplete\b(?!{obj})|trust scoring", re.IGNORECASE)
@@ -718,12 +734,28 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — complete Q4 2026 — served by the backend",
             "6. **YAML policy format** — complete and served to every caller",
             # A space and an opening parenthesis or square bracket after a date open an aside, not
-            # an object, so "complete" is a mark there whatever the aside starts with.
+            # an object, so "complete" is a mark where the aside ends the item, whatever the aside
+            # starts with.
             "6. **YAML policy format** — complete Q4-2026 (Discovery table above)",
             "6. **YAML policy format** — complete Q4 2026 (Discovery table above)",
             "6. **YAML policy format** — complete October 3, 2026 (Discovery table above)",
             "6. **YAML policy format** — complete 2026-10 [see Appendix A.1]",
             "6. **YAML policy format** — complete Oct. 2026 (2 checks remain in Appendix A.1)",
+            # A date takes each closed aside after it, so "complete" is still a mark where a
+            # punctuation mark or a second aside follows the first.
+            "6. **YAML policy format** — complete Q4-2026 (Discovery table above), served by the backend",
+            "6. **YAML policy format** — complete Q4-2026 (Discovery table above). Served by the backend",
+            "6. **YAML policy format** — complete Q4-2026 (Discovery table above) — served by the backend",
+            "6. **YAML policy format** — complete Q4-2026 (Discovery table above) [see Appendix A.1]",
+            # An aside that is not closed leaves "complete" a mark whatever follows its opening
+            # parenthesis or bracket: one with no closing parenthesis or bracket, also after a
+            # closed aside, and one that holds a parenthesis or bracket of its own kind, which
+            # is reported here in an item still to do.
+            "6. **YAML policy format** — complete Q4-2026 (Discovery table above",
+            "6. **YAML policy format** — complete 2026-10 [see Appendix A.1",
+            "6. **YAML policy format** — complete Q4-2026 (Discovery table above) [see Appendix A.1",
+            "3. **Delegation chains** — complete Q4-2026 (see (a) and (b)) conformance checks",
+            "3. **Delegation chains** — complete Q4-2026 [see [1]] conformance checks",
             # A title that opens with "Complete" and no object of it is a mark as well.
             "6. **Complete 2026-10** — YAML policy format",
             "6. **Complete and served** — YAML policy format",
@@ -789,21 +821,31 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "1. **Complete and publish Q4-2026 conformance checks** — required for Level 3",
             # An aside after the word that follows the date leaves that word the object.
             "3. **Delegation chains** — complete Q4-2026 conformance checks (Discovery table)",
+            # A closed aside after a count or a date is no object, and the word after it is one,
+            # after one aside or two and in a title as well.
+            "3. **Delegation chains** — complete 3 (of 5) remaining checks",
+            "3. **Delegation chains** — complete Q4-2026 [1] conformance checks",
+            "3. **Delegation chains** — complete Q4 2026 (Discovery table) conformance checks",
+            "3. **Delegation chains** — complete Q4-2026 (of 5) [1] conformance checks",
+            "1. **Complete Q4-2026 (of 5) conformance checks** — required for Level 3",
+            "1. **Complete and publish Q4-2026 [1] conformance checks** — required for Level 3",
         ]
         for date in dates:
             for case in (date.lower(), date.title(), date.upper()):
                 unfinished.append(f"3. **Delegation chains** — complete {case} the backend")
+                unfinished.append(f"3. **Delegation chains** — complete {case} (Discovery table) the backend")
         self.assertEqual(self.finished(unfinished), [])
         # So a finished item worded that way is not reported either, and neither is one dated
         # with nothing between a year and its quarter, which is one word with a letter, nor one
         # with no space between a date and a parenthesis that a letter follows, which joins them
-        # into one word.
+        # into one word, nor one with a word after the closed aside that follows its date.
         unreported = [
             "6. **YAML policy format** — complete per Appendix A.1",
             "6. **YAML policy format** — complete from 2026-10",
             "6. **YAML policy format** — complete Q4 2026 and served by the backend",
             "6. **YAML policy format** — declarative governance policies (complete 2026Q4)",
             "6. **YAML policy format** — complete Q4-2026(Discovery table above)",
+            "6. **YAML policy format** — complete Q4-2026 (Discovery table above) and served by the backend",
         ]
         self.assertEqual(self.finished(unreported), [])
 
@@ -816,6 +858,9 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "3. **Delegation chains** — complete 2026-Sept. conformance checks",
             "1. **Complete Sept. conformance checks** — required for Level 3",
             "1. **Complete and publish Sept. conformance checks** — required for Level 3",
+            # A closed aside after that full stop changes nothing: the word after the aside is the
+            # object.
+            "3. **Delegation chains** — complete Sept. (of 5) conformance checks",
         ]
         marked = [
             # With its full stop, the date still stands before a punctuation mark here.
@@ -827,6 +872,9 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — declarative governance policies (complete Sept. 2026)",
             "6. **YAML policy format** — declarative governance policies (complete Sept.-2026)",
             "6. **YAML policy format** — declarative governance policies (complete Sept.2026)",
+            # A letter right after the full stop leaves it out of the abbreviation, as a digit
+            # does: it is the punctuation mark before the next part, and the date takes that part.
+            "6. **YAML policy format** — declarative governance policies (complete Sept.Oct)",
             # A full stop after a number or a month name is a punctuation mark after the date.
             "6. **YAML policy format** — complete Sept. 2026. Served by the backend",
             "6. **YAML policy format** — complete Q4 2026. Served by the backend",
@@ -838,6 +886,7 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
                 unfinished.append(f"3. **Delegation chains** — complete {case}. conformance checks")
                 marked.append(f"6. **YAML policy format** — declarative governance policies (complete {case}.)")
                 marked.append(f"6. **YAML policy format** — declarative governance policies, complete {case}.")
+                marked.append(f"6. **YAML policy format** — complete {case}. (Discovery table)")
         self.assertEqual(self.finished(unfinished), [])
         self.assertEqual(self.finished(marked), marked)
         # So a finished item is not reported where a sentence starts right after the abbreviation.
