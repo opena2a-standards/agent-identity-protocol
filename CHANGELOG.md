@@ -364,25 +364,34 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   it is the verb that opens an item's title, as it was in "Complete trust scoring".
 - In that priority list check, "complete" is now no mark where an object follows it: a space and
   a word with a letter, or a space, a number, a space and such a word, unless that word is and,
-  but, or, as, at, by, for, in, on, since, with or a month name, in any letter case. A word runs
-  up to a space or to a punctuation mark that no letter, digit or underscore follows, so
-  "in-browser" is one word and is not "in". Where "complete" opens an item's title, in any letter
+  but, or, as, at, by, for, in, on, since, with, a month name, the abbreviation of one (Jan to
+  Dec, and Sept) or a quarter (Q1 to Q4), in any letter case. A word runs up to a space or to a
+  punctuation mark that no letter, digit or underscore follows, so "in-browser" is one word and
+  is not "in", and "Octet" is not "Oct". Where "complete" opens an item's title, in any letter
   case, it is also no mark where "and", a word and an object follow it. So an item still to do
   worded "complete the depth limit enforcement", "needs a complete runtime protocol", "complete
   in-browser key storage" or "complete 3 remaining checks", or one whose title is "complete and
   publish the DID resolver" or "COMPLETE and publish the DID resolver", is no longer reported,
   and neither is a finished item worded "complete per Appendix A.1". "complete" is still a mark
   at the end of an item and before punctuation, one of those words or a word of digits, so an
-  item worded `(complete 2026-10)`, "(complete October 2026)", "(complete 3 October 2026)" or
-  "complete and served" is reported, and so is an item whose title is "Complete 2026-10" or
-  "Complete and served", whether it is finished or still to do.
+  item worded `(complete 2026-10)`, "(complete October 2026)", "(complete Oct 2026)", "(complete
+  Sept 2026)", "(complete Q4 2026)", "(complete 3 October 2026)" or "complete and served" is
+  reported, and so is an item whose title is "Complete 2026-10" or "Complete and served", whether
+  it is finished or still to do.
+- In that priority list check, the word after "and" in a title that opens with "complete" now
+  runs up to a space or to a punctuation mark that no letter, digit or underscore follows, as the
+  entry above says. The check read it up to the next space, so it took the punctuation after the
+  word for part of it, and an item such as `6. **Complete and served**: YAML policy format` or
+  `1. **Complete and publish, then x** — required for Level 3` was not reported. Such an item is
+  now reported. An item whose title is "Complete and publish the DID resolver" still is not.
 - The tests of the operator check in `tests/test_check_scripts.py` now cover a comment that
   starts where an operator ends, as in `_Z = (1 ==# a comment`, and, on Python 3.14 and later,
   the `=` of a t-string replacement field, as in `t"{a=}"`, and a keyword argument after a
   t-string, as in `_f(t"{_A}", b=1)`. `flake8 --select=E225` reports none of them. Before, the
   check could stop skipping comments or stop reading t-strings in parts and every one of its
-  tests still passed. The tests of the priority list check now give each word it names and each
-  month name in lower, title and upper case, and an item worded "complete inside the backend".
+  tests still passed. The tests of the priority list check now give each word it names, each
+  month name, each abbreviation of one and each quarter in lower, title and upper case, and an
+  item worded "complete inside the backend" or "complete Octet stream parsing".
 
 ## [1.2.0-draft] - 2026-10-06
 
