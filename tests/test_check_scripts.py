@@ -583,31 +583,42 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         "complete" is no mark where an object follows it: a space and a word with a letter, as in
         "complete the depth limit enforcement", "a complete runtime protocol" and "complete
         in-browser key storage", or a space, a number, a space and such a word, as in "complete 3
-        remaining checks". That word is not and, but, or, as, at, by, for, in, on, since, with or
-        a date, in any letter case. A date is one or more parts with one punctuation mark between
-        each two: a part is a month name, the abbreviation of one (Jan to Dec, and Sept), a
-        quarter (Q1 to Q4), a half-year (H1 or H2) or a number, so "Oct", "Q4-2026", "2026-Q4",
-        "Q4/2026", "Oct-2026", "2026-Oct" and "3-Oct-2026" are dates. A word runs up to a space or
-        to a punctuation mark that no letter, digit or underscore follows, so "in-browser",
-        "802.1X", "Octet" and "Q4-based" are each one word, and neither "in-browser" nor "inside"
-        is "in", nor is "Octet" "Oct" or "Q4-based" a date. Where "complete" opens the item's
-        title, it is also no mark where "and", a word and an object follow it, as in "Complete and
-        publish the DID resolver". So "complete" is still a mark at the end of an item and before
-        punctuation, one of those words or a date, as in "complete 2026-10", "complete and
-        served", "(complete October 2026)", "(complete Oct 2026)", "(complete Q4 2026)",
-        "(complete Q4-2026)", "(complete H2 2026)" and "(complete 3 October 2026)", and where it
-        opens a title such as "Complete 2026-10" or "Complete and served". A finished item worded
-        "complete per Appendix A.1" or "complete from 2026-10" is not reported, and neither is one
-        dated "complete 2026Q4": with nothing between the year and the quarter, that is one word
-        with a letter.
+        remaining checks". That word is not and, but, or, as, at, by, for, in, on, since or with,
+        in any letter case, and it does not start a date that ends the item or stands before a
+        punctuation mark, after a space or not, that no letter, digit or underscore follows. A
+        date is one or more parts with a space, a punctuation mark, or a full stop or comma and a
+        space between each two: a part is a month name, the abbreviation of one (Jan to Dec, and
+        Sept), a quarter (Q1 to Q4), a half-year (H1 or H2) or a number, in any letter case, so
+        "Oct", "Q4 2026", "Q4-2026", "2026-Q4", "Q4/2026", "Oct-2026", "2026-Oct", "3-Oct-2026",
+        "Oct. 2026" and "October 3, 2026" are dates. A date takes every part that follows it, so
+        "complete Oct. 2026 conformance checks" holds the date "Oct. 2026", which a word follows,
+        and no date "Oct" before a full stop. A word runs up to a space or to a punctuation mark
+        that no letter, digit or underscore follows, so "in-browser", "802.1X", "Octet" and
+        "Q4-based" are each one word, and neither "in-browser" nor "inside" is "in", nor is
+        "Octet" "Oct" or "Q4-based" a date. Where "complete" opens the item's title, it is also no
+        mark where "and", a word and an object follow it, as in "Complete and publish the DID
+        resolver". So "complete" is still a mark at the end of an item and before punctuation, one
+        of those words or such a date, as in "complete 2026-10", "complete and served", "(complete
+        October 2026)", "(complete Oct 2026)", "(complete Q4 2026)", "(complete Q4-2026)",
+        "(complete H2 2026)" and "(complete 3 October 2026)", and where it opens a title such as
+        "Complete 2026-10" or "Complete and served". It is no mark before a date that a word
+        follows, as in "complete Q4-2026 conformance checks" and "complete Oct the backend". A
+        finished item worded "complete per Appendix A.1", "complete from 2026-10" or "complete Q4
+        2026 and served" is not reported, and neither is one dated "complete 2026Q4": with nothing
+        between the year and the quarter, that is one word with a letter.
         """
         # A word ends where neither a letter, digit or underscore nor a punctuation mark and one of
         # those follows.
         end = r"(?![^\w\s]?\w)"
         word = r"\w+(?:[^\w\s]\w+)*"
         part = rf"(?:{cls.MONTHS}|{cls.SHORT_DATES}|\d+)"
-        date = rf"{part}(?:[^\w\s]{part})*"
-        no_object = rf"(?:and|but|or|as|at|by|for|in|on|since|with|{date}){end}"
+        # A date takes every part it can and gives none back, so "Oct. 2026 conformance" holds no
+        # date "Oct" that a full stop follows.
+        date = rf"(?>{part}(?:(?:[.,]\s|[^\w\s]|\s){part})*)"
+        # A date leaves "complete" a mark only where it ends the item or stands before a
+        # punctuation mark, after a space or not, that no letter, digit or underscore follows.
+        dated = rf"{date}(?=\s*(?:[^\w\s](?!\w)|$))"
+        no_object = rf"(?:(?:and|but|or|as|at|by|for|in|on|since|with){end}|{dated})"
         obj = rf"\s+(?:\d+\s+)?(?!{no_object})\w"
         marks = re.compile(rf"\b(?:done|completed)\b|\bcomplete\b(?!{obj})|trust scoring", re.IGNORECASE)
         verb = re.compile(rf"^(\d+\. \**)complete(?=\s+and\s+{word}{obj})", re.IGNORECASE)
@@ -685,6 +696,12 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — declarative governance policies (complete 2026-H2)",
             "6. **YAML policy format** — declarative governance policies, complete since Q4-2026",
             "6. **Complete Q4-2026** — YAML policy format",
+            # A full stop or a comma and a space between two parts joins them into one date, and a
+            # date before a punctuation mark, after a space or not, leaves "complete" a mark.
+            "6. **YAML policy format** — declarative governance policies (complete October 3, 2026)",
+            "6. **YAML policy format** — declarative governance policies, complete Q4-2026.",
+            "6. **YAML policy format** — declarative governance policies, complete Q4 2026, served by the backend",
+            "6. **YAML policy format** — complete Q4 2026 — served by the backend",
             "6. **YAML policy format** — complete and served to every caller",
             # A title that opens with "Complete" and no object of it is a mark as well.
             "6. **Complete 2026-10** — YAML policy format",
@@ -697,20 +714,25 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "1. **Complete and publish, then x** — required for Level 3",
         ]
         # Each word finished() names, in each letter case, leaves "complete" a mark before it, and
-        # so does each month name, each abbreviation of one, each quarter and each half-year.
-        words = (
-            "and", "but", "or", "as", "at", "by", "for", "in", "on", "since", "with", "January", "February",
-            "March", "April", "May", "June", "July", "August", "September", "October", "November", "December",
-            "Jan", "Feb", "Mar", "Apr", "Jun", "Jul", "Aug", "Sep", "Sept", "Oct", "Nov", "Dec",
-            "Q1", "Q2", "Q3", "Q4", "H1", "H2",
+        # so does each month name, each abbreviation of one, each quarter and each half-year where
+        # it ends the item or stands before punctuation.
+        words = ("and", "but", "or", "as", "at", "by", "for", "in", "on", "since", "with")
+        dates = (
+            "January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
+            "November", "December", "Jan", "Feb", "Mar", "Apr", "Jun", "Jul", "Aug", "Sep", "Sept", "Oct", "Nov",
+            "Dec", "Q1", "Q2", "Q3", "Q4", "H1", "H2",
         )
         for word in words:
             for case in (word.lower(), word.title(), word.upper()):
                 marked.append(f"6. **YAML policy format** — complete {case} the backend")
+        for date in dates:
+            for case in (date.lower(), date.title(), date.upper()):
+                marked.append(f"6. **YAML policy format** — declarative governance policies (complete {case})")
+                marked.append(f"6. **YAML policy format** — declarative governance policies, complete {case}")
         self.assertEqual(self.finished(marked), marked)
         # It is no mark where an object follows it in an item still to do: a word with a letter
-        # that finished() does not name, or a number and such a word, or, where it opens the title,
-        # "and", a word and an object.
+        # that finished() does not name, or a number and such a word, or a date and such a word,
+        # or, where it opens the title, "and", a word and an object.
         unfinished = [
             "1. **Complete the DID resolver** — required for Level 3 and cross-platform identity",
             "1. **Complete 2FA support** — required for Level 3",
@@ -735,13 +757,25 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "3. **Delegation chains** — complete Q4-based conformance checks",
             "3. **Delegation chains** — complete May-day conformance checks",
             "3. **Delegation chains** — complete 2026-ready conformance checks",
+            # A date that a word follows is no mark, nor is the part of it before a full stop or a
+            # comma and a space.
+            "3. **Delegation chains** — complete Q4-2026 conformance checks",
+            "3. **Delegation chains** — complete Q4 2026 conformance checks",
+            "3. **Delegation chains** — complete 3 October 2026 conformance checks",
+            "3. **Delegation chains** — complete Oct. 2026 conformance checks",
+            "3. **Delegation chains** — complete October 3, 2026 conformance checks",
+            "1. **Complete and publish Q4-2026 conformance checks** — required for Level 3",
         ]
+        for date in dates:
+            for case in (date.lower(), date.title(), date.upper()):
+                unfinished.append(f"3. **Delegation chains** — complete {case} the backend")
         self.assertEqual(self.finished(unfinished), [])
         # So a finished item worded that way is not reported either, and neither is one dated
         # with nothing between a year and its quarter, which is one word with a letter.
         unreported = [
             "6. **YAML policy format** — complete per Appendix A.1",
             "6. **YAML policy format** — complete from 2026-10",
+            "6. **YAML policy format** — complete Q4 2026 and served by the backend",
             "6. **YAML policy format** — declarative governance policies (complete 2026Q4)",
         ]
         self.assertEqual(self.finished(unreported), [])
