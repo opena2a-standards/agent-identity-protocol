@@ -413,8 +413,8 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   of an item, before a closing parenthesis, before a space and an opening parenthesis and before a
   word, in lower, title and upper case, and
   an item worded "complete inside the backend", "complete Octet stream parsing" or
-  "complete Q4-based conformance checks". They give each abbreviation with its full stop in the
-  same three places and letter cases.
+  "complete Q4-based conformance checks". They give each abbreviation with its full stop at the
+  end of an item, before a closing parenthesis and before a word, in the same letter cases.
 
 ## [1.2.0-draft] - 2026-10-06
 
