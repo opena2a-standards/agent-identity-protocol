@@ -53,14 +53,15 @@ draft-fane-opena2a-aip-NN.{xml,txt}:
 The pairing paragraph is the text from that line to the next blank line,
 heading or list item, wherever it sits under the version's heading.
 
-README.md must disclose the same pairing in one paragraph that starts with
-"**Internet-Draft.**": it names the paired draft and the spec version; when
+docs/specification-notes.md, which README.md links, must disclose the same
+pairing in one paragraph that starts with "**Internet-Draft.**": it names the
+paired draft and the spec version; when
 the pairing paragraph says the paired draft is not submitted, it says so too,
 says the datatracker copy "is behind this repository", and names the revision
 the CHANGELOG records as current on the datatracker, with its submission date
 and the version it carries. Once the pairing no longer says "not submitted",
 it must record the paired draft's submission in the second shape below, and
-the README names that submission date and may say neither. The pairing
+the notes page names that submission date and may say neither. The pairing
 paragraph names each revision in one sentence shape only (line breaks
 allowed):
     `draft-fane-opena2a-aip-NN` (submitted YYYY-MM-DD) remains the current
@@ -75,7 +76,7 @@ version must have its paired draft. A version with no pairing line fails.
 Run in CI by scripts/validate_examples.py. Also runs on its own:
     python3 scripts/check_draft_sync.py [--draft draft-fane-opena2a-aip-NN]
 --draft checks the named revision against the current spec instead of the
-paired one, and skips the README check. python3 standard library only. Exit
+paired one, and skips the notes page check. python3 standard library only. Exit
 code 0 = in sync or pending.
 """
 from __future__ import annotations
@@ -100,6 +101,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SPEC = ROOT / "AIP-SPEC.md"
 CHANGELOG = ROOT / "CHANGELOG.md"
 README = ROOT / "README.md"
+NOTES = ROOT / "docs" / "specification-notes.md"
 README_MARKER = "**Internet-Draft.**"
 README_BEHIND = "is behind this repository"
 CURRENT_SHAPE = (
@@ -416,7 +418,7 @@ def check_draft(name: str, spec: str) -> list[str]:
 
 
 def disclosure_problems(readme: str, changelog: str, version: str, draft: str) -> list[str]:
-    """What the README's Internet-Draft paragraph misstates against the CHANGELOG pairing."""
+    """What the notes page's Internet-Draft paragraph misstates against the CHANGELOG pairing."""
     paragraphs = [p for p in re.split(r"\n\s*\n", readme) if p.strip().startswith(README_MARKER)]
     if len(paragraphs) != 1:
         return [f"expected one paragraph starting {README_MARKER!r}, found {len(paragraphs)}"]
@@ -462,11 +464,12 @@ def disclosure_problems(readme: str, changelog: str, version: str, draft: str) -
 
 
 def check_disclosure(changelog: str, version: str, draft: str) -> int:
-    problems = disclosure_problems(README.read_text(encoding="utf-8"), changelog, version, draft)
+    problems = disclosure_problems(NOTES.read_text(encoding="utf-8"), changelog, version, draft)
+    name = NOTES.relative_to(ROOT).as_posix()
     for problem in problems:
-        print(f"draft sync FAIL {README.name}: {problem}")
+        print(f"draft sync FAIL {name}: {problem}")
     if not problems:
-        print(f"draft sync OK   {README.name} discloses the {draft} pairing with {version}")
+        print(f"draft sync OK   {name} discloses the {draft} pairing with {version}")
     return 1 if problems else 0
 
 

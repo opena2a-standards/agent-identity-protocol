@@ -347,7 +347,7 @@ class DraftDisclosure(unittest.TestCase):
         version = check_draft_sync.spec_version(spec)
         changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
         name, _ = check_draft_sync.pairing(changelog, version)
-        readme = check_draft_sync.README.read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         self.assertEqual(check_draft_sync.disclosure_problems(readme, changelog, version, name), [])
 
     def test_submitted_draft_with_its_date_passes(self) -> None:
@@ -455,12 +455,25 @@ def unknown_cli_usage(text: str) -> list[str]:
     return problems
 
 
+# The pages under docs/ that took the reference text moved out of README.md.
+MOVED_TEXT_PAGES = [
+    ROOT / "docs" / name
+    for name in ("specification-notes.md", "interoperability.md", "naming-and-prior-art.md", "use-cases.md")
+]
+
+
 class CliCommandsInDocs(unittest.TestCase):
     def test_spec_and_readme_quote_only_commands_the_cli_has(self) -> None:
         for path in (check_draft_sync.SPEC, check_draft_sync.README):
             text = path.read_text(encoding="utf-8")
             self.assertIn("opena2a-cli identity create --name", text, path.name)
             self.assertEqual(unknown_cli_usage(text), [], path.name)
+
+    def test_pages_moved_out_of_the_readme_quote_only_commands_the_cli_has(self) -> None:
+        # A page need not quote `identity create --name`, as the specification and README.md do.
+        for path in MOVED_TEXT_PAGES:
+            with self.subTest(page=path.name):
+                self.assertEqual(unknown_cli_usage(path.read_text(encoding="utf-8")), [], path.name)
 
     def test_unknown_subcommand_and_option_are_reported(self) -> None:
         text = (
@@ -663,7 +676,7 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         self.assertIn("registers no such route", status)
 
     def test_discovery_row_says_the_endpoint_is_served_as_the_readme_does(self) -> None:
-        readme = check_draft_sync.README.read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         self.assertIn("`https://aim.opena2a.org/.well-known/aip`", readme)
         self.assertIn("answered HTTP 200", readme)
         status = self.status("/.well-known/aip |")
