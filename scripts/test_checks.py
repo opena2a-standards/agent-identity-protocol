@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Regression tests for scripts/check_draft_sync.py, the README link lists and Quick Start,
-the prior-art attribution in README.md, AIP-SPEC.md and GAP-ANALYSIS.md, the JWT
-access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two lists of
-protocols AIP is designed to complement, the lists under the README's Internet-Draft paragraph,
+the prior-art attribution in docs/naming-and-prior-art.md, AIP-SPEC.md and GAP-ANALYSIS.md, the
+JWT access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two lists of
+protocols AIP is designed to complement (docs/interoperability.md and AIP-SPEC.md), the lists
+under the Internet-Draft paragraph of docs/specification-notes.md,
 the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, the version note
 AIP-SPEC.md carries while a change to a requirement is unreleased, the trust factor status
 README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, the reference provider identifier
@@ -301,9 +302,9 @@ class LocalIdentityStatus(unittest.TestCase):
 
     def test_readme_says_the_draft_lacks_both_status_notes(self):
         # Sections 4.3 and 11.1 of draft -04, the counterparts of Sections 3.3 and 9.1, carry no
-        # status note, so the lists under the README's Internet-Draft paragraph name each note,
+        # status note, so the lists under the notes page's Internet-Draft paragraph name each note,
         # beside its section of the draft, among the informative changes made since that revision.
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         items = [item for _, listed in counted_lists(draft_disclosure(readme)) for item in listed]
         for section, counterpart in (("§3.3", "Section 4.3 of the draft"), ("§9.1", "Section 11.1 of the draft")):
             with self.subTest(section=section):
@@ -313,7 +314,9 @@ class LocalIdentityStatus(unittest.TestCase):
                 self.assertIn(counterpart, named[0])
 
 
-PRIOR_ART_DOCS = ("README.md", "AIP-SPEC.md", "GAP-ANALYSIS.md")
+PRIOR_ART_PAGE = "docs/naming-and-prior-art.md"
+PRIOR_ART_DOCS = (PRIOR_ART_PAGE, "AIP-SPEC.md", "GAP-ANALYSIS.md")
+INTEROPERABILITY = check_draft_sync.ROOT / "docs" / "interoperability.md"
 
 
 class PriorArtAttribution(unittest.TestCase):
@@ -336,7 +339,7 @@ class PriorArtAttribution(unittest.TestCase):
         spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
         claim = "draft-singla-agent-identity-protocol (Singla, first published 2026-04-16,"
         self.assertTrue(claim in spec, f"AIP-SPEC.md does not say {claim!r}")
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = (check_draft_sync.ROOT / PRIOR_ART_PAGE).read_text(encoding="utf-8")
         row = next(line for line in readme.splitlines() if "[draft-singla-agent-identity-protocol-00]" in line)
         self.assertIn("| April 16, 2026", row)
 
@@ -352,7 +355,7 @@ class JwtAccessTokenLifetime(unittest.TestCase):
         self.assertIn("lifetime SHOULD NOT exceed 2 hours", bullet)
 
     def test_readme_names_the_change_since_the_draft(self):
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         items = [item for _, listed in counted_lists(draft_disclosure(readme)) for item in listed]
         named = [item for item in items if item.startswith("- §5.4 ")]
         self.assertEqual(len(named), 1, "no Internet-Draft list item starts '- §5.4 '")
@@ -431,7 +434,7 @@ SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
 def draft_disclosure(readme: str) -> str:
-    """Return the README text from its "**Internet-Draft.**" paragraph to the next heading."""
+    """Return the notes page text from its "**Internet-Draft.**" paragraph to the next heading."""
     start = readme.index("**Internet-Draft.**")
     end = re.search(r"^#", readme[start:], re.MULTILINE)
     return readme[start: start + end.start() if end else len(readme)]
@@ -502,7 +505,7 @@ FRONT_LABEL = re.compile(r"(?:> )?\*\*([^*]+?)[.:]\*\*")
 
 
 def part_name(heading: str) -> str:
-    """Return the name README.md uses for the section under a heading of the specification.
+    """Return the name docs/specification-notes.md uses for the section under a heading of the specification.
 
     "3.1 Cryptographic Identity" is "§3.1", "14. References" is "§14", "Appendix A: Reference
     Implementation" is "Appendix A" and "A.1 Spec sections ..." is "Appendix A.1". Any other
@@ -720,7 +723,7 @@ PARTS_SPEC = (
 
 
 class InternetDraftLists(unittest.TestCase):
-    """The lists under the README's Internet-Draft paragraph: where the specification and the draft differ."""
+    """The lists under the notes page's Internet-Draft paragraph: where the specification and the draft differ."""
 
     def test_disclosure_ends_at_the_next_heading(self):
         disclosure = draft_disclosure("# Title\n\n" + LISTS_README)
@@ -795,7 +798,7 @@ class InternetDraftLists(unittest.TestCase):
     def test_each_count_equals_the_items_listed_under_it(self):
         # Each lead-in opens with the number of items under it, so a count cannot be changed, or
         # an item added or removed, without the other.
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         lists = counted_lists(draft_disclosure(readme))
         self.assertTrue(lists, "no list under the Internet-Draft paragraph")
         for lead, items in lists:
@@ -804,13 +807,13 @@ class InternetDraftLists(unittest.TestCase):
                 self.assertEqual(count_word(lead), len(items))
 
     def test_no_count_stands_outside_a_lead_in(self):
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         self.assertEqual(unchecked_counts(draft_disclosure(readme)), [])
 
     def test_changes_to_appendix_a1_rows_have_a_list_of_their_own(self):
         # A lead-in opens with a number word and NUMBER_WORDS ends at "twelve", so the informative
         # changes are two lists: the changes to rows of the Appendix A.1 table, and the others.
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         lists = counted_lists(draft_disclosure(readme))
         rows = [items for lead, items in lists if "row of the Appendix A.1 table" in lead]
         self.assertEqual(len(rows), 1, "lead-ins that say their items are each to a row of the Appendix A.1 table")
@@ -863,13 +866,13 @@ class InternetDraftLists(unittest.TestCase):
         self.assertEqual([row_section(cell) for cell in ("§6 Trust", "Local verify")], ["§6", "Local verify"])
 
     def draft_then_and_now(self) -> tuple[str, str, str, list[str]]:
-        """Return the paired draft, AIP-SPEC.md when it was made, AIP-SPEC.md now and the README change items."""
+        """Return the paired draft, AIP-SPEC.md when it was made, AIP-SPEC.md now and the notes page change items."""
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
         changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
         draft, _ = check_draft_sync.pairing(changelog, check_draft_sync.spec_version(spec))
         if draft is None:
             self.skipTest("the CHANGELOG pairs no draft with the specification's version")
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         return draft, spec_when_draft_was_made(draft), spec, change_items(readme)
 
     def test_lists_name_every_part_of_the_specification_changed_since_the_draft(self):
@@ -907,7 +910,7 @@ DRAFT_TXT = (
 
 
 class SectionsWithoutCounterpart(unittest.TestCase):
-    """The two README lists of the parts that only the specification or only the paired draft has."""
+    """The two notes page lists of the parts that only the specification or only the paired draft has."""
 
     def test_a_no_counterpart_list_is_read_by_its_document_and_is_not_a_list_of_changes(self):
         lead, items = counterpart_list(COUNTERPART_README, "specification")
@@ -952,13 +955,13 @@ class SectionsWithoutCounterpart(unittest.TestCase):
         self.assertEqual(only_in(draft, spec, top_level=False), ["Introduction", "Agent Trust Protocol Integration"])
 
     def documents(self) -> tuple[str, str, str]:
-        """Return README.md, AIP-SPEC.md and the txt of the draft paired with the specification's version."""
+        """Return docs/specification-notes.md, AIP-SPEC.md and the txt of the draft paired with the specification's version."""
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
         changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
         draft, _ = check_draft_sync.pairing(changelog, check_draft_sync.spec_version(spec))
         if draft is None or not (check_draft_sync.ROOT / f"{draft}.txt").exists():
             self.skipTest("the draft paired with the specification's version is not built")
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         return readme, spec, (check_draft_sync.ROOT / f"{draft}.txt").read_text(encoding="utf-8")
 
     def test_lists_name_every_top_level_section_only_one_document_has(self):
@@ -1217,10 +1220,10 @@ def gap_status(row: str) -> str:
 
 
 class ComplementedProtocols(unittest.TestCase):
-    """Each protocol AIP is designed to complement carries one status, in the README and in the spec."""
+    """Each protocol AIP is designed to complement carries one status, in docs/interoperability.md and in the spec."""
 
     def setUp(self):
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = INTEROPERABILITY.read_text(encoding="utf-8")
         spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
         self.readme_items = complemented(readme, "## ", "- [")
         self.spec_items = complemented(spec, "This specification defines", "- **")
@@ -1228,9 +1231,9 @@ class ComplementedProtocols(unittest.TestCase):
         self.spec = statuses(self.spec_items, SPEC_STATUS)
 
     def lines(self, protocol: str) -> dict[str, str]:
-        """Return the README line and the spec line whose protocol name starts with protocol."""
+        """Return the interoperability page line and the spec line whose protocol name starts with protocol."""
         return {
-            "README.md": next(item for item in self.readme_items if item.startswith(f"- [{protocol}")),
+            "docs/interoperability.md": next(item for item in self.readme_items if item.startswith(f"- [{protocol}")),
             "AIP-SPEC.md": next(item for item in self.spec_items if item.startswith(f"- **{protocol}")),
         }
 
@@ -1262,9 +1265,9 @@ class ComplementedProtocols(unittest.TestCase):
                 self.assertEqual(self.status_of(self.spec, name), [gap_status(row)])
 
     def test_readme_names_the_gap_analysis_row_behind_each_status(self):
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = INTEROPERABILITY.read_text(encoding="utf-8")
         sentence = next(line for line in readme.splitlines() if line.startswith("The rows behind these statuses"))
-        named = re.search(r"\[GAP-ANALYSIS\.md\]\(GAP-ANALYSIS\.md\) \(([^)]*)\)", sentence)
+        named = re.search(r"\[GAP-ANALYSIS\.md\]\(\.\./GAP-ANALYSIS\.md\) \(([^)]*)\)", sentence)
         self.assertIsNotNone(named, "the sentence lists no GAP-ANALYSIS.md rows")
         self.assertEqual(named.group(1).split(", "), list(GAP_ROWS.values()))
 
@@ -1328,7 +1331,7 @@ class ComplementedProtocols(unittest.TestCase):
         self.assertEqual(self.spec["Google A2A"], ["Implemented"])
 
     def test_readme_defines_each_status_before_the_list(self):
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = INTEROPERABILITY.read_text(encoding="utf-8")
         intro = next(line for line in readme.splitlines() if line.startswith("AIP is designed to complement"))
         self.assertEqual([status for status in STATUSES if f"**{status}**" not in intro], [])
 
@@ -1450,7 +1453,7 @@ class UnreleasedRequirementChanges(unittest.TestCase):
 
     def test_readme_says_the_specification_has_changed_since_the_dated_version(self):
         self.changed_sections()
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         paragraph = re.sub(r"\s+", " ", blocks(draft_disclosure(readme))[0])
         self.assertNotIn(f"specification is {self.version},", paragraph)
         self.assertIn(f"is {self.version} with later changes", paragraph)
@@ -1483,11 +1486,11 @@ class TrustFactorStatus(unittest.TestCase):
         self.assertIn("All nine factors have scoring functions", row)
 
     def test_readme_lists_the_dropped_statement_as_a_change_since_the_draft(self):
-        # §6.1 dropped its SHOULD NOT on stubbed factors with the stubs. The README's list of
+        # §6.1 dropped its SHOULD NOT on stubbed factors with the stubs. The notes page's list of
         # statements the draft lacks quotes only what AIP-SPEC.md still says, and the dropped
         # statement is named once, among the changes made since the draft.
         spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         dropped = "SHOULD NOT treat the stubbed factors as validated by the reference implementation"
         self.assertNotIn(dropped, spec)
         lists = counted_lists(draft_disclosure(readme))
@@ -1540,7 +1543,7 @@ class ReferenceProviderDid(unittest.TestCase):
     def test_readme_names_the_change_since_the_draft(self):
         # Section 4.2 of draft -04 still says the reference implementation issues the did:web
         # form, and its Section 12 carries the discovery sample without the note.
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         items = [item for _, listed in counted_lists(draft_disclosure(readme)) for item in listed]
         named = [item for item in items if item.startswith("- §3.2 ")]
         self.assertEqual(len(named), 1, "no Internet-Draft list item starts '- §3.2 '")
@@ -1616,7 +1619,7 @@ class AppendixA1(unittest.TestCase):
 
     def test_readme_names_the_three_dated_rows_in_one_item(self):
         # InternetDraftLists checks that the changes to Appendix A.1 rows have a list of their own.
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         lists = counted_lists(draft_disclosure(readme))
         own = [items for lead, items in lists if "row of the Appendix A.1 table" in lead]
         self.assertEqual(len(own), 1, [lead for lead, _ in lists])

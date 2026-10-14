@@ -102,7 +102,7 @@ curl -s -o /dev/null -w '%{http_code}\n' https://aim.opena2a.org/.well-known/aip
 
 ### Integration Patterns (Section 11)
 
-The rows below restate what the Google A2A and Anthropic MCP lines of the README Interoperability list and of the AIP-SPEC abstract say as of 2026-10-11; they add no new reading of the source. The verification flows of both protocols have their own rows under Verification.
+The rows below restate what the Google A2A and Anthropic MCP lines of the Interoperability list in [docs/interoperability.md](docs/interoperability.md) and of the AIP-SPEC abstract say as of 2026-10-11; they add no new reading of the source. The verification flows of both protocols have their own rows under Verification.
 
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
@@ -145,7 +145,7 @@ repository, use the fully qualified name **OpenA2A AIP**.
 | OpenA2A AAP (companion), `draft-fane-opena2a-aap` | OpenA2A | -00, 2026-07-06 | Authorization token model + broker/resolution layer |
 
 The two OpenA2A rows were updated on 2026-10-11; the other rows record the datatracker as of
-June 2026. The README names the current revision of `draft-fane-opena2a-aip`.
+June 2026. [docs/specification-notes.md](docs/specification-notes.md) names the current revision of `draft-fane-opena2a-aip`.
 
 ### OpenA2A AIP vs draft-aip-agent-identity-protocol (Cao/Arango)
 

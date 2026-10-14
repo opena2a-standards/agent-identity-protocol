@@ -28,6 +28,20 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 - `tests/test_agent_id.py` derives the agent ID of the §3.1 example from its public key and checks
   it, checks that every other `aim_` agent ID in `AIP-SPEC.md` has the §3.1 shape, and checks the
   README Quick Start agent ID against the public key printed beside it.
+- `README.md` is shortened to the Quick Start, the use cases, the link to the specification, the
+  conformance levels, the reference implementation and one Documentation list. Its reference
+  text moved, as written, to new pages: the Internet-Draft paragraph with the lists of where the
+  specification and the paired draft differ, the DID resolution command and the dated discovery
+  measurement to `docs/specification-notes.md`; the Interoperability list and "How AIP and ATP
+  Work Together" to `docs/interoperability.md`; "Naming and prior art" to
+  `docs/naming-and-prior-art.md`; and the sentences cut from the use cases, with the conformance
+  suite's fixture count, to `docs/use-cases.md`. `CONTRIBUTING.md`, which the README links,
+  carries what its Contributing paragraph said. The Quick Start note no longer names the CLI
+  version: the output it shows is that of `opena2a-cli` 0.10.13, the version npm lists as latest
+  on 2026-10-14. `scripts/check_draft_sync.py` reads the Internet-Draft paragraph from
+  `docs/specification-notes.md`, `scripts/check_first_use.py` also checks the new pages, the tests
+  that read moved text read it at its new path, and `GAP-ANALYSIS.md` names the new pages where it
+  named the README.
 
 ### Fixed
 

@@ -28,6 +28,10 @@ FILES = [
         "CONTRIBUTING.md",
         "CHANGELOG.md",
         "GAP-ANALYSIS.md",
+        "docs/specification-notes.md",
+        "docs/interoperability.md",
+        "docs/naming-and-prior-art.md",
+        "docs/use-cases.md",
     )
 ]
 PHRASE = "OpenA2A AIM (Agent Identity Management)"

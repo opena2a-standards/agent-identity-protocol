@@ -347,7 +347,7 @@ class DraftDisclosure(unittest.TestCase):
         version = check_draft_sync.spec_version(spec)
         changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
         name, _ = check_draft_sync.pairing(changelog, version)
-        readme = check_draft_sync.README.read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         self.assertEqual(check_draft_sync.disclosure_problems(readme, changelog, version, name), [])
 
     def test_submitted_draft_with_its_date_passes(self) -> None:
@@ -663,7 +663,7 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         self.assertIn("registers no such route", status)
 
     def test_discovery_row_says_the_endpoint_is_served_as_the_readme_does(self) -> None:
-        readme = check_draft_sync.README.read_text(encoding="utf-8")
+        readme = check_draft_sync.NOTES.read_text(encoding="utf-8")
         self.assertIn("`https://aim.opena2a.org/.well-known/aip`", readme)
         self.assertIn("answered HTTP 200", readme)
         status = self.status("/.well-known/aip |")
