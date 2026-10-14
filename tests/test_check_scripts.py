@@ -455,12 +455,25 @@ def unknown_cli_usage(text: str) -> list[str]:
     return problems
 
 
+# The pages under docs/ that took the reference text moved out of README.md.
+MOVED_TEXT_PAGES = [
+    ROOT / "docs" / name
+    for name in ("specification-notes.md", "interoperability.md", "naming-and-prior-art.md", "use-cases.md")
+]
+
+
 class CliCommandsInDocs(unittest.TestCase):
     def test_spec_and_readme_quote_only_commands_the_cli_has(self) -> None:
         for path in (check_draft_sync.SPEC, check_draft_sync.README):
             text = path.read_text(encoding="utf-8")
             self.assertIn("opena2a-cli identity create --name", text, path.name)
             self.assertEqual(unknown_cli_usage(text), [], path.name)
+
+    def test_pages_moved_out_of_the_readme_quote_only_commands_the_cli_has(self) -> None:
+        # A page need not quote `identity create --name`, as the specification and README.md do.
+        for path in MOVED_TEXT_PAGES:
+            with self.subTest(page=path.name):
+                self.assertEqual(unknown_cli_usage(path.read_text(encoding="utf-8")), [], path.name)
 
     def test_unknown_subcommand_and_option_are_reported(self) -> None:
         text = (

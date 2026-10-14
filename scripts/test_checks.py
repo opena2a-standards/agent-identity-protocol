@@ -129,22 +129,37 @@ class CurrentRevisionShape(unittest.TestCase):
         self.assertIn(SHAPE, doc)
 
 
+# The pages under docs/ that took the reference text moved out of README.md. A check that reads
+# README.md for what its text must not contain reads each of these pages too.
+MOVED_TEXT_PAGES = (
+    "docs/specification-notes.md",
+    "docs/interoperability.md",
+    "docs/naming-and-prior-art.md",
+    "docs/use-cases.md",
+)
+
+
 class ReadmeLinks(unittest.TestCase):
+    # Each page is read on its own: a page lists no link twice and repeats no command.
     def test_readme_lists_no_link_twice(self):
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
-        bullets = Counter(line.strip() for line in readme.splitlines() if line.lstrip().startswith("- ["))
-        self.assertEqual([line for line, n in bullets.items() if n > 1], [])
+        for name in ("README.md", *MOVED_TEXT_PAGES):
+            readme = (check_draft_sync.ROOT / name).read_text(encoding="utf-8")
+            with self.subTest(file=name):
+                bullets = Counter(line.strip() for line in readme.splitlines() if line.lstrip().startswith("- ["))
+                self.assertEqual([line for line, n in bullets.items() if n > 1], [])
 
     def test_readme_repeats_no_command(self):
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
-        commands: Counter[str] = Counter()
-        in_block = False
-        for line in readme.splitlines():
-            if line.lstrip().startswith("```"):
-                in_block = not in_block
-            elif in_block and line.strip() and not line.lstrip().startswith("#"):
-                commands[line.strip()] += 1
-        self.assertEqual([line for line, n in commands.items() if n > 1], [])
+        for name in ("README.md", *MOVED_TEXT_PAGES):
+            readme = (check_draft_sync.ROOT / name).read_text(encoding="utf-8")
+            commands: Counter[str] = Counter()
+            in_block = False
+            for line in readme.splitlines():
+                if line.lstrip().startswith("```"):
+                    in_block = not in_block
+                elif in_block and line.strip() and not line.lstrip().startswith("#"):
+                    commands[line.strip()] += 1
+            with self.subTest(file=name):
+                self.assertEqual([line for line, n in commands.items() if n > 1], [])
 
 
 def first_command_output(lines: list[str]) -> tuple[str, list[str]]:
@@ -244,7 +259,7 @@ class ReferenceImplementationLevel(unittest.TestCase):
         unshipped = unshipped_level_2_rows(spec)
         if not unshipped:
             self.skipTest("Appendix A.1 marks every Level 2 section Shipped")
-        for name in ("README.md", "AIP-SPEC.md"):
+        for name in ("README.md", *MOVED_TEXT_PAGES, "AIP-SPEC.md"):
             text = (check_draft_sync.ROOT / name).read_text(encoding="utf-8")
             with self.subTest(file=name):
                 overclaims = [claim for claim in level_2_claims(text) if "targets" not in claim]
@@ -329,6 +344,17 @@ class PriorArtAttribution(unittest.TestCase):
             with self.subTest(doc=name):
                 for author in ("James Cao (Montcao)", "Carlos Eduardo Arango Gutierrez (NVIDIA)"):
                     self.assertTrue(author in text, f"{name} does not name {author!r}")
+                stray = [line for line in text.splitlines() if line.count("NVIDIA") > line.count("Arango Gutierrez (NVIDIA)")]
+                self.assertEqual(stray, [], f"{name} names NVIDIA other than as Arango Gutierrez's affiliation")
+        # The other pages that took text moved out of README.md need not name the authors, but a
+        # line of theirs that names NVIDIA names it as Arango Gutierrez's affiliation, as it had to
+        # in README.md. docs/specification-notes.md names both affiliations in its item on the
+        # naming note.
+        for name in MOVED_TEXT_PAGES:
+            if name in PRIOR_ART_DOCS:
+                continue
+            text = (check_draft_sync.ROOT / name).read_text(encoding="utf-8")
+            with self.subTest(doc=name):
                 stray = [line for line in text.splitlines() if line.count("NVIDIA") > line.count("Arango Gutierrez (NVIDIA)")]
                 self.assertEqual(stray, [], f"{name} names NVIDIA other than as Arango Gutierrez's affiliation")
 
@@ -1507,6 +1533,11 @@ class TrustFactorStatus(unittest.TestCase):
         stops = paragraph(section, "Where it stops today:")
         self.assertNotIn("stub", stops.lower())
         self.assertIn("all nine factors", stops)
+        # The sentence on how the score treats any other agent moved out of that paragraph to
+        # docs/use-cases.md, under the heading of the use case.
+        uses = (check_draft_sync.ROOT / "docs" / "use-cases.md").read_text(encoding="utf-8")
+        moved = uses.split("## You run many agents", 1)[1].split("\n#", 1)[0]
+        self.assertNotIn("stub", moved.lower())
 
     def test_gap_analysis_lists_no_trust_factor_as_stub(self):
         gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
