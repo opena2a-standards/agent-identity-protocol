@@ -447,6 +447,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   closing parenthesis or bracket of its own kind. They give one worded "complete Q4-2026 [see [1]
   and [2]] conformance checks", which is reported: its aside holds a bracket of its own kind and
   is not closed.
+- The version note of `AIP-SPEC.md` links `docs/specification-notes.md#internet-draft` as the page
+  that lists where the text differs from `draft-fane-opena2a-aip-04`. It linked
+  `README.md#specification`, and that section has held no such list since the README was
+  shortened. `scripts/test_checks.py` follows the link and checks that the section it reaches
+  holds the Internet-Draft paragraph and its lists; on the earlier link it fails.
 
 ## [1.2.0-draft] - 2026-10-06
 

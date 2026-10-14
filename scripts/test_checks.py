@@ -5,7 +5,8 @@ JWT access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the t
 protocols AIP is designed to complement (docs/interoperability.md and AIP-SPEC.md), the lists
 under the Internet-Draft paragraph of docs/specification-notes.md,
 the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, the version note
-AIP-SPEC.md carries while a change to a requirement is unreleased, the trust factor status
+AIP-SPEC.md carries while a change to a requirement is unreleased and the page it links for
+where that text differs from the paired draft, the trust factor status
 README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, the reference provider identifier
 AIP-SPEC.md gives, and three AIP-SPEC.md Appendix A.1 notes on the reference implementation.
 
@@ -1484,6 +1485,69 @@ class UnreleasedRequirementChanges(unittest.TestCase):
         self.assertNotIn(f"specification is {self.version},", paragraph)
         self.assertIn(f"is {self.version} with later changes", paragraph)
         self.assertIn("lists them under Unreleased", paragraph)
+
+
+DIFFERENCES_LINK = re.compile(r"\[[^\]]+\]\(([^)\s]+)\) lists where this text differs")
+
+
+def heading_anchor(heading: str) -> str:
+    """Return the anchor GitHub gives a heading: lower case, punctuation other than "-" dropped, spaces as "-"."""
+    return re.sub(r"[^\w\- ]", "", heading.strip().lower()).replace(" ", "-")
+
+
+def anchored_section(page: str, anchor: str) -> str | None:
+    """Return the section of page under the heading with that anchor, or None without one.
+
+    The section runs to the next heading of the same or a higher level; a line in a fenced code
+    block is not a heading.
+    """
+    lines = page.splitlines()
+    headings: list[tuple[int, int, str]] = []
+    fenced = False
+    for i, line in enumerate(lines):
+        if line.lstrip().startswith("```"):
+            fenced = not fenced
+        elif not fenced and (heading := re.match(r"(#{1,6}) (.+)", line)):
+            headings.append((i, len(heading.group(1)), heading.group(2)))
+    for n, (first, level, text) in enumerate(headings):
+        if heading_anchor(text) == anchor:
+            end = next((i for i, deeper, _ in headings[n + 1:] if deeper <= level), len(lines))
+            return "\n".join(lines[first:end])
+    return None
+
+
+class VersionNoteLinks(unittest.TestCase):
+    # The version note names a page that lists where this text differs from the paired draft.
+    # Those lists are the ones under the Internet-Draft paragraph that InternetDraftLists checks,
+    # so the link reaches that paragraph and its lists and not a page they have moved from.
+
+    def test_section_under_an_anchor_ends_at_the_next_heading_of_its_level(self):
+        page = "# Title\n\n## Specification\n\nA link.\n\n```\n# a comment\n```\n\n### Naming\n\nText.\n\n## Levels\n\nA table.\n"
+        self.assertEqual(
+            anchored_section(page, "specification"),
+            "## Specification\n\nA link.\n\n```\n# a comment\n```\n\n### Naming\n\nText.\n",
+        )
+        self.assertEqual(anchored_section(page, "naming"), "### Naming\n\nText.\n")
+        self.assertIsNone(anchored_section(page, "a-comment"))
+        self.assertEqual(heading_anchor("Internet-Draft"), "internet-draft")
+        self.assertEqual(heading_anchor("Naming and prior art"), "naming-and-prior-art")
+
+    def test_link_for_the_differences_reaches_the_internet_draft_lists(self):
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        note = spec_parts(spec).get("version note")
+        if not note:
+            self.skipTest("AIP-SPEC.md has no version note above the abstract")
+        targets = DIFFERENCES_LINK.findall(re.sub(r"\s+", " ", note))
+        self.assertEqual(len(targets), 1, "the version note links no page, or more than one, as listing the differences")
+        path, _, anchor = targets[0].partition("#")
+        page = (check_draft_sync.SPEC.parent / path).resolve()
+        self.assertTrue(page.is_file(), f"the version note links {path}, which does not exist")
+        text = page.read_text(encoding="utf-8")
+        if anchor:
+            text = anchored_section(text, anchor)
+            self.assertIsNotNone(text, f"{path} has no heading with the anchor #{anchor}")
+        self.assertIn(check_draft_sync.README_MARKER, text, f"{targets[0]} holds no Internet-Draft paragraph")
+        self.assertTrue(counted_lists(draft_disclosure(text)), f"{targets[0]} holds no list of the differences")
 
 
 def paragraph(text: str, start: str) -> str:
