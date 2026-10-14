@@ -45,6 +45,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- The `AIP-SPEC.md` naming note links `docs/naming-and-prior-art.md` for the prior-art list and
+  OpenA2A's position on the collision. It linked the README's "Naming and prior art" section,
+  which since the README was shortened links that page and names none of the drafts the note
+  names. `scripts/test_checks.py` checks that the text the note links names each of those drafts
+  and states OpenA2A's position.
 - `AIP-SPEC.md` Appendix A.1 describes the reference implementation as it is, with each of three
   notes dated. The hybrid signing row says the Ed25519-only `RealATCIssuer` was removed, where it
   called it an issuer with no active production callers, and that the reference implementation
