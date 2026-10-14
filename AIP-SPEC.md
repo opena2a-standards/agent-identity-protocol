@@ -6,7 +6,7 @@
 **Authors:** OpenA2A
 **Date:** October 2026 (first published March 2026)
 
-> **Version note.** This text is 1.2.0-draft, dated 2026-10-06, with later changes that no dated version carries yet. [CHANGELOG.md](./CHANGELOG.md) lists them under Unreleased, and those to §3.1 and §5.4 change a requirement. `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft as dated; the [repository README](./README.md#specification) lists where this text differs from that draft.
+> **Version note.** This text is 1.2.0-draft, dated 2026-10-06, with later changes that no dated version carries yet. [CHANGELOG.md](./CHANGELOG.md) lists them under Unreleased, and those to §3.1 and §5.4 change a requirement. `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft as dated; [docs/specification-notes.md](./docs/specification-notes.md#internet-draft) lists where this text differs from that draft.
 
 > **Naming note.** As of 2026-09-30, at least three other Internet-Drafts use the abbreviation "AIP" for an agent identity protocol: draft-aip-agent-identity-protocol-00 (James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), first published 2026-03-16, expired 2026-09-17), draft-singla-agent-identity-protocol (Singla, first published 2026-04-16, active) and draft-prakash-aip (revision 01, 2026-08-19, active). When referenced outside this document, use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See the [repository README](./README.md#naming-and-prior-art) for the prior-art list and OpenA2A's position on the collision.
 
