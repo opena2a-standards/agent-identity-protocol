@@ -377,7 +377,7 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   trust scoring, so an item ending in `(complete)` passed. "Complete" is not read as a mark where
   it is the verb that opens an item's title, as it was in "Complete trust scoring".
 - In that priority list check, "complete" is now no mark where an object follows it: a space and
-  a word with a letter, or a space, a number, a space and such a word, unless that word is and,
+  a word or a number, or a space, a number, a space and such a word, unless that word is and,
   but, or, as, at, by, for, in, on, since or with, in any letter case, or starts a date that, with
   the closed asides after it, ends the item, stands before a punctuation mark, after a space or
   not, that no letter, digit or underscore follows, or stands before a space and an opening
@@ -420,7 +420,9 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   nothing between a year and its quarter or half-year, as in "(complete 2026Q4)", is not reported:
   that is one word with a letter. Nor is one worded "complete Q4-2026(Discovery table above)":
   with no space before it, the parenthesis that a letter follows joins the date and "Discovery"
-  into one word.
+  into one word. Nor is one worded "complete 3 and served by the backend" or "complete 3 (of 5)
+  and served by the backend": there the number is the object, a date that a word follows, after a
+  closed aside or not.
 - In that priority list check, the word after "and" in a title that opens with "complete" now
   runs up to a space or to a punctuation mark that no letter, digit or underscore follows, as the
   entry above says. The check read it up to the next space, so it took the punctuation after the
@@ -440,7 +442,11 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   conformance checks". They give each abbreviation with its full stop at the end of an item,
   before a closing parenthesis, before a space and an opening parenthesis and before a word, in
   the same letter cases, and a finished item worded "(complete Sept.Oct)", where a letter follows
-  the full stop.
+  the full stop. They give an item still to do worded "(complete 3 (of 5) remaining checks)" or
+  "[complete 3 [1] remaining checks]", which is not reported: its closed aside ends at the first
+  closing parenthesis or bracket of its own kind. They give one worded "complete Q4-2026 [see [1]
+  and [2]] conformance checks", which is reported: its aside holds a bracket of its own kind and
+  is not closed.
 
 ## [1.2.0-draft] - 2026-10-06
 

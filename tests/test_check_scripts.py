@@ -595,7 +595,7 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         """Return each priority list item that is marked finished or asks for trust scoring.
 
         "done", "complete" and "completed" mark an item as finished, in any letter case. Of these,
-        "complete" is no mark where an object follows it: a space and a word with a letter, as in
+        "complete" is no mark where an object follows it: a space and a word or a number, as in
         "complete the depth limit enforcement", "a complete runtime protocol" and "complete
         in-browser key storage", or a space, a number, a space and such a word, as in "complete 3
         remaining checks". That word is not and, but, or, as, at, by, for, in, on, since or with,
@@ -639,7 +639,9 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         word with a letter. Nor is "complete Q4-2026(Discovery table above)": with no space before
         it, the parenthesis that a letter follows joins the date and "Discovery" into one word.
         Nor is "complete Q4-2026 (Discovery table above) and served by the backend": a word
-        follows the closed aside.
+        follows the closed aside. Nor is "complete 3 and served by the backend" or "complete 3 (of
+        5) and served by the backend": there the number is the object, a date that a word
+        follows, after a closed aside or not.
         """
         # A word ends where neither a letter, digit or underscore nor a punctuation mark and one of
         # those follows.
@@ -755,7 +757,7 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — complete 2026-10 [see Appendix A.1]",
             "6. **YAML policy format** — complete Oct. 2026 (2 checks remain in Appendix A.1)",
             # A date takes each closed aside after it, so "complete" is still a mark where a
-            # punctuation mark or a second aside follows the first.
+            # punctuation mark follows the first, or a second aside that ends the item.
             "6. **YAML policy format** — complete Q4-2026 (Discovery table above), served by the backend",
             "6. **YAML policy format** — complete Q4-2026 (Discovery table above). Served by the backend",
             "6. **YAML policy format** — complete Q4-2026 (Discovery table above) — served by the backend",
@@ -763,12 +765,14 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             # An aside that is not closed leaves "complete" a mark whatever follows its opening
             # parenthesis or bracket: one with no closing parenthesis or bracket, also after a
             # closed aside, and one that holds a parenthesis or bracket of its own kind, which
-            # is reported here in an item still to do.
+            # is reported here in an item still to do, where a punctuation mark or a word follows
+            # the first closing parenthesis or bracket inside it.
             "6. **YAML policy format** — complete Q4-2026 (Discovery table above",
             "6. **YAML policy format** — complete 2026-10 [see Appendix A.1",
             "6. **YAML policy format** — complete Q4-2026 (Discovery table above) [see Appendix A.1",
             "3. **Delegation chains** — complete Q4-2026 (see (a) and (b)) conformance checks",
             "3. **Delegation chains** — complete Q4-2026 [see [1]] conformance checks",
+            "3. **Delegation chains** — complete Q4-2026 [see [1] and [2]] conformance checks",
             # A title that opens with "Complete" and no object of it is a mark as well.
             "6. **Complete 2026-10** — YAML policy format",
             "6. **Complete and served** — YAML policy format",
@@ -842,6 +846,11 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "3. **Delegation chains** — complete Q4-2026 (of 5) [1] conformance checks",
             "1. **Complete Q4-2026 (of 5) conformance checks** — required for Level 3",
             "1. **Complete and publish Q4-2026 [1] conformance checks** — required for Level 3",
+            # A closed aside ends at the first closing parenthesis or bracket of its own kind, not
+            # at the one that closes an aside around the item's text, so the word after it is the
+            # object here.
+            "3. **Delegation chains** — (complete 3 (of 5) remaining checks)",
+            "3. **Delegation chains** — [complete 3 [1] remaining checks]",
         ]
         for date in dates:
             for case in (date.lower(), date.title(), date.upper()):
@@ -851,7 +860,8 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
         # So a finished item worded that way is not reported either, and neither is one dated
         # with nothing between a year and its quarter, which is one word with a letter, nor one
         # with no space between a date and a parenthesis that a letter follows, which joins them
-        # into one word, nor one with a word after the closed aside that follows its date.
+        # into one word, nor one with a word after the closed aside that follows its date, nor one
+        # whose number is the object, a date that a word follows, after a closed aside or not.
         unreported = [
             "6. **YAML policy format** — complete per Appendix A.1",
             "6. **YAML policy format** — complete from 2026-10",
@@ -859,6 +869,8 @@ class GapAnalysisDefersToAppendix(unittest.TestCase):
             "6. **YAML policy format** — declarative governance policies (complete 2026Q4)",
             "6. **YAML policy format** — complete Q4-2026(Discovery table above)",
             "6. **YAML policy format** — complete Q4-2026 (Discovery table above) and served by the backend",
+            "6. **YAML policy format** — complete 3 and served by the backend",
+            "6. **YAML policy format** — complete 3 (of 5) and served by the backend",
         ]
         self.assertEqual(self.finished(unreported), [])
 
