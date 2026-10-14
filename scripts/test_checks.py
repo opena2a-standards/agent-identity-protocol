@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Regression tests for scripts/check_draft_sync.py, the README link lists and Quick Start,
 the prior-art attribution in docs/naming-and-prior-art.md, AIP-SPEC.md and GAP-ANALYSIS.md, the
-JWT access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two lists of
+text the AIP-SPEC.md naming note links for the prior-art list, the JWT access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two lists of
 protocols AIP is designed to complement (docs/interoperability.md and AIP-SPEC.md), the lists
 under the Internet-Draft paragraph of docs/specification-notes.md,
 the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, the version note
@@ -26,6 +26,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import unittest
 from collections import Counter
 from pathlib import Path
@@ -335,6 +336,35 @@ PRIOR_ART_DOCS = (PRIOR_ART_PAGE, "AIP-SPEC.md", "GAP-ANALYSIS.md")
 INTEROPERABILITY = check_draft_sync.ROOT / "docs" / "interoperability.md"
 
 
+def linked_text(source: Path, link: str) -> str:
+    """Return the text a relative Markdown link in source points to.
+
+    Without a fragment that is the whole file. With one it is the section under the heading whose
+    GitHub anchor the fragment is, up to the next heading of the same or a higher level; a line in
+    a fenced code block is not a heading. Fails, quoting the link, where no heading has that anchor.
+    """
+    path, _, fragment = link.partition("#")
+    text = (source.parent / path if path else source).read_text(encoding="utf-8")
+    if not fragment:
+        return text
+    lines = text.splitlines()
+    headings = []
+    fenced = False
+    for at, line in enumerate(lines):
+        if line.startswith("```"):
+            fenced = not fenced
+        heading = None if fenced else re.match(r"(#{1,6}) (.+)", line)
+        if heading:
+            anchor = re.sub(r"[^\w\- ]", "", heading.group(2).strip().lower()).replace(" ", "-")
+            headings.append((at, len(heading.group(1)), anchor))
+    starts = [(at, level) for at, level, anchor in headings if anchor == fragment]
+    if not starts:
+        raise AssertionError(f"no heading in {path or source.name} has the anchor of {link!r}")
+    start, level = starts[0]
+    end = next((at for at, found, _ in headings if at > start and found <= level), len(lines))
+    return "\n".join(lines[start:end])
+
+
 class PriorArtAttribution(unittest.TestCase):
     # draft-aip-agent-identity-protocol-00 lists J. Cao of Montcao and C. Arango Gutierrez of
     # NVIDIA; the datatracker records draft-singla-agent-identity-protocol-00 as submitted on
@@ -369,6 +399,43 @@ class PriorArtAttribution(unittest.TestCase):
         readme = (check_draft_sync.ROOT / PRIOR_ART_PAGE).read_text(encoding="utf-8")
         row = next(line for line in readme.splitlines() if "[draft-singla-agent-identity-protocol-00]" in line)
         self.assertIn("| April 16, 2026", row)
+
+    def test_naming_note_links_the_text_that_lists_the_other_drafts(self):
+        # The AIP-SPEC.md naming note sends the reader to its link for the prior-art list and
+        # OpenA2A's position on the collision, so the text the link points to names each draft the
+        # note names and states that position. README.md#naming-and-prior-art held both until they
+        # moved to docs/naming-and-prior-art.md.
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        note = next(line for line in spec.splitlines() if line.startswith("> **Naming note.**"))
+        links = [link for link in re.findall(r"\]\(([^)\s]+)\)", note) if "://" not in link]
+        self.assertEqual(len(links), 1, "the naming note does not carry one link within the repository")
+        text = linked_text(check_draft_sync.SPEC, links[0])
+        drafts = sorted(set(re.findall(r"draft-[a-z0-9-]*[a-z0-9]", note)))
+        self.assertEqual(len(drafts), 3, "the naming note does not name three other drafts")
+        for draft in drafts:
+            with self.subTest(draft=draft):
+                self.assertTrue(draft in text, f"{links[0]} does not name {draft}")
+        self.assertTrue("OpenA2A's position" in text, f"{links[0]} does not state OpenA2A's position")
+
+    def test_linked_text_is_the_section_under_the_anchored_heading(self):
+        page = (
+            "# Title\n\n## Specification\n\n```bash\n# Not a heading\n```\n\n"
+            "### Naming and prior art\n\nOne sentence.\n\n#### Detail\n\nMore.\n\n## Conformance Levels\n\nLevels.\n"
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "docs").mkdir()
+            (Path(tmp) / "docs" / "page.md").write_text(page, encoding="utf-8")
+            spec = Path(tmp) / "SPEC.md"
+            spec.write_text("[link](./docs/page.md#not-a-heading)\n", encoding="utf-8")
+            self.assertEqual(
+                linked_text(spec, "./docs/page.md#naming-and-prior-art"),
+                "### Naming and prior art\n\nOne sentence.\n\n#### Detail\n\nMore.\n",
+            )
+            self.assertTrue(linked_text(spec, "./docs/page.md#specification").endswith("More.\n"))
+            self.assertEqual(linked_text(spec, "./docs/page.md"), page)
+            self.assertEqual(linked_text(spec, ""), spec.read_text(encoding="utf-8"))
+            with self.assertRaisesRegex(AssertionError, "not-a-heading"):
+                linked_text(spec, "./docs/page.md#not-a-heading")
 
 
 class JwtAccessTokenLifetime(unittest.TestCase):
