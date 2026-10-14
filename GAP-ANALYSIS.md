@@ -91,7 +91,7 @@ A.1 differ, Appendix A.1 is the current record.
 
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
-| /.well-known/aip | Complete (*updated 2026-10*): the provider serves its discovery document; on 2026-09-02 both `https://aim.opena2a.org/.well-known/aip` and `https://api.aim.opena2a.org/.well-known/aip` answered HTTP 200 (README Quick Start) | `handlers/aip_handler.go` |
+| /.well-known/aip | Complete (*updated 2026-10*): the provider serves its discovery document; on 2026-09-02 both `https://aim.opena2a.org/.well-known/aip` and `https://api.aim.opena2a.org/.well-known/aip` answered HTTP 200 ([docs/specification-notes.md](docs/specification-notes.md#reference-provider)) | `handlers/aip_handler.go` |
 
 To check the discovery endpoint yourself, fetch the provider's discovery document; an HTTP 200
 means it is served:
