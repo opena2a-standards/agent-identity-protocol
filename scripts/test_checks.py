@@ -4,7 +4,8 @@ the prior-art attribution in docs/naming-and-prior-art.md, AIP-SPEC.md and GAP-A
 text the AIP-SPEC.md naming note links for the prior-art list, the JWT access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two lists of
 protocols AIP is designed to complement (docs/interoperability.md and AIP-SPEC.md), the lists
 under the Internet-Draft paragraph of docs/specification-notes.md,
-the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, the version note
+the RFCs listed in AIP-SPEC.md §14, the GAP-ANALYSIS.md priority list, the file named by each
+GAP-ANALYSIS.md row that reports code, the version note
 AIP-SPEC.md carries while a change to a requirement is unreleased and the page it links for
 where that text differs from the paired draft, the trust factor status
 README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, the reference provider identifier
@@ -1455,6 +1456,45 @@ class GapAnalysisPriorities(unittest.TestCase):
         row = next(line for line in gap.splitlines() if line.startswith("| OAuth 2.0 / OIDC |"))
         self.assertIn("serves an OAuth 2.0 token endpoint", row)
         self.assertIn("No code that issues an OpenID Connect ID token was found", row)
+
+
+def rows_without_a_file(gap: str) -> list[str]:
+    """Return the requirement of each row in the "What Exists vs What the Spec Requires" tables
+    whose status reports some code (it starts with neither NOT IMPLEMENTED nor REMOVED, as in
+    gap_status) and whose File column names no path in backticks."""
+    tables = gap.split("## What Exists vs What the Spec Requires", 1)[1].split("\n## ", 1)[0]
+    missing = []
+    for line in tables.splitlines():
+        if not line.startswith("| ") or line.startswith("| Spec Requirement |"):
+            continue
+        cells = [cell.strip() for cell in line.strip().strip("|").split("|")]
+        if cells[1].startswith(("NOT IMPLEMENTED", "REMOVED")):
+            continue
+        if not re.search(r"`[^`]+`", cells[-1]):
+            missing.append(cells[0])
+    return missing
+
+
+class GapAnalysisFiles(unittest.TestCase):
+    def test_rows_without_a_file_finds_a_row_that_reports_code_and_names_no_file(self):
+        gap = (
+            "## What Exists vs What the Spec Requires\n\n"
+            "| Spec Requirement | Implementation Status | File |\n"
+            "|-----------------|----------------------|------|\n"
+            "| Served card | Partial: the backend serves it | not recorded in this analysis |\n"
+            "| Keygen | Complete | `crypto/keygen.go` |\n"
+            "| Negotiation | NOT IMPLEMENTED | - |\n"
+            "| Old flow | REMOVED | - |\n\n"
+            "## Priority Implementation Order\n\n"
+            "| Later table | Complete | none |\n"
+        )
+        self.assertEqual(rows_without_a_file(gap), ["Served card"])
+
+    def test_each_row_that_reports_code_names_a_file(self):
+        # A row that says the reference implementation has code for a requirement names the
+        # file that holds it, so a reader can check the statement against the source.
+        gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
+        self.assertEqual(rows_without_a_file(gap), [])
 
 
 def unreleased_entries(changelog: str) -> dict[str, list[str]]:

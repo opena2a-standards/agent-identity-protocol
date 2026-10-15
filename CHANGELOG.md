@@ -340,6 +340,13 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   form", is not reported. A number word that follows a hyphen is not reported even where it is
   part of a count, as the "five" of "a twenty-five-field form" is, so no part of that count is
   reported.
+- The A2A agent card identity row of `GAP-ANALYSIS.md` names the `agent-identity-management`
+  files that serve the agent card, instead of "not recorded in this analysis":
+  `a2a_handler.go` (GetPublicAgentCard, the handler the backend routes
+  `GET /.well-known/agent.json` to) and `a2a_service.go` (GetEnhancedAgentCard, which adds the
+  `aim` extension to the card). `scripts/test_checks.py` fails if a row of the What Exists vs What
+  the Spec Requires tables whose status starts with neither NOT IMPLEMENTED nor REMOVED names no
+  path in backticks in its File column.
 - `test_changelog_entry_says_what_is_not_reported` and
   `test_docs_say_how_ci_is_read_and_what_a_git_failure_reports` in `scripts/test_checks.py` look
   their entry up in the whole of this file, not only under Unreleased, so they no longer end in a
