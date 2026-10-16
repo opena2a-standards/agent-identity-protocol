@@ -59,36 +59,6 @@ That is the provider's document on the date in [its capture record](docs/capture
 
 To resolve a registered agent's DID document, and for what the provider's endpoints answered when last measured, see [docs/specification-notes.md](docs/specification-notes.md#reference-provider).
 
-## Use cases
-
-### A browser agent acts for someone you cannot see
-
-A shopping agent drives a real browser to your checkout for a person who has left the room. The web identifies people with passwords and cookies and identifies servers with TLS certificates; the agent is neither, so your site guesses from a User-Agent string, and anyone can send any string.
-
-AIP gives the agent a cryptographic identity and a way to prove it. The verifier issues a random challenge, the agent signs it with the key bound to its identity, and the verifier checks the signature, the key binding, the challenge's freshness and that the nonce was used once (AIP-SPEC Section 5.1).
-
-What you can do today: run the Section 5.1 transcripts in the conformance suite. One is accepted; three are rejected for a wrong key, a stale challenge and a replayed nonce.
-
-```bash
-git clone https://github.com/opena2a-standards/aip-conformance
-cd aip-conformance/verifiers/go
-go run . ../../fixtures
-```
-
-Where it stops today: the reference identity provider advertises the challenge endpoint in its discovery document but does not serve that route yet, so the transcripts above are the way to exercise Section 5.1.
-
-### You run many agents and need to know which one to trust less today
-
-A platform team runs agents built by several teams. One begins failing actions and tripping security alerts, and nobody has a number that moves, so its access stays where it was until a person notices.
-
-AIP defines a trust score from 0.0 to 1.0 composed of nine weighted factors (Section 6). Penalties are applied and recorded against the agent, and the identity provider publishes a discovery document that any relying party can fetch.
-
-What you can do today: run the first two commands in [Quick Start](#quick-start), which create an agent identity and fetch the identity provider's discovery document.
-
-Where it stops today: the reference implementation scores all nine factors, but compliance counts only for an agent whose organization has a compliance snapshot, and user feedback only for an agent that has feedback ratings. [docs/use-cases.md](docs/use-cases.md) says how the score treats any other agent, and what each use case leaves out here.
-
-Why you can check this yourself: [`AIP-SPEC.md`](AIP-SPEC.md) and the Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/); [aip-conformance](https://github.com/opena2a-standards/aip-conformance), byte-pinned fixtures with Go and Python verifiers; the live discovery document at `https://aim.opena2a.org/.well-known/aip`; and the reference implementation, [OpenA2A AIM (Agent Identity Management)](https://github.com/opena2a-org/agent-identity-management).
-
 ## Specification
 
 [AIP-SPEC.md](AIP-SPEC.md) — the full protocol specification.
@@ -117,7 +87,7 @@ The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-managem
 - [docs/interoperability.md](docs/interoperability.md) — the protocols AIP is designed to complement, a status for each, and how AIP and ATP work together
 - [GAP-ANALYSIS.md](GAP-ANALYSIS.md) — what the reference implementation has against what the specification requires
 - [docs/naming-and-prior-art.md](docs/naming-and-prior-art.md) — the other specifications named "AIP"
-- [docs/use-cases.md](docs/use-cases.md) — the text the use cases above leave out
+- [docs/use-cases.md](docs/use-cases.md) — two use cases, with what you can run today and where the reference implementation stops
 - [CHANGELOG.md](CHANGELOG.md) — changes to the specification, by version
 - [CONTRIBUTING.md](CONTRIBUTING.md) — co-authors, an independent second implementation and security review are wanted; how to contribute
 - [OASB (Open Agent Security Benchmark)](https://github.com/opena2a-org/oasb) — security controls

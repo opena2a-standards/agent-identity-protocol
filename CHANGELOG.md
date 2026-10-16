@@ -76,6 +76,9 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   replaced by "see the table above", and the README's "Naming and prior art" paragraph now says to
   use the fully qualified name "OpenA2A AIP" outside this repository. `scripts/test_checks.py`
   checks the README header, the moved note and that paragraph.
+- `README.md` is shorter: its Use cases section moved, as written, to `docs/use-cases.md`, which
+  now holds both use cases whole, and the README links that page from its Documentation list.
+  The tests that read the use cases read them on that page and assert the same text.
 
 ### Fixed
 

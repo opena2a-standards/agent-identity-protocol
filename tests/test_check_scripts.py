@@ -388,9 +388,10 @@ class ImplementationStatusChallenge(unittest.TestCase):
                 return [cell.strip() for cell in line.strip().strip("|").split("|")]
         self.fail("Appendix A.1 has no §5 Verification (challenge-response) row")
 
-    def test_row_agrees_with_readme_on_the_unserved_route(self) -> None:
-        readme = check_draft_sync.README.read_text(encoding="utf-8")
-        self.assertIn("advertises the challenge endpoint in its discovery document but does not serve that route", readme)
+    def test_row_agrees_with_the_use_cases_page_on_the_unserved_route(self) -> None:
+        # The browser agent use case moved from README.md to docs/use-cases.md.
+        uses = (ROOT / "docs" / "use-cases.md").read_text(encoding="utf-8")
+        self.assertIn("advertises the challenge endpoint in its discovery document but does not serve that route", uses)
         _, status, note = self.section5_row()
         self.assertEqual(status, "Partial")
         self.assertIn(self.ROUTE, note)

@@ -1772,17 +1772,15 @@ class TrustFactorStatus(unittest.TestCase):
         self.assertEqual(len(named), 1, named)
         self.assertTrue(named[0].startswith("- §6.1 no longer says"), named[0])
 
-    def test_readme_trust_use_case_names_no_stubbed_factor(self):
-        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
-        section = readme.split("### You run many agents", 1)[1].split("\n#", 1)[0]
+    def test_trust_use_case_names_no_stubbed_factor(self):
+        # The trust use case moved from README.md to docs/use-cases.md, and its "Where it stops
+        # today" paragraph again holds the sentence on how the score treats any other agent.
+        uses = (check_draft_sync.ROOT / "docs" / "use-cases.md").read_text(encoding="utf-8")
+        section = uses.split("## You run many agents", 1)[1].split("\n#", 1)[0]
         stops = paragraph(section, "Where it stops today:")
         self.assertNotIn("stub", stops.lower())
         self.assertIn("all nine factors", stops)
-        # The sentence on how the score treats any other agent moved out of that paragraph to
-        # docs/use-cases.md, under the heading of the use case.
-        uses = (check_draft_sync.ROOT / "docs" / "use-cases.md").read_text(encoding="utf-8")
-        moved = uses.split("## You run many agents", 1)[1].split("\n#", 1)[0]
-        self.assertNotIn("stub", moved.lower())
+        self.assertNotIn("stub", section.lower())
 
     def test_gap_analysis_lists_no_trust_factor_as_stub(self):
         gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
