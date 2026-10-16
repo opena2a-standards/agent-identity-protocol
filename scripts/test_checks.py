@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Regression tests for scripts/check_draft_sync.py, the README link lists and Quick Start,
+the README header and the naming note it moved to docs/naming-and-prior-art.md,
 the prior-art attribution in docs/naming-and-prior-art.md, AIP-SPEC.md and GAP-ANALYSIS.md, the
 text the AIP-SPEC.md naming note links for the prior-art list, the JWT access-token lifetime in AIP-SPEC.md §5.4, the status on each line of the two lists of
 protocols AIP is designed to complement (docs/interoperability.md and AIP-SPEC.md), the lists
@@ -467,6 +468,49 @@ class PriorArtAttribution(unittest.TestCase):
             self.assertEqual(linked_text(spec, ""), spec.read_text(encoding="utf-8"))
             with self.assertRaisesRegex(AssertionError, "not-a-heading"):
                 linked_text(spec, "./docs/page.md#not-a-heading")
+
+
+# The two sentences of the naming note that moved from the README header to the naming page.
+NAMING_NOTE = (
+    'When referenced outside this repository, please use the fully qualified name **"OpenA2A AIP"**'
+    " to disambiguate.",
+    'The bare "AIP" is retained inside this repository where context is unambiguous.',
+)
+
+
+def header_paragraphs(readme: str) -> list[str]:
+    """Return the paragraphs of a README above its first "## " heading, each on one line."""
+    top = ("\n" + readme).split("\n## ", 1)[0]
+    return [" ".join(block.split()) for block in re.split(r"\n\s*\n", top) if block.strip()]
+
+
+class ReadmeHeader(unittest.TestCase):
+    def test_header_is_the_strip_title_description_and_scope_line(self):
+        # A badge row may join the header; any other paragraph moves below it or to docs/.
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        found = [p for p in header_paragraphs(readme) if not p.startswith("[![")]
+        self.assertEqual(len(found), 4, found)
+        strip, title, description, scope = found
+        self.assertTrue(strip.startswith("> **OpenA2A specs**"), strip)
+        self.assertTrue(title.startswith("# "), title)
+        self.assertEqual(description, "OpenA2A's open standard for AI agent identity, capabilities, and trust.")
+        self.assertTrue(scope.startswith("OpenA2A AIP answers"), scope)
+
+    def test_header_paragraphs_end_at_the_first_h2(self):
+        readme = "> strip\n\n# Title\n\nOne.\n\n> **Note.** Two\nlines.\n\n## Quick Start\n\nThree.\n"
+        self.assertEqual(header_paragraphs(readme), ["> strip", "# Title", "One.", "> **Note.** Two lines."])
+
+    def test_naming_note_is_on_the_naming_page(self):
+        page = " ".join((check_draft_sync.ROOT / PRIOR_ART_PAGE).read_text(encoding="utf-8").split())
+        for sentence in NAMING_NOTE:
+            with self.subTest(sentence=sentence[:40]):
+                self.assertIn(sentence, page)
+
+    def test_readme_names_what_to_cite_and_links_the_naming_page(self):
+        readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
+        section = readme.split("\n### Naming and prior art\n", 1)[1].split("\n#", 1)[0]
+        self.assertIn('"OpenA2A AIP"', section)
+        self.assertIn("](docs/naming-and-prior-art.md)", section)
 
 
 class JwtAccessTokenLifetime(unittest.TestCase):

@@ -6,8 +6,6 @@ OpenA2A's open standard for AI agent identity, capabilities, and trust.
 
 OpenA2A AIP answers "Who is this agent, what can it do, and should I trust it?" with cryptographic identity, structured capabilities, and multi-factor trust scoring.
 
-> **Naming note.** Multiple independent specifications use the abbreviation "AIP" for "Agent Identity Protocol" (see [Naming and prior art](#naming-and-prior-art) below). When referenced outside this repository, please use the fully qualified name **"OpenA2A AIP"** to disambiguate. The bare "AIP" is retained inside this repository where context is unambiguous.
-
 ## Quick Start
 
 Read [AIP-SPEC.md](AIP-SPEC.md), the protocol specification, first. The commands below create an agent identity with `opena2a-cli` and fetch the reference identity provider's discovery document:
@@ -99,7 +97,7 @@ It is also published as the individual Internet-Draft [draft-fane-opena2a-aip](h
 
 ### Naming and prior art
 
-Other independent specifications also use "AIP" for "Agent Identity Protocol". [docs/naming-and-prior-art.md](docs/naming-and-prior-art.md) lists them with their authors, first publication and scope.
+Other independent specifications also use "AIP" for "Agent Identity Protocol". [docs/naming-and-prior-art.md](docs/naming-and-prior-art.md) lists them with their authors, first publication and scope. When referenced outside this repository, use the fully qualified name **"OpenA2A AIP"**.
 
 ## Conformance Levels
 
