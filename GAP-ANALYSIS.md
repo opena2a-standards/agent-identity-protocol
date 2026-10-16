@@ -102,11 +102,11 @@ curl -s -o /dev/null -w '%{http_code}\n' https://aim.opena2a.org/.well-known/aip
 
 ### Integration Patterns (Section 11)
 
-The rows below restate what the Google A2A and Anthropic MCP lines of the Interoperability list in [docs/interoperability.md](docs/interoperability.md) and of the AIP-SPEC abstract say as of 2026-10-11; they add no new reading of the source. The verification flows of both protocols have their own rows under Verification.
+The status text of the rows below restates what the Google A2A and Anthropic MCP lines of the Interoperability list in [docs/interoperability.md](docs/interoperability.md) and of the AIP-SPEC abstract say as of 2026-10-11; it adds no new reading of the source. The File column of the A2A agent card identity row was read from the `agent-identity-management` source in 2026-10: the handler the backend routes `GET /.well-known/agent.json` to, and the service function that adds the `aim` extension to the card. The verification flows of both protocols have their own rows under Verification.
 
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
-| A2A agent card identity | Partial (*updated 2026-10*): the agent card the backend serves carries the agent's ID and registered public key in an `aim` extension, and that ID is the UUID the provider assigns (AIP-SPEC §3.1), not an `aim_` agent ID | not recorded in this analysis |
+| A2A agent card identity | Partial (*updated 2026-10*): the agent card the backend serves carries the agent's ID and registered public key in an `aim` extension, and that ID is the UUID the provider assigns (AIP-SPEC §3.1), not an `aim_` agent ID | `apps/backend/internal/interfaces/http/handlers/a2a_handler.go` (GetPublicAgentCard), `apps/backend/internal/application/a2a_service.go` (GetEnhancedAgentCard) |
 | MCP capability-based tool access | Partial (*updated 2026-10*): the backend checks an agent's capabilities server-side; it does not serve the §5.1 exchange an MCP server would use to verify a connecting agent (AIP-SPEC Appendix A.1, the §5 row) | `apps/backend/internal/application/capability_service.go` |
 
 ---
