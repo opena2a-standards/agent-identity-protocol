@@ -6,6 +6,34 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/capture_quick_start.py` runs the README Quick Start command,
+  `npx opena2a-cli identity create --name my-agent`, with HOME set to an empty
+  `/tmp/aip-quick-start` and an empty npm prefix and cache, so npx installs the package from the
+  npm registry. It writes what the command prints to `docs/captures/identity-create.txt`, and the
+  command, the opena2a-cli version, the fixture, the date, the exit code and the line range the
+  README shows to `docs/captures/identity-create.json`. The capture in this change was taken with
+  `opena2a-cli` 0.10.13. The README shows that output in a text block under "What
+  `npx opena2a-cli identity create --name my-agent` prints ([full output](docs/captures/identity-create.txt)):"
+  where it showed it as comment lines in the command block, so its Stored in line is now the path
+  the capture printed. `tests/test_quick_start_capture.py` checks that the README block is the
+  line range the sidecar names and that the sidecar names the README's command, and the
+  `scripts/test_checks.py` Quick Start tests read the output from that block.
+- `python3 scripts/capture_quick_start.py discovery` runs the second Quick Start command,
+  `curl https://aim.opena2a.org/.well-known/aip`, with HOME set to an empty temporary directory
+  and no proxy variables. It writes what curl prints to `docs/captures/discovery.txt`, and the
+  command, the fixture, the date and the exit code to `docs/captures/discovery.json`. It writes
+  nothing when curl exits non-zero or when what it prints is not a JSON object with a
+  `providerDid` and an `endpoints` object, since curl exits 0 on an HTTP error body. With no
+  argument, or with `identity-create`, the script captures the first command as before. The
+  README shows the captured document, one member per line, under "What
+  `curl https://aim.opena2a.org/.well-known/aip` prints, with line breaks added ([full output](docs/captures/discovery.txt)):",
+  with a note that links its capture record, `AIP-SPEC.md` Section 10.1 and the Reference
+  Implementation section. `tests/test_quick_start_capture.py` checks that the README block is the
+  captured document with line breaks added and parses to the same JSON, and that the sidecar
+  names the README's second command.
+
 ### Changed
 
 - `AIP-SPEC.md` §3.1 defines the agent ID as `aim_` followed by the base64url encoding (RFC 4648

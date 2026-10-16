@@ -1,0 +1,5 @@
+Identity created
+  Agent ID:    aim_FwnY3huUgvFoeqwt
+  Name:        my-agent
+  Public Key:  FwnY3huUgvFoeqwt9PxqdWaR00Q4993c...
+  Stored in:   /tmp/aip-quick-start/.opena2a/aim-core

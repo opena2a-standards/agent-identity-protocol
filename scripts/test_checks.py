@@ -166,20 +166,40 @@ class ReadmeLinks(unittest.TestCase):
 
 
 def first_command_output(lines: list[str]) -> tuple[str, list[str]]:
-    """Return the first command in the first fenced block and the comment lines right under it.
+    """Return the first command in the first fenced block and the output shown for it.
 
-    The output shown for a command is the run of comment lines that follows it before a blank
-    line, a closing fence or the next command.
+    The output shown for a command is the fenced block under the line
+    "What `<command>` prints", up to its closing fence; it is empty when no such line follows.
     """
     fence = next(i for i, line in enumerate(lines) if line.startswith("```"))
     block = lines[fence + 1:]
-    start = next(i for i, line in enumerate(block) if line.strip() and not line.startswith("#"))
+    command = next(line for line in block if line.strip() and not line.startswith("#"))
+    label = f"What `{command}` prints"
+    at = next((i for i, line in enumerate(lines) if line.startswith(label)), None)
+    if at is None:
+        return command, []
+    opening = next((i for i in range(at + 1, len(lines)) if lines[i].startswith("```")), len(lines))
     output = []
-    for line in block[start + 1:]:
-        if not line.startswith("#"):
+    for line in lines[opening + 1:]:
+        if line.startswith("```"):
             break
         output.append(line)
-    return block[start], output
+    return command, output
+
+
+def note_after_output(lines: list[str]) -> str:
+    """Return the paragraph that follows the output block of the first command, on one line."""
+    command, output = first_command_output(lines)
+    at = next(i for i, line in enumerate(lines) if line.startswith(f"What `{command}` prints"))
+    opening = next(i for i in range(at + 1, len(lines)) if lines[i].startswith("```"))
+    rest = lines[opening + len(output) + 2:]
+    paragraph = []
+    for line in rest:
+        if paragraph and not line.strip():
+            break
+        if line.strip():
+            paragraph.append(line.strip())
+    return " ".join(paragraph)
 
 
 class ReadmeQuickStart(unittest.TestCase):
@@ -187,14 +207,13 @@ class ReadmeQuickStart(unittest.TestCase):
         readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
         command, output = first_command_output(readme.splitlines()[:30])
         self.assertEqual(command, "npx opena2a-cli identity create --name my-agent")
-        self.assertIn("#   Identity created", output)
+        self.assertIn("Identity created", output)
 
     def test_output_note_says_a_repeat_run_keeps_the_agent_id(self):
         # A second run with the same data directory prints "Identity already exists" and the
         # same Agent ID, so the note must not say the ID differs on each run.
         readme = (check_draft_sync.ROOT / "README.md").read_text(encoding="utf-8")
-        _, output = first_command_output(readme.splitlines()[:30])
-        note = " ".join(line.lstrip("#").strip() for line in output)
+        note = note_after_output(readme.splitlines())
         self.assertNotIn("each run", note)
         self.assertIn('"Identity already exists"', note)
 
@@ -208,7 +227,18 @@ class ReadmeQuickStart(unittest.TestCase):
         self.assertEqual([line.split("  ")[0] for line in shown[start:]], labels)
         self.assertEqual(shown[start + 2].split(), ["Name:", "my-agent"])
 
-    def test_output_ends_at_a_blank_line(self):
+    def test_output_is_the_block_under_its_label_and_ends_at_its_fence(self):
+        lines = [
+            "```bash", "# Create", "run a", "```", "",
+            "What `run a` prints ([full output](a.txt)):", "",
+            "```text", "out 1", "  out 2", "```", "",
+            "The note,", "on two lines.", "",
+            "```bash", "run b", "```",
+        ]
+        self.assertEqual(first_command_output(lines), ("run a", ["out 1", "  out 2"]))
+        self.assertEqual(note_after_output(lines), "The note, on two lines.")
+
+    def test_command_with_no_label_shows_no_output(self):
         lines = ["```bash", "# Create", "run a", "", "# Next", "run b", "```"]
         self.assertEqual(first_command_output(lines), ("run a", []))
 

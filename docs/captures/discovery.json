@@ -1,0 +1,8 @@
+{
+  "command": "curl https://aim.opena2a.org/.well-known/aip",
+  "fixture": "HOME is an empty directory created for the run, so curl reads no .curlrc; no proxy variables are set; standard input is empty and standard output is a pipe",
+  "date": "2026-10-16",
+  "exitCode": 0,
+  "stream": "stdout",
+  "shown": "the whole document, with line breaks added by format_json in scripts/capture_quick_start.py"
+}
