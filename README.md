@@ -34,6 +34,31 @@ Your agent ID and public key will differ, and Stored in names `.opena2a/aim-core
 curl https://aim.opena2a.org/.well-known/aip
 ```
 
+What `curl https://aim.opena2a.org/.well-known/aip` prints, with line breaks added ([full output](docs/captures/discovery.txt)):
+
+```json
+{
+  "conformanceLevel": 2,
+  "endpoints": {
+    "agents": "/api/v1/agents",
+    "atc": "/api/v1/agents/{agentId}/atc",
+    "audit": "/api/v1/agents/{agentId}/audit",
+    "capabilities": "/api/v1/capabilities",
+    "challenge": "/api/v1/agents/{agentId}/challenge",
+    "didResolve": "/api/v1/did/{did}",
+    "trustScore": "/api/v1/agents/{agentId}/trust",
+    "verify": "/api/v1/agents/{agentId}/verify"
+  },
+  "providerDid": "did:aip:provider_opena2a",
+  "supportedAgentTypes": ["claude", "gpt", "gemini", "langchain", "crewai", "autogen", "semantic-kernel", "mcp-server", "a2a-agent", "custom"],
+  "supportedCapabilityNamespaces": ["file", "db", "api", "network", "system", "mcp", "data", "payment"],
+  "supportedProtocols": ["mcp", "a2a"],
+  "version": "1.0"
+}
+```
+
+That is the provider's document on the date in [its capture record](docs/captures/discovery.json), and the provider can change it. [AIP-SPEC.md Section 10.1](AIP-SPEC.md#101-well-known-endpoint) shows the target form, and [Reference Implementation](#reference-implementation) says what the reference implementation does not serve yet.
+
 To resolve a registered agent's DID document, and for what the provider's endpoints answered when last measured, see [docs/specification-notes.md](docs/specification-notes.md#reference-provider).
 
 ## Use cases

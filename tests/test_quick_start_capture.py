@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Regression tests for the README Quick Start capture and scripts/capture_quick_start.py.
+"""Regression tests for the README Quick Start captures and scripts/capture_quick_start.py.
 
 README.md shows what its first command prints in a text block under the line
-'What `<command>` prints ([full output](docs/captures/<name>.txt)):'. The capture run
-writes that .txt and a .json beside it. These tests check that the README block is the
-excerpt the .json names, line for line, that the .json records the README's command, and
+'What `<command>` prints ([full output](docs/captures/<name>.txt)):', and what its second
+command prints under 'What `<command>` prints, with line breaks added ([full output](...)):'.
+The capture run writes that .txt and a .json beside it. These tests check that each README
+block is what the .txt holds (the excerpt the .json names for the first, the whole document
+with line breaks added for the second), that the .json records the README's command, and
 what the capture script writes, or refuses to write, with the command run replaced.
 
 Run from the repository root:
@@ -30,7 +32,11 @@ sys.path.insert(0, str(ROOT / "scripts"))
 import capture_quick_start  # noqa: E402
 
 README = ROOT / "README.md"
-LABEL = re.compile(r"^What `(?P<command>[^`]+)` prints(?P<trimmed>, trimmed)? \(\[full output\]\((?P<txt>[^)]+)\)\):$")
+LABEL = re.compile(
+    r"^What `(?P<command>[^`]+)` prints"
+    r"(?:(?P<trimmed>, trimmed)|(?P<formatted>, with line breaks added))?"
+    r" \(\[full output\]\((?P<txt>[^)]+)\)\):$"
+)
 VERSION_OR_DATE = re.compile(r"v?[0-9]+\.[0-9]+\.[0-9]+|20[0-9]{2}-[0-9]{2}-[0-9]{2}")
 
 
@@ -45,20 +51,39 @@ def first_command(lines: list[str]) -> str:
     return next(line for line in lines[fence + 1:] if line.strip() and not line.startswith("#"))
 
 
-def capture(lines: list[str]) -> tuple[re.Match, list[str]]:
-    """Return the capture label and the lines of the fenced block right after it."""
+def commands(lines: list[str]) -> list[str]:
+    """Return the lines of the ```bash blocks that are not blank or a comment, in order."""
+    found, inside = [], False
+    for line in lines:
+        if line.startswith("```"):
+            inside = not inside and line.strip() == "```bash"
+        elif inside and line.strip() and not line.startswith("#"):
+            found.append(line)
+    return found
+
+
+def captures(lines: list[str]) -> list[tuple[re.Match, list[str]]]:
+    """Return each capture label, in order, with the lines of the fenced block right after it."""
+    found = []
     for i, line in enumerate(lines):
         match = LABEL.match(line)
-        if match:
-            break
-    else:
+        if not match:
+            continue
+        rest = lines[i + 1:]
+        opening = next(j for j, line in enumerate(rest) if line.strip())
+        if not rest[opening].startswith("```"):
+            raise AssertionError(f"the capture label {line!r} is not followed by a fenced block")
+        block = rest[opening + 1:]
+        found.append((match, block[: next(j for j, line in enumerate(block) if line.startswith("```"))]))
+    return found
+
+
+def capture(lines: list[str]) -> tuple[re.Match, list[str]]:
+    """Return the first capture label and the lines of the fenced block right after it."""
+    found = captures(lines)
+    if not found:
         raise AssertionError("the Quick Start has no 'What `<command>` prints ([full output](...)):' line")
-    rest = lines[i + 1:]
-    opening = next(j for j, line in enumerate(rest) if line.strip())
-    if not rest[opening].startswith("```"):
-        raise AssertionError("the capture label is not followed by a fenced block")
-    block = rest[opening + 1:]
-    return match, block[: next(j for j, line in enumerate(block) if line.startswith("```"))]
+    return found[0]
 
 
 class QuickStartCapture(unittest.TestCase):
@@ -87,10 +112,82 @@ class QuickStartCapture(unittest.TestCase):
         self.assertEqual((first, last), capture_quick_start.excerpt_range(captured))
         # An untrimmed excerpt is shown as captured; ", trimmed" in the label would allow elision.
         self.assertIsNone(self.label.group("trimmed"))
+        self.assertIsNone(self.label.group("formatted"))
         self.assertEqual(self.block, captured[first - 1 : last])
 
     def test_readme_block_prints_no_version_or_date(self) -> None:
         self.assertEqual([line for line in self.block if VERSION_OR_DATE.search(line)], [])
+
+
+class DiscoveryCapture(unittest.TestCase):
+    """The second Quick Start command, curl of the discovery document, and its capture."""
+
+    def setUp(self) -> None:
+        self.lines = quick_start(README.read_text(encoding="utf-8"))
+        found = [(label, block) for label, block in captures(self.lines) if label.group("command").startswith("curl ")]
+        if len(found) != 1:
+            self.fail(f"expected one capture label for a curl command in the Quick Start, found {len(found)}")
+        self.label, self.block = found[0]
+        self.txt = ROOT / self.label.group("txt")
+        self.record = json.loads(self.txt.with_suffix(".json").read_text(encoding="utf-8"))
+
+    def test_label_names_the_second_command_and_its_sidecar(self) -> None:
+        self.assertEqual(self.label.group("command"), commands(self.lines)[1])
+        self.assertEqual(self.label.group("command"), capture_quick_start.DISCOVERY_COMMAND)
+        self.assertEqual(self.label.group("txt"), f"docs/captures/{capture_quick_start.DISCOVERY_NAME}.txt")
+
+    def test_sidecar_records_the_run_of_that_command(self) -> None:
+        self.assertEqual(self.record["command"], capture_quick_start.DISCOVERY_COMMAND)
+        self.assertRegex(self.record["date"], r"^20[0-9]{2}-[0-9]{2}-[0-9]{2}$")
+        self.assertEqual(self.record["exitCode"], 0)
+        self.assertEqual(self.record["stream"], "stdout")
+        self.assertTrue(self.record["fixture"])
+
+    def test_readme_block_is_the_captured_document_with_line_breaks_added(self) -> None:
+        captured = self.txt.read_text(encoding="utf-8")
+        document = capture_quick_start.discovery_document(captured)
+        # The label says line breaks were added, so the block may differ from the .txt in
+        # whitespace only: it is format_json of the captured document, and parses to it.
+        self.assertIsNotNone(self.label.group("formatted"))
+        self.assertEqual(self.block, capture_quick_start.format_json(document).splitlines())
+        self.assertEqual(json.loads("\n".join(self.block)), json.loads(captured))
+
+    def test_readme_block_prints_no_version_or_date(self) -> None:
+        self.assertEqual([line for line in self.block if VERSION_OR_DATE.search(line)], [])
+
+
+class FormatJson(unittest.TestCase):
+    def test_object_members_take_one_line_each_and_arrays_stay_on_one(self) -> None:
+        value = {"b": 1, "a": {"y": "/p/{id}", "x": {}}, "list": ["m", "n"], "text": "é"}
+        self.assertEqual(
+            capture_quick_start.format_json(value).splitlines(),
+            [
+                "{",
+                '  "b": 1,',
+                '  "a": {',
+                '    "y": "/p/{id}",',
+                '    "x": {}',
+                "  },",
+                '  "list": ["m", "n"],',
+                '  "text": "é"',
+                "}",
+            ],
+        )
+        self.assertEqual(json.loads(capture_quick_start.format_json(value)), value)
+
+    def test_a_value_that_is_not_an_object_is_written_on_one_line(self) -> None:
+        self.assertEqual(capture_quick_start.format_json([{"a": 1}, 2]), '[{"a": 1}, 2]')
+
+
+class DiscoveryDocument(unittest.TestCase):
+    def test_a_discovery_document_is_returned(self) -> None:
+        text = '{"endpoints":{"agents":"/api/v1/agents"},"providerDid":"did:example:provider"}'
+        self.assertEqual(capture_quick_start.discovery_document(text)["providerDid"], "did:example:provider")
+
+    def test_output_that_is_not_a_discovery_document_is_refused(self) -> None:
+        for text in ("<html>Bad Gateway</html>", "[]", '{"error":"not found"}', '{"providerDid":"d","endpoints":[]}'):
+            with self.subTest(text=text), self.assertRaises(ValueError):
+                capture_quick_start.discovery_document(text)
 
 
 class ExcerptRange(unittest.TestCase):
@@ -113,8 +210,8 @@ class InstalledVersion(unittest.TestCase):
             self.assertEqual(capture_quick_start.installed_version(Path(cache)), "9.8.7")
 
 
-class Main(unittest.TestCase):
-    """main() with the command run replaced, writing into a temporary directory."""
+class CaptureIdentity(unittest.TestCase):
+    """capture_identity() with the command run replaced, writing into a temporary directory."""
 
     def run_main(self, result: subprocess.CompletedProcess, home_exists: bool = False) -> tuple[int, Path]:
         work = Path(self.enterContext(tempfile.TemporaryDirectory()))
@@ -126,7 +223,7 @@ class Main(unittest.TestCase):
         self.enterContext(mock.patch.object(capture_quick_start, "run_command", return_value=(result, "9.8.7")))
         self.enterContext(contextlib.redirect_stdout(io.StringIO()))
         self.enterContext(contextlib.redirect_stderr(io.StringIO()))
-        return capture_quick_start.main(), work / "captures"
+        return capture_quick_start.capture_identity(), work / "captures"
 
     def test_writes_the_untrimmed_output_and_the_record(self) -> None:
         stdout = "\nIdentity created\n  Agent ID:    aim_x\n\n"
@@ -149,6 +246,55 @@ class Main(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertFalse(captures.exists())
         capture_quick_start.run_command.assert_not_called()
+
+
+class CaptureDiscovery(unittest.TestCase):
+    """capture_discovery() with the curl run replaced, writing into a temporary directory."""
+
+    DOCUMENT = '{"endpoints":{"agents":"/api/v1/agents"},"providerDid":"did:example:provider"}'
+
+    def run_capture(self, result: subprocess.CompletedProcess) -> tuple[int, Path]:
+        work = Path(self.enterContext(tempfile.TemporaryDirectory()))
+        self.enterContext(mock.patch.object(capture_quick_start, "CAPTURES", work / "captures"))
+        self.enterContext(mock.patch.object(capture_quick_start, "run_discovery", return_value=result))
+        self.enterContext(contextlib.redirect_stdout(io.StringIO()))
+        self.enterContext(contextlib.redirect_stderr(io.StringIO()))
+        return capture_quick_start.capture_discovery(), work / "captures"
+
+    def test_writes_the_untrimmed_output_and_the_record(self) -> None:
+        code, captures = self.run_capture(subprocess.CompletedProcess([], 0, self.DOCUMENT, "progress\n"))
+        self.assertEqual(code, 0)
+        self.assertEqual((captures / "discovery.txt").read_text(encoding="utf-8"), self.DOCUMENT)
+        record = json.loads((captures / "discovery.json").read_text(encoding="utf-8"))
+        self.assertEqual(record["command"], capture_quick_start.DISCOVERY_COMMAND)
+        self.assertEqual(record["exitCode"], 0)
+        self.assertEqual(record["stream"], "stdout")
+
+    def test_writes_nothing_when_curl_fails(self) -> None:
+        code, captures = self.run_capture(subprocess.CompletedProcess([], 6, "", "Could not resolve host\n"))
+        self.assertEqual(code, 1)
+        self.assertFalse(captures.exists())
+
+    def test_writes_nothing_for_an_error_body_curl_exits_0_on(self) -> None:
+        code, captures = self.run_capture(subprocess.CompletedProcess([], 0, '{"error":"not found"}', ""))
+        self.assertEqual(code, 1)
+        self.assertFalse(captures.exists())
+
+
+class Main(unittest.TestCase):
+    def test_runs_the_capture_named_and_identity_create_by_default(self) -> None:
+        identity = self.enterContext(mock.patch.object(capture_quick_start, "capture_identity", return_value=0))
+        discovery = self.enterContext(mock.patch.object(capture_quick_start, "capture_discovery", return_value=0))
+        self.assertEqual(capture_quick_start.main([]), 0)
+        self.assertEqual(capture_quick_start.main(["identity-create"]), 0)
+        self.assertEqual((identity.call_count, discovery.call_count), (2, 0))
+        self.assertEqual(capture_quick_start.main(["discovery"]), 0)
+        self.assertEqual((identity.call_count, discovery.call_count), (2, 1))
+
+    def test_refuses_a_capture_it_does_not_know(self) -> None:
+        self.enterContext(contextlib.redirect_stderr(io.StringIO()))
+        with self.assertRaises(SystemExit):
+            capture_quick_start.main(["status"])
 
 
 if __name__ == "__main__":
