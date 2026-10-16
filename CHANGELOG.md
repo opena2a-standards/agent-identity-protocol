@@ -70,6 +70,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   `docs/specification-notes.md`, `scripts/check_first_use.py` also checks the new pages, the tests
   that read moved text read it at its new path, and `GAP-ANALYSIS.md` names the new pages where it
   named the README.
+- The `README.md` header holds the specification family strip, the title, the one-sentence
+  description and the scope line. Its naming note moved to the end of
+  `docs/naming-and-prior-art.md`, with its link to the README's "Naming and prior art" section
+  replaced by "see the table above", and the README's "Naming and prior art" paragraph now says to
+  use the fully qualified name "OpenA2A AIP" outside this repository. `scripts/test_checks.py`
+  checks the README header, the moved note and that paragraph.
 
 ### Fixed
 
