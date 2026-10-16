@@ -1,0 +1,13 @@
+{
+  "command": "npx opena2a-cli identity create --name my-agent",
+  "package": "opena2a-cli",
+  "version": "0.10.13",
+  "fixture": "HOME is /tmp/aip-quick-start, an empty directory created for the run; npm's prefix and cache are empty directories created for the run, so npx installs the package from the npm registry; standard input is empty and standard output is a pipe",
+  "date": "2026-10-16",
+  "exitCode": 0,
+  "stream": "stdout",
+  "excerpt": {
+    "firstLine": 1,
+    "lastLine": 5
+  }
+}

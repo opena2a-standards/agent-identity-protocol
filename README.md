@@ -15,15 +15,21 @@ Read [AIP-SPEC.md](AIP-SPEC.md), the protocol specification, first. The commands
 ```bash
 # Create an agent identity
 npx opena2a-cli identity create --name my-agent
-# prints (your agent ID and public key will differ and
-# Stored in names your own home directory; a repeat run in the same home directory
-# prints "Identity already exists" and the same agent ID):
-#   Identity created
-#     Agent ID:    aim_z9eLMMCNM2A3VpcV
-#     Name:        my-agent
-#     Public Key:  z9eLMMCNM2A3VpcVeef9RvgDQVX+E6zk...
-#     Stored in:   /home/you/.opena2a/aim-core
+```
 
+What `npx opena2a-cli identity create --name my-agent` prints ([full output](docs/captures/identity-create.txt)):
+
+```text
+Identity created
+  Agent ID:    aim_FwnY3huUgvFoeqwt
+  Name:        my-agent
+  Public Key:  FwnY3huUgvFoeqwt9PxqdWaR00Q4993c...
+  Stored in:   /tmp/aip-quick-start/.opena2a/aim-core
+```
+
+Your agent ID and public key will differ, and Stored in names `.opena2a/aim-core` in your own home directory, where the command writes the identity. A repeat run in the same home directory prints "Identity already exists" and the same agent ID.
+
+```bash
 # Discover an identity provider
 curl https://aim.opena2a.org/.well-known/aip
 ```

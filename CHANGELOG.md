@@ -6,6 +6,21 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ## [Unreleased]
 
+### Added
+
+- `scripts/capture_quick_start.py` runs the README Quick Start command,
+  `npx opena2a-cli identity create --name my-agent`, with HOME set to an empty
+  `/tmp/aip-quick-start` and an empty npm prefix and cache, so npx installs the package from the
+  npm registry. It writes what the command prints to `docs/captures/identity-create.txt`, and the
+  command, the opena2a-cli version, the fixture, the date, the exit code and the line range the
+  README shows to `docs/captures/identity-create.json`. The capture in this change was taken with
+  `opena2a-cli` 0.10.13. The README shows that output in a text block under "What
+  `npx opena2a-cli identity create --name my-agent` prints ([full output](docs/captures/identity-create.txt)):"
+  where it showed it as comment lines in the command block, so its Stored in line is now the path
+  the capture printed. `tests/test_quick_start_capture.py` checks that the README block is the
+  line range the sidecar names and that the sidecar names the README's command, and the
+  `scripts/test_checks.py` Quick Start tests read the output from that block.
+
 ### Changed
 
 - `AIP-SPEC.md` §3.1 defines the agent ID as `aim_` followed by the base64url encoding (RFC 4648
