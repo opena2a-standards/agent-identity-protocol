@@ -82,6 +82,17 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` §3.2 lists the registered `did:opena2a` type prefixes as the resource type
+  registry in Section 3.2 of `did-method-opena2a` registers them: `registry`, `authority`,
+  `publisher`, `agent`, `mcp_server`, `ai_tool`, `llm` and `skill`. It had listed `a2a_agent` as a
+  registered type and had left out `registry`. §3.2 now cites that section as the source of the
+  list and says that section names `a2a_agent` a deprecated alias of `agent`.
+  `tests/test_did_resource_types.py` reads each list of code spans that follows the words
+  "registered type prefixes" in `AIP-SPEC.md` and checks it against the types of
+  `registries/resource-types.json` in `did-method-opena2a`, copied into the test from commit
+  5c55fca3b639, and checks the alias and the citation in the §3.2 paragraph on `did:opena2a`.
+  `docs/specification-notes.md` names the change in its §3.2 item, among the informative changes
+  made since `draft-fane-opena2a-aip-04`, whose Section 4.2 lists no type prefix.
 - The `AIP-SPEC.md` naming note links `docs/naming-and-prior-art.md` for the prior-art list and
   OpenA2A's position on the collision. It linked the README's "Naming and prior art" section,
   which since the README was shortened links that page and names none of the drafts the note
