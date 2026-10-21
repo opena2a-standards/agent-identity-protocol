@@ -26,7 +26,7 @@ A.1 differ, Appendix A.1 is the current record.
 | Spec Requirement | Implementation Status | File |
 |-----------------|----------------------|------|
 | namespace:action format | Complete | `apps/backend/internal/domain/capability.go` |
-| Reserved namespaces | Complete (8 namespaces) | `capability.go` |
+| Reserved namespaces | Partial (*updated 2026-10*): 9 of the 11 namespaces of AIP-SPEC §4.2 are reserved, all but `payment` and `agent`; the discovery document advertises a different list of 8 (AIP-SPEC Appendix A.1, the §4 row) | `apps/backend/internal/domain/capability.go` (ReservedNamespaces), `handlers/aip_handler.go` |
 | Capability violation tracking | Complete | `capability.go` (CapabilityViolation) |
 | Capability negotiation protocol | NOT IMPLEMENTED — capabilities checked server-side only | - |
 | Custom org namespaces | NOT IMPLEMENTED | - |

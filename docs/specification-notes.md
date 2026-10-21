@@ -46,12 +46,13 @@ Nine changes made since that revision are informative:
 - §14 lists RFC 3339, RFC 4648, RFC 6749, RFC 7523 and RFC 8785, which the text cites and the list had omitted. Section 15 of the draft lists RFC 3339, RFC 4648 and RFC 8785, and does not cite the other two, which only the OpenID Connect status line in the abstract cites.
 - Appendix A says the reference implementation targets Conformance Level 2 and does not meet it yet, where it had said the reference implementation was "at Conformance Level 2". The draft's appendices are Related Work, Document History and Acknowledgments, so it has no counterpart of Appendix A or of the A.1 table.
 
-Four more changes made since that revision are informative too, each to a row of the Appendix A.1 table:
+Five more changes made since that revision are informative too, each to a row of the Appendix A.1 table:
 
 - Appendix A.1 marks its row for §5 Verification Partial, where it had Shipped, and says the §5.1 exchange is not served.
 - Appendix A.1 marks its row for §6 Trust Scoring Partial, where it had Shipped, and says the reference implementation is at algorithm version 1 and does not implement the unscored state or `algorithmVersion` of version 2.
 - Appendix A.1 says in its row for §3 Agent Identity that the provider assigns each agent a UUID and that `opena2a-cli identity create` derives the §3.1 agent ID.
 - Appendix A.1 dates its notes on §3 Hybrid PQC signing, §6.5 ATP integration and Local offline verification 2026-10-11. The §3 Hybrid PQC signing row says the reference implementation signs no ATC and its issuance route asks the Registry to sign, where it had named an Ed25519-only issuer with no production callers. The §6.5 row marks ATP integration Partial, where it had Not yet integrated. The Local offline verification row names the TypeScript and Java SDK verifiers, where it had said none of the TypeScript, Python and Java SDKs ships one.
+- Appendix A.1 marks its row for §4 Capabilities Partial, where it had Shipped, and says the reference implementation subtracts a flat 10% from the agent's trust score for a capability violation, where §4.4 sets the penalty by severity, and does not reserve the §4.2 namespaces `payment` and `agent`.
 
 One more change made since that revision is informative too, to an example that quoted commands the CLI does not have:
 

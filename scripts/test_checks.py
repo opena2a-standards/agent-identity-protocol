@@ -11,8 +11,9 @@ AIP-SPEC.md carries while a change to a requirement is unreleased and the page i
 where that text differs from the paired draft, the trust factor status
 README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, the reference provider identifier
 AIP-SPEC.md gives, the keys of the AIP-SPEC.md §3.3 identity file example and the §3.3 and §9.1
-status notes on what the CLI writes, and three AIP-SPEC.md Appendix A.1 notes on the reference
-implementation.
+status notes on what the CLI writes, four AIP-SPEC.md Appendix A.1 notes on the reference
+implementation, and the count GAP-ANALYSIS.md gives of the AIP-SPEC.md §4.2 namespaces the
+reference implementation reserves.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Two cases read the specification as of
@@ -40,6 +41,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_draft_sync  # noqa: E402
+import gen_registries  # noqa: E402
 
 VERSION = "1.2.0-draft"
 DRAFT = "draft-fane-opena2a-aip-04"
@@ -1603,6 +1605,71 @@ class GapAnalysisFiles(unittest.TestCase):
         self.assertEqual(rows_without_a_file(gap), [])
 
 
+def reserved_namespaces_status(gap: str) -> str:
+    """Return the Implementation Status cell of the GAP-ANALYSIS.md row for reserved namespaces."""
+    row = next(line for line in gap.splitlines() if line.startswith("| Reserved namespaces |"))
+    return row.split("|")[2].strip()
+
+
+def namespace_counts(status: str) -> tuple[int, int, list[str]] | None:
+    """Return how many of the AIP-SPEC.md §4.2 namespaces a status says are reserved, out of how
+    many, and the code spans between "all but" and the next semicolon, the namespaces that are not.
+
+    None when the status states no count of the form "9 of the 11 namespaces of AIP-SPEC §4.2".
+    """
+    counted = re.search(r"\b(\d+) of the (\d+) namespaces of AIP-SPEC §4\.2\b", status)
+    if not counted:
+        return None
+    but = status.split("all but ", 1)
+    unreserved = re.findall(r"`([^`]+)`", but[1].split(";", 1)[0]) if len(but) > 1 else []
+    return int(counted.group(1)), int(counted.group(2)), unreserved
+
+
+def spec_namespaces(spec: str) -> list[str]:
+    """Return the namespaces of the AIP-SPEC.md §4.2 table, from which registries/capability-namespaces.json is generated."""
+    marker = "<!-- opena2a-definition: capability-namespaces -->"
+    return [row["Namespace"] for row in gen_registries.table_after_marker(spec.splitlines(), marker)[1]]
+
+
+class ReservedNamespaceCount(unittest.TestCase):
+    def test_namespace_counts_reads_the_count_and_the_namespaces_not_reserved(self):
+        gap = (
+            "| Spec Requirement | Implementation Status | File |\n"
+            "| Reserved namespaces | Partial: 9 of the 11 namespaces of AIP-SPEC §4.2 are reserved, "
+            "all but `payment` and `agent`; the discovery document lists `user` | `capability.go` |\n"
+        )
+        status = reserved_namespaces_status(gap)
+        self.assertTrue(status.startswith("Partial: "), status)
+        self.assertEqual(namespace_counts(status), (9, 11, ["payment", "agent"]))
+        self.assertEqual(namespace_counts("Complete: 11 of the 11 namespaces of AIP-SPEC §4.2 are reserved"), (11, 11, []))
+        self.assertIsNone(namespace_counts("Complete (8 namespaces)"))
+
+    def test_spec_namespaces_are_the_rows_of_the_section_4_2_table(self):
+        spec = (
+            "### 4.2 Reserved Namespaces\n\n<!-- opena2a-definition: capability-namespaces -->\n"
+            "| Namespace | Description | Risk Level |\n|---|---|---|\n"
+            "| `file` | Filesystem operations | Medium-High |\n| `agent` | Agent-to-agent operations | Medium |\n\n"
+            "Organizations MAY define custom namespaces.\n"
+        )
+        self.assertEqual(spec_namespaces(spec), ["file", "agent"])
+
+    def test_gap_analysis_counts_the_namespaces_of_the_section_4_2_table(self):
+        # The row said "Complete (8 namespaces)" while §4.2 listed eleven. It says how many of the
+        # §4.2 namespaces are reserved, out of how many, and names the ones that are not, so a
+        # namespace added to §4.2 or removed from it fails here until the row counts it. The row
+        # is Complete exactly when every one is reserved.
+        gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
+        namespaces = spec_namespaces(check_draft_sync.SPEC.read_text(encoding="utf-8"))
+        status = reserved_namespaces_status(gap)
+        counts = namespace_counts(status)
+        self.assertIsNotNone(counts, f"the reserved namespaces row gives no count of the §4.2 namespaces: {status!r}")
+        reserved, total, unreserved = counts
+        self.assertEqual(total, len(namespaces))
+        self.assertEqual([name for name in unreserved if name not in namespaces], [])
+        self.assertEqual(reserved + len(unreserved), total)
+        self.assertEqual(status.startswith("Complete"), reserved == total, status)
+
+
 def unreleased_entries(changelog: str) -> dict[str, list[str]]:
     """Return the entries under each "### " heading of the CHANGELOG's Unreleased section.
 
@@ -1858,6 +1925,7 @@ class ReferenceProviderDid(unittest.TestCase):
 
 
 HYBRID_ROW = "§3 Hybrid PQC signing (Ed25519 + ML-DSA-65)"
+CAPABILITIES_ROW = "§4 Capabilities"
 ATP_ROW = "§6.5 ATP integration"
 LOCAL_VERIFY_ROW = "Local offline verification"
 # The date a note gives for its status. A row can carry other dates, such as the ATP release
@@ -1894,6 +1962,18 @@ class AppendixA1(unittest.TestCase):
         self.assertNotIn("no active production callers", note)
         self.assertNotIn("atc_issuer.go", note)
         self.assertIn("POST /api/v1/agents/{id}/atc", note)
+
+    def test_capabilities_row_names_the_parts_of_section_4_not_implemented(self):
+        # Measured on agent-identity-management main at 9290cc1c: capability_service.go subtracts a
+        # flat 0.10 when it records a capability violation, where §4.4 sets 2%, 5%, 10% or 20% by
+        # severity, and ReservedNamespaces in domain/capability.go lists nine namespaces, without
+        # payment and agent. The row had marked §4 Shipped.
+        status, note = self.rows[CAPABILITIES_ROW]
+        self.assertEqual(status, "Partial")
+        self.assertRegex(note, STATUS_DATE)
+        self.assertIn("the §4.4 penalty schedule and the reservation of `payment` and `agent`", note)
+        self.assertIn("a flat 0.10 (10%)", note)
+        self.assertIn("all but `payment` and `agent`", note)
 
     def test_atp_row_cites_the_current_atp_version(self):
         # ATP-SPEC.md reads "Version: 1.1.0-draft"; GAP-ANALYSIS.md marks the integration Partial.

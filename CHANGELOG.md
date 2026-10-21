@@ -95,6 +95,19 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` Appendix A.1 marks "§4 Capabilities" Partial, not Shipped. At
+  `agent-identity-management` `main` (`9290cc1c`, 2026-10-21) `application/capability_service.go`
+  subtracts a flat 0.10 (10%) from the agent's trust score when it records a capability violation,
+  where §4.4 sets a penalty of 2%, 5%, 10% or 20% by the violation's severity, and the severity it
+  records follows the agent's count of earlier violations. `ReservedNamespaces` in
+  `domain/capability.go` lists nine of the eleven §4.2 namespaces, without `payment` and `agent`,
+  and the discovery document advertises a different list of eight. The row names both gaps; the
+  requirements are unchanged. The `GAP-ANALYSIS.md` row for reserved namespaces says Partial, 9 of
+  the 11 reserved, where it said Complete (8 namespaces). `docs/specification-notes.md` names the
+  change among the changes to Appendix A.1 rows made since `draft-fane-opena2a-aip-04`.
+  `scripts/test_checks.py` checks that the §4 row is Partial, dated and names both gaps, and that
+  the reserved namespaces row counts the namespaces of the §4.2 table, names the ones not reserved
+  and says Complete only when every one is reserved.
 - `AIP-SPEC.md` §3.2 lists the registered `did:opena2a` type prefixes as the resource type
   registry in Section 3.2 of `did-method-opena2a` registers them: `registry`, `authority`,
   `publisher`, `agent`, `mcp_server`, `ai_tool`, `llm` and `skill`. It had listed `a2a_agent` as a
