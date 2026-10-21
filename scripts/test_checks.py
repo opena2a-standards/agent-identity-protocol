@@ -1964,15 +1964,24 @@ class AppendixA1(unittest.TestCase):
         self.assertIn("POST /api/v1/agents/{id}/atc", note)
 
     def test_capabilities_row_names_the_parts_of_section_4_not_implemented(self):
-        # Measured on agent-identity-management main at 9290cc1c: capability_service.go subtracts a
-        # flat 0.10 when it records a capability violation, where §4.4 sets 2%, 5%, 10% or 20% by
-        # severity, and ReservedNamespaces in domain/capability.go lists nine namespaces, without
-        # payment and agent. The row had marked §4 Shipped.
+        # Measured on agent-identity-management main at 9290cc1c: AgentService.VerifyCapability,
+        # which serves POST /api/v1/agents/{id}/verify-capability and POST /api/v1/verifications,
+        # subtracts 0.10 when it blocks a capability violation and 0.05 when it lets it through,
+        # where §4.4 sets 2%, 5%, 10% or 20% by severity. CapabilityService.VerifyAction subtracts a
+        # flat 0.10, and no route mounts it. ReservedNamespaces in domain/capability.go lists nine
+        # namespaces, without payment and agent. The row had marked §4 Shipped.
         status, note = self.rows[CAPABILITIES_ROW]
         self.assertEqual(status, "Partial")
         self.assertRegex(note, STATUS_DATE)
         self.assertIn("the §4.4 penalty schedule and the reservation of `payment` and `agent`", note)
-        self.assertIn("a flat 0.10 (10%)", note)
+        self.assertIn("`AgentService.VerifyCapability`", note)
+        self.assertIn(
+            "subtracts 0.10 (10%) from the agent's trust score when it blocks the request and 0.05 (5%) when it lets it through",
+            note,
+        )
+        # The flat 0.10 is the penalty of the path no route mounts, so a sentence that gives it says so.
+        flat = [sentence for sentence in SENTENCE_END.split(note) if "flat 0.10" in sentence]
+        self.assertEqual([sentence for sentence in flat if "is mounted on no route" not in sentence], [])
         self.assertIn("all but `payment` and `agent`", note)
 
     def test_atp_row_cites_the_current_atp_version(self):
