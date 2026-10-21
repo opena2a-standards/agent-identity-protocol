@@ -10,7 +10,9 @@ GAP-ANALYSIS.md row that reports code, the version note
 AIP-SPEC.md carries while a change to a requirement is unreleased and the page it links for
 where that text differs from the paired draft, the trust factor status
 README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, the reference provider identifier
-AIP-SPEC.md gives, and three AIP-SPEC.md Appendix A.1 notes on the reference implementation.
+AIP-SPEC.md gives, the keys of the AIP-SPEC.md §3.3 identity file example and the §3.3 and §9.1
+status notes on what the CLI writes, and three AIP-SPEC.md Appendix A.1 notes on the reference
+implementation.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Two cases read the specification as of
@@ -23,6 +25,7 @@ python3 standard library only.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -328,6 +331,23 @@ LOCAL_IDENTITY_GAPS = {
     "9.1 Local Audit Log": ["identity_created", "`action`", "`target`", "`result`", "`plugin`"],
 }
 
+# The keys of the identity.json that `opena2a-cli identity create` writes (opena2a-cli 0.10.13 with
+# @opena2a/aim-core 0.2.0). secretKey holds the private key in plain base64, where Section 3.3 has
+# encryptedPrivateKey; the Section 3.3 status note names it (LOCAL_IDENTITY_GAPS).
+CLI_IDENTITY_KEYS = ("agentId", "agentName", "createdAt", "publicKey", "secretKey")
+
+IDENTITY_SPEC = (
+    "### 3.3 Identity File Format\n\n```\n~/.opena2a/aim-core/\n```\n\nIdentity file format:\n\n"
+    "```json\n{\"agentId\": \"aim_x\"}\n```\n\n### 3.4 Agent Types\n\n```json\n{\"type\": \"custom\"}\n```\n"
+)
+
+
+def identity_file_example(spec: str) -> dict:
+    """Return the JSON object in the first ```json block after "Identity file format:" in Section 3.3."""
+    body = ("\n" + spec).split("\n### 3.3 Identity File Format\n", 1)[1]
+    body = body.split("Identity file format:", 1)[1]
+    return json.loads(re.search(r"```json\n(.*?)\n```", body, re.DOTALL).group(1))
+
 
 class LocalIdentityStatus(unittest.TestCase):
     def test_status_notes_are_read_from_their_own_subsection(self):
@@ -348,6 +368,18 @@ class LocalIdentityStatus(unittest.TestCase):
                 self.assertEqual(len(notes), 1, f"Section {heading} has no status note")
                 missing = [term for term in terms if term not in notes[0]]
                 self.assertEqual(missing, [], f"Section {heading} status note")
+
+    def test_identity_file_example_is_the_json_block_after_its_label(self):
+        self.assertEqual(identity_file_example(IDENTITY_SPEC), {"agentId": "aim_x"})
+
+    def test_identity_file_example_has_the_keys_the_cli_writes(self):
+        # Section 3.3 gives the agent ID and name the keys the CLI writes, agentId and agentName.
+        # secretKey is the one key of the CLI's file that the example lacks: the CLI keeps the
+        # private key there unencrypted, where Section 3.3 has encryptedPrivateKey.
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        example = identity_file_example(spec)
+        self.assertEqual([key for key in CLI_IDENTITY_KEYS if key not in example], ["secretKey"])
+        self.assertIn("encryptedPrivateKey", example)
 
     def test_readme_says_the_draft_lacks_both_status_notes(self):
         # Sections 4.3 and 11.1 of draft -04, the counterparts of Sections 3.3 and 9.1, carry no

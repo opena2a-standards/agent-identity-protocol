@@ -26,9 +26,10 @@ Six parts of the draft have no counterpart in the specification:
 - Appendix B, Document History.
 - Appendix C, Acknowledgments.
 
-Four changes made to the specification since that revision are to a requirement or its wording:
+Five changes made to the specification since that revision are to a requirement or its wording:
 
 - §3.1 defines the agent ID as `aim_` followed by the base64url encoding of the first 12 bytes of the public key, the form `opena2a-cli identity create` prints, and lets a provider assign its own identifier instead, where Section 4.1 of the draft gives the first eight hexadecimal characters of the SHA-256 digest of the public key. The examples in §3.3, §5.3, §7.1, §8.2 and §9.1 carry `aim_PUAXw-hDiVqStwqn`, an agent ID of that form, where the draft's examples carry `aim_7f3a9c2e`.
+- §3.3 gives the agent ID and name in the identity file the keys `agentId` and `agentName`, under which `opena2a-cli identity create` writes them, where Section 4.3 of the draft gives `id` and `name`.
 - §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, where Section 6.4 of the draft gives JWT bearer tokens "a one-hour time-to-live".
 - §6.1 no longer says "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them", a statement that was in the specification when that revision was made and that Section 7.1 of the draft does not carry either. The statement applied until the reference implementation measured compliance, drift detection and user feedback, and it now has a scoring function for each.
 - §12.1 reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". This change is editorial.

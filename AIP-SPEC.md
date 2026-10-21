@@ -6,7 +6,7 @@
 **Authors:** OpenA2A
 **Date:** October 2026 (first published March 2026)
 
-> **Version note.** This text is 1.2.0-draft, dated 2026-10-06, with later changes that no dated version carries yet. [CHANGELOG.md](./CHANGELOG.md) lists them under Unreleased, and those to §3.1 and §5.4 change a requirement. `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft as dated; [docs/specification-notes.md](./docs/specification-notes.md#internet-draft) lists where this text differs from that draft.
+> **Version note.** This text is 1.2.0-draft, dated 2026-10-06, with later changes that no dated version carries yet. [CHANGELOG.md](./CHANGELOG.md) lists them under Unreleased, and those to §3.1, §3.3 and §5.4 change a requirement. `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft as dated; [docs/specification-notes.md](./docs/specification-notes.md#internet-draft) lists where this text differs from that draft.
 
 > **Naming note.** As of 2026-09-30, at least three other Internet-Drafts use the abbreviation "AIP" for an agent identity protocol: draft-aip-agent-identity-protocol-00 (James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), first published 2026-03-16, expired 2026-09-17), draft-singla-agent-identity-protocol (Singla, first published 2026-04-16, active) and draft-prakash-aip (revision 01, 2026-08-19, active). When referenced outside this document, use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See [docs/naming-and-prior-art.md](./docs/naming-and-prior-art.md) for the prior-art list and OpenA2A's position on the collision.
 
@@ -198,8 +198,8 @@ Identity file format:
 
 ```json
 {
-  "id": "aim_PUAXw-hDiVqStwqn",
-  "name": "my-agent",
+  "agentId": "aim_PUAXw-hDiVqStwqn",
+  "agentName": "my-agent",
   "type": "claude",
   "publicKey": "ed25519:PUAXw+hDiVqStwqn...Zgw",
   "encryptedPrivateKey": "aes-256-gcm:...",
@@ -219,11 +219,13 @@ Identity file format:
 }
 ```
 
+`agentId` holds the agent ID (§3.1) and `agentName` the agent's name. The 1.2.0-draft text dated 2026-10-06, which `draft-fane-opena2a-aip-04` pairs with, and every earlier revision named these keys `id` and `name`. `opena2a-cli identity create` writes the agent ID and name under `agentId` and `agentName`, and the examples in §5.3, §8.2 and §9.1 carry the agent ID under `agentId`, so this section uses those keys.
+
 Private keys MUST be encrypted at rest. The default encryption is AES-256-GCM with a key derived from the user's system keychain or a passphrase.
 
 `declaredPurpose` is **optional**: a structured declaration of what the agent is *for* (`category`, `taskScopes`, `capabilityJustification`, `autonomy`, and the optional `dataScopes` / `egressScopes`). It is an identity and attestation property plus an offline detection signal — it MUST NOT be used as an authorization input, and a verifier MUST NOT reject an identity for lacking it. Its full vocabulary and semantics are defined in [`atx-spec` core.md §1.5](https://github.com/opena2a-standards/atx-spec); when carried in an ATX it is covered by the v1.1 signed payload. At the DID layer, declared purpose is surfaced only as a `PurposeAttestation` service-endpoint pointer, never inline in the DID Document body.
 
-> **Reference implementation status (2026-10-11, published packages `opena2a-cli` 0.10.13 and `@opena2a/aim-core` 0.2.0, the latest of each).** The CLI's local identity does not follow this section. `opena2a-cli identity create` keeps one identity per data directory, in `~/.opena2a/aim-core/identity.json` (aim-core `dist/identity.js:44`), not in a per-agent file under `identities/`. The file holds `agentId`, `agentName`, `publicKey`, `secretKey` and `createdAt`: the agent ID and name sit under different keys from `id` and `name` above, `publicKey` is plain base64 without the `ed25519:` prefix, and there is no `type`, `capabilities` or `status`. `secretKey` is the Ed25519 secret key in plain base64 (`dist/identity.js:62`), protected only by file mode 0600 (`dist/identity.js:71`), so the private key is not encrypted at rest as this section and Section 12.1 require. This revision specifies the target; it does not change the tool.
+> **Reference implementation status (2026-10-11, published packages `opena2a-cli` 0.10.13 and `@opena2a/aim-core` 0.2.0, the latest of each).** The CLI's local identity does not follow this section. `opena2a-cli identity create` keeps one identity per data directory, in `~/.opena2a/aim-core/identity.json` (aim-core `dist/identity.js:44`), not in a per-agent file under `identities/`. The file holds `agentId`, `agentName`, `publicKey`, `secretKey` and `createdAt`: `publicKey` is plain base64 without the `ed25519:` prefix, the private key is under `secretKey` where the file above has `encryptedPrivateKey`, and there is no `type`, `capabilities` or `status`. `secretKey` is the Ed25519 secret key in plain base64 (`dist/identity.js:62`), protected only by file mode 0600 (`dist/identity.js:71`), so the private key is not encrypted at rest as this section and Section 12.1 require. This revision specifies the target; it does not change the tool.
 
 ### 3.4 Agent Types
 

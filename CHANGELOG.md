@@ -47,6 +47,19 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   which replaces `aim_7f3a9c2e` in every example. Appendix A.1 and GAP-ANALYSIS.md say the CLI
   derives the agent ID and the provider assigns a UUID. `draft-fane-opena2a-aip-04`, as
   submitted, still gives the SHA-256 form in Section 4.1; README.md says so.
+- `AIP-SPEC.md` §3.3 gives the agent ID and name in the identity file the keys `agentId` and
+  `agentName`, where it had `id` and `name`. `opena2a-cli identity create` writes the agent ID and
+  name to `identity.json` under `agentId` and `agentName` (`opena2a-cli` 0.10.13 with
+  `@opena2a/aim-core` 0.2.0, the latest of each on 2026-10-21), and the examples in §5.3, §8.2 and
+  §9.1 carry the agent ID under `agentId`. A paragraph under the example says which keys the
+  earlier text used. The §3.3 reference implementation status note no longer names the two keys as
+  a difference; it still names the file's location, `publicKey` without the `ed25519:` prefix, the
+  private key in plain base64 under `secretKey` where §3.3 has `encryptedPrivateKey`, and the
+  missing `type`, `capabilities` and `status`. The version note names §3.3 among the sections
+  whose requirement changed. `draft-fane-opena2a-aip-04`, as submitted, still gives `id` and `name`
+  in Section 4.3; `docs/specification-notes.md` lists the change. `scripts/test_checks.py` checks
+  that the §3.3 example has each key the CLI writes except `secretKey`, and has
+  `encryptedPrivateKey`.
 - `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
   giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
   valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,
