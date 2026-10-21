@@ -56,10 +56,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   a difference; it still names the file's location, `publicKey` without the `ed25519:` prefix, the
   private key in plain base64 under `secretKey` where §3.3 has `encryptedPrivateKey`, and the
   missing `type`, `capabilities` and `status`. The version note names §3.3 among the sections
-  whose requirement changed. `draft-fane-opena2a-aip-04`, as submitted, still gives `id` and `name`
-  in Section 4.3; `docs/specification-notes.md` lists the change. `scripts/test_checks.py` checks
-  that the §3.3 example has each key the CLI writes except `secretKey`, and has
-  `encryptedPrivateKey`.
+  whose requirement changed, and so does the line on the version note in
+  `docs/specification-notes.md`. `draft-fane-opena2a-aip-04`, as submitted, still gives `id` and
+  `name` in Section 4.3; `docs/specification-notes.md` lists the change. `scripts/test_checks.py`
+  checks that the §3.3 example has each key the CLI writes except `secretKey`, and has
+  `encryptedPrivateKey`, and that the line on the version note in `docs/specification-notes.md`
+  names the sections the note names.
 - `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
   giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
   valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,

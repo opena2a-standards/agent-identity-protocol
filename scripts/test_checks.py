@@ -1747,6 +1747,18 @@ class UnreleasedRequirementChanges(unittest.TestCase):
         self.assertIn("Unreleased", note)
         self.assertEqual([section for section in sections if not names_part(note, section)], [])
 
+    def test_notes_page_names_the_sections_the_version_note_names(self):
+        # docs/specification-notes.md lists the version note among the changes made since the
+        # paired draft and names the sections the note gives as changing a requirement. The note
+        # came to name §3.3 beside §3.1 and §5.4 while that line still named §3.1 and §5.4.
+        self.changed_sections()
+        note = spec_parts(self.spec).get("version note", "")
+        notes = check_draft_sync.NOTES.read_text(encoding="utf-8")
+        lines = [item for item in change_items(notes) if item.startswith("- A version note above the abstract ")]
+        self.assertEqual(len(lines), 1, "the notes page has no line, or more than one, on the version note")
+        section = re.compile(r"§\d+(?:\.\d+)*")
+        self.assertEqual(section.findall(lines[0]), section.findall(note))
+
     def test_earlier_agent_id_rule_names_the_dated_text_that_carried_it(self):
         # §3.1 changed after the version on the Version line was dated, so the sentence on the
         # earlier rule names that version's text by its date instead of "Revisions up to" it.
