@@ -26,16 +26,17 @@ Six parts of the draft have no counterpart in the specification:
 - Appendix B, Document History.
 - Appendix C, Acknowledgments.
 
-Four changes made to the specification since that revision are to a requirement or its wording:
+Five changes made to the specification since that revision are to a requirement or its wording:
 
 - §3.1 defines the agent ID as `aim_` followed by the base64url encoding of the first 12 bytes of the public key, the form `opena2a-cli identity create` prints, and lets a provider assign its own identifier instead, where Section 4.1 of the draft gives the first eight hexadecimal characters of the SHA-256 digest of the public key. The examples in §3.3, §5.3, §7.1, §8.2 and §9.1 carry `aim_PUAXw-hDiVqStwqn`, an agent ID of that form, where the draft's examples carry `aim_7f3a9c2e`.
+- §3.3 gives the agent ID and name in the identity file the keys `agentId` and `agentName`, under which `opena2a-cli identity create` writes them, where Section 4.3 of the draft gives `id` and `name`.
 - §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, where Section 6.4 of the draft gives JWT bearer tokens "a one-hour time-to-live".
 - §6.1 no longer says "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them", a statement that was in the specification when that revision was made and that Section 7.1 of the draft does not carry either. The statement applied until the reference implementation measured compliance, drift detection and user feedback, and it now has a scoring function for each.
 - §12.1 reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". This change is editorial.
 
 Nine changes made since that revision are informative:
 
-- A version note above the abstract says the text is 1.2.0-draft with changes made after that version was dated, and names §3.1 and §5.4 as the changed requirements.
+- A version note above the abstract says the text is 1.2.0-draft with changes made after that version was dated, and names §3.1, §3.3 and §5.4 as the changed requirements.
 - The naming note gives each author of draft-aip-agent-identity-protocol-00 their own affiliation, James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), where it had given both the second one. The draft cites that document in its Appendix A, Related Work, and its reference gives the authors as "Cao and Arango".
 - Each line of the abstract's list of protocols AIP is designed to complement ends with an implementation status, which Section 1 of the draft does not give.
 - §3.2 says the reference implementation will issue `did:web:aim.opena2a.org:agents:<uuid>` and identify itself as `did:web:aim.opena2a.org`, where it had said it does, as Section 4.2 of the draft still says. §10.1 says its discovery sample shows the target form and gives the `providerDid` the reference provider reported on 2026-10-11, `did:aip:provider_opena2a`; Section 12 of the draft carries the sample without that note. §3.2 also lists the registered `did:opena2a` type prefixes as Section 3.2 of `did-method-opena2a` registers them, `registry`, `authority`, `publisher`, `agent`, `mcp_server`, `ai_tool`, `llm` and `skill`, and says that section names `a2a_agent` a deprecated alias of `agent`, where it had listed `a2a_agent` as a registered type and had left out `registry`; Section 4.2 of the draft lists no type prefix and says they are registered in that specification.
@@ -45,12 +46,13 @@ Nine changes made since that revision are informative:
 - §14 lists RFC 3339, RFC 4648, RFC 6749, RFC 7523 and RFC 8785, which the text cites and the list had omitted. Section 15 of the draft lists RFC 3339, RFC 4648 and RFC 8785, and does not cite the other two, which only the OpenID Connect status line in the abstract cites.
 - Appendix A says the reference implementation targets Conformance Level 2 and does not meet it yet, where it had said the reference implementation was "at Conformance Level 2". The draft's appendices are Related Work, Document History and Acknowledgments, so it has no counterpart of Appendix A or of the A.1 table.
 
-Four more changes made since that revision are informative too, each to a row of the Appendix A.1 table:
+Five more changes made since that revision are informative too, each to a row of the Appendix A.1 table:
 
 - Appendix A.1 marks its row for §5 Verification Partial, where it had Shipped, and says the §5.1 exchange is not served.
 - Appendix A.1 marks its row for §6 Trust Scoring Partial, where it had Shipped, and says the reference implementation is at algorithm version 1 and does not implement the unscored state or `algorithmVersion` of version 2.
 - Appendix A.1 says in its row for §3 Agent Identity that the provider assigns each agent a UUID and that `opena2a-cli identity create` derives the §3.1 agent ID.
 - Appendix A.1 dates its notes on §3 Hybrid PQC signing, §6.5 ATP integration and Local offline verification 2026-10-11. The §3 Hybrid PQC signing row says the reference implementation signs no ATC and its issuance route asks the Registry to sign, where it had named an Ed25519-only issuer with no production callers. The §6.5 row marks ATP integration Partial, where it had Not yet integrated. The Local offline verification row names the TypeScript and Java SDK verifiers, where it had said none of the TypeScript, Python and Java SDKs ships one.
+- Appendix A.1 marks its row for §4 Capabilities Partial, where it had Shipped, and says that when a verified agent that holds at least one granted capability, and is not marked compromised, requests a capability outside its grants, the reference implementation subtracts 10% from the agent's trust score if it blocks the request and 5% if it lets it through, where §4.4 sets the penalty by severity, and that it does not reserve the §4.2 namespaces `payment` and `agent`.
 
 One more change made since that revision is informative too, to an example that quoted commands the CLI does not have:
 

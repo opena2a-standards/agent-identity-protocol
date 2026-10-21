@@ -10,7 +10,10 @@ GAP-ANALYSIS.md row that reports code, the version note
 AIP-SPEC.md carries while a change to a requirement is unreleased and the page it links for
 where that text differs from the paired draft, the trust factor status
 README.md, AIP-SPEC.md and GAP-ANALYSIS.md give, the reference provider identifier
-AIP-SPEC.md gives, and three AIP-SPEC.md Appendix A.1 notes on the reference implementation.
+AIP-SPEC.md gives, the keys of the AIP-SPEC.md §3.3 identity file example and the §3.3 and §9.1
+status notes on what the CLI writes, four AIP-SPEC.md Appendix A.1 notes on the reference
+implementation, and the count GAP-ANALYSIS.md gives of the AIP-SPEC.md §4.2 namespaces the
+reference implementation reserves.
 
 The draft sync cases run on small CHANGELOG and README texts built here, so
 they do not depend on the repository's current pairing. Two cases read the specification as of
@@ -23,6 +26,7 @@ python3 standard library only.
 """
 from __future__ import annotations
 
+import json
 import os
 import re
 import shutil
@@ -37,6 +41,7 @@ from unittest import mock
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_draft_sync  # noqa: E402
+import gen_registries  # noqa: E402
 
 VERSION = "1.2.0-draft"
 DRAFT = "draft-fane-opena2a-aip-04"
@@ -328,6 +333,23 @@ LOCAL_IDENTITY_GAPS = {
     "9.1 Local Audit Log": ["identity_created", "`action`", "`target`", "`result`", "`plugin`"],
 }
 
+# The keys of the identity.json that `opena2a-cli identity create` writes (opena2a-cli 0.10.13 with
+# @opena2a/aim-core 0.2.0). secretKey holds the private key in plain base64, where Section 3.3 has
+# encryptedPrivateKey; the Section 3.3 status note names it (LOCAL_IDENTITY_GAPS).
+CLI_IDENTITY_KEYS = ("agentId", "agentName", "createdAt", "publicKey", "secretKey")
+
+IDENTITY_SPEC = (
+    "### 3.3 Identity File Format\n\n```\n~/.opena2a/aim-core/\n```\n\nIdentity file format:\n\n"
+    "```json\n{\"agentId\": \"aim_x\"}\n```\n\n### 3.4 Agent Types\n\n```json\n{\"type\": \"custom\"}\n```\n"
+)
+
+
+def identity_file_example(spec: str) -> dict:
+    """Return the JSON object in the first ```json block after "Identity file format:" in Section 3.3."""
+    body = ("\n" + spec).split("\n### 3.3 Identity File Format\n", 1)[1]
+    body = body.split("Identity file format:", 1)[1]
+    return json.loads(re.search(r"```json\n(.*?)\n```", body, re.DOTALL).group(1))
+
 
 class LocalIdentityStatus(unittest.TestCase):
     def test_status_notes_are_read_from_their_own_subsection(self):
@@ -348,6 +370,18 @@ class LocalIdentityStatus(unittest.TestCase):
                 self.assertEqual(len(notes), 1, f"Section {heading} has no status note")
                 missing = [term for term in terms if term not in notes[0]]
                 self.assertEqual(missing, [], f"Section {heading} status note")
+
+    def test_identity_file_example_is_the_json_block_after_its_label(self):
+        self.assertEqual(identity_file_example(IDENTITY_SPEC), {"agentId": "aim_x"})
+
+    def test_identity_file_example_has_the_keys_the_cli_writes(self):
+        # Section 3.3 gives the agent ID and name the keys the CLI writes, agentId and agentName.
+        # secretKey is the one key of the CLI's file that the example lacks: the CLI keeps the
+        # private key there unencrypted, where Section 3.3 has encryptedPrivateKey.
+        spec = (check_draft_sync.ROOT / "AIP-SPEC.md").read_text(encoding="utf-8")
+        example = identity_file_example(spec)
+        self.assertEqual([key for key in CLI_IDENTITY_KEYS if key not in example], ["secretKey"])
+        self.assertIn("encryptedPrivateKey", example)
 
     def test_readme_says_the_draft_lacks_both_status_notes(self):
         # Sections 4.3 and 11.1 of draft -04, the counterparts of Sections 3.3 and 9.1, carry no
@@ -1571,6 +1605,71 @@ class GapAnalysisFiles(unittest.TestCase):
         self.assertEqual(rows_without_a_file(gap), [])
 
 
+def reserved_namespaces_status(gap: str) -> str:
+    """Return the Implementation Status cell of the GAP-ANALYSIS.md row for reserved namespaces."""
+    row = next(line for line in gap.splitlines() if line.startswith("| Reserved namespaces |"))
+    return row.split("|")[2].strip()
+
+
+def namespace_counts(status: str) -> tuple[int, int, list[str]] | None:
+    """Return how many of the AIP-SPEC.md §4.2 namespaces a status says are reserved, out of how
+    many, and the code spans between "all but" and the next semicolon, the namespaces that are not.
+
+    None when the status states no count of the form "9 of the 11 namespaces of AIP-SPEC §4.2".
+    """
+    counted = re.search(r"\b(\d+) of the (\d+) namespaces of AIP-SPEC §4\.2\b", status)
+    if not counted:
+        return None
+    but = status.split("all but ", 1)
+    unreserved = re.findall(r"`([^`]+)`", but[1].split(";", 1)[0]) if len(but) > 1 else []
+    return int(counted.group(1)), int(counted.group(2)), unreserved
+
+
+def spec_namespaces(spec: str) -> list[str]:
+    """Return the namespaces of the AIP-SPEC.md §4.2 table, from which registries/capability-namespaces.json is generated."""
+    marker = "<!-- opena2a-definition: capability-namespaces -->"
+    return [row["Namespace"] for row in gen_registries.table_after_marker(spec.splitlines(), marker)[1]]
+
+
+class ReservedNamespaceCount(unittest.TestCase):
+    def test_namespace_counts_reads_the_count_and_the_namespaces_not_reserved(self):
+        gap = (
+            "| Spec Requirement | Implementation Status | File |\n"
+            "| Reserved namespaces | Partial: 9 of the 11 namespaces of AIP-SPEC §4.2 are reserved, "
+            "all but `payment` and `agent`; the discovery document lists `user` | `capability.go` |\n"
+        )
+        status = reserved_namespaces_status(gap)
+        self.assertTrue(status.startswith("Partial: "), status)
+        self.assertEqual(namespace_counts(status), (9, 11, ["payment", "agent"]))
+        self.assertEqual(namespace_counts("Complete: 11 of the 11 namespaces of AIP-SPEC §4.2 are reserved"), (11, 11, []))
+        self.assertIsNone(namespace_counts("Complete (8 namespaces)"))
+
+    def test_spec_namespaces_are_the_rows_of_the_section_4_2_table(self):
+        spec = (
+            "### 4.2 Reserved Namespaces\n\n<!-- opena2a-definition: capability-namespaces -->\n"
+            "| Namespace | Description | Risk Level |\n|---|---|---|\n"
+            "| `file` | Filesystem operations | Medium-High |\n| `agent` | Agent-to-agent operations | Medium |\n\n"
+            "Organizations MAY define custom namespaces.\n"
+        )
+        self.assertEqual(spec_namespaces(spec), ["file", "agent"])
+
+    def test_gap_analysis_counts_the_namespaces_of_the_section_4_2_table(self):
+        # The row said "Complete (8 namespaces)" while §4.2 listed eleven. It says how many of the
+        # §4.2 namespaces are reserved, out of how many, and names the ones that are not, so a
+        # namespace added to §4.2 or removed from it fails here until the row counts it. The row
+        # is Complete exactly when every one is reserved.
+        gap = (check_draft_sync.ROOT / "GAP-ANALYSIS.md").read_text(encoding="utf-8")
+        namespaces = spec_namespaces(check_draft_sync.SPEC.read_text(encoding="utf-8"))
+        status = reserved_namespaces_status(gap)
+        counts = namespace_counts(status)
+        self.assertIsNotNone(counts, f"the reserved namespaces row gives no count of the §4.2 namespaces: {status!r}")
+        reserved, total, unreserved = counts
+        self.assertEqual(total, len(namespaces))
+        self.assertEqual([name for name in unreserved if name not in namespaces], [])
+        self.assertEqual(reserved + len(unreserved), total)
+        self.assertEqual(status.startswith("Complete"), reserved == total, status)
+
+
 def unreleased_entries(changelog: str) -> dict[str, list[str]]:
     """Return the entries under each "### " heading of the CHANGELOG's Unreleased section.
 
@@ -1647,6 +1746,18 @@ class UnreleasedRequirementChanges(unittest.TestCase):
         self.assertIn(f"This text is {self.version}, dated ", note)
         self.assertIn("Unreleased", note)
         self.assertEqual([section for section in sections if not names_part(note, section)], [])
+
+    def test_notes_page_names_the_sections_the_version_note_names(self):
+        # docs/specification-notes.md lists the version note among the changes made since the
+        # paired draft and names the sections the note gives as changing a requirement. The note
+        # came to name §3.3 beside §3.1 and §5.4 while that line still named §3.1 and §5.4.
+        self.changed_sections()
+        note = spec_parts(self.spec).get("version note", "")
+        notes = check_draft_sync.NOTES.read_text(encoding="utf-8")
+        lines = [item for item in change_items(notes) if item.startswith("- A version note above the abstract ")]
+        self.assertEqual(len(lines), 1, "the notes page has no line, or more than one, on the version note")
+        section = re.compile(r"§\d+(?:\.\d+)*")
+        self.assertEqual(section.findall(lines[0]), section.findall(note))
 
     def test_earlier_agent_id_rule_names_the_dated_text_that_carried_it(self):
         # §3.1 changed after the version on the Version line was dated, so the sentence on the
@@ -1826,6 +1937,7 @@ class ReferenceProviderDid(unittest.TestCase):
 
 
 HYBRID_ROW = "§3 Hybrid PQC signing (Ed25519 + ML-DSA-65)"
+CAPABILITIES_ROW = "§4 Capabilities"
 ATP_ROW = "§6.5 ATP integration"
 LOCAL_VERIFY_ROW = "Local offline verification"
 # The date a note gives for its status. A row can carry other dates, such as the ATP release
@@ -1862,6 +1974,27 @@ class AppendixA1(unittest.TestCase):
         self.assertNotIn("no active production callers", note)
         self.assertNotIn("atc_issuer.go", note)
         self.assertIn("POST /api/v1/agents/{id}/atc", note)
+
+    def test_capabilities_row_names_the_parts_of_section_4_not_implemented(self):
+        # Measured on agent-identity-management main at 9290cc1c: AgentService.VerifyCapability,
+        # which serves POST /api/v1/agents/{id}/verify-capability and POST /api/v1/verifications,
+        # subtracts 0.10 when it blocks a capability violation and 0.05 when it lets it through,
+        # where §4.4 sets 2%, 5%, 10% or 20% by severity. CapabilityService.VerifyAction subtracts a
+        # flat 0.10, and no route mounts it. ReservedNamespaces in domain/capability.go lists nine
+        # namespaces, without payment and agent. The row had marked §4 Shipped.
+        status, note = self.rows[CAPABILITIES_ROW]
+        self.assertEqual(status, "Partial")
+        self.assertRegex(note, STATUS_DATE)
+        self.assertIn("the §4.4 penalty schedule and the reservation of `payment` and `agent`", note)
+        self.assertIn("`AgentService.VerifyCapability`", note)
+        self.assertIn(
+            "subtracts 0.10 (10%) from the agent's trust score when it blocks the request and 0.05 (5%) when it lets it through",
+            note,
+        )
+        # The flat 0.10 is the penalty of the path no route mounts, so a sentence that gives it says so.
+        flat = [sentence for sentence in SENTENCE_END.split(note) if "flat 0.10" in sentence]
+        self.assertEqual([sentence for sentence in flat if "is mounted on no route" not in sentence], [])
+        self.assertIn("all but `payment` and `agent`", note)
 
     def test_atp_row_cites_the_current_atp_version(self):
         # ATP-SPEC.md reads "Version: 1.1.0-draft"; GAP-ANALYSIS.md marks the integration Partial.
