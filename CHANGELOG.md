@@ -62,6 +62,20 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   checks that the §3.3 example has each key the CLI writes except `secretKey`, and has
   `encryptedPrivateKey`, and that the line on the version note in `docs/specification-notes.md`
   names the sections the note names.
+- `AIP-SPEC.md` §5.1.4 says that its checks read the challenge body: check 2 compares the
+  presented `publicKey` with the key bound to the challenge body's `agentDid`, check 3 reads its
+  `expiresAt`, check 4 its `nonce` and check 5 its `issuerDid`, and §5.1.3 resolves the
+  verification key for the challenge body's `agentDid`. Check 1 also requires each of the five
+  fields the response echoes to equal the challenge body's, compared code point for code point
+  after JSON escapes are resolved (`SIGNATURE_INVALID`). Check 5 rejects with
+  `UNTRUSTED_ISSUER`, and a trusted-issuer set with no entry trusts no issuer. Before the
+  checks, a relying party rejects the transcript when an object in either body has two members
+  with the same name, or when either body has a member whose name §5.1.1 or §5.1.2 does not
+  give that body (`PARSE_ERROR`). §5.1.5 names the fixture cases for the echo and
+  trusted-issuer rules, §14 lists RFC 8259, and the version note names §5.1.3 and §5.1.4 among
+  the sections whose requirement changed, as does the line on the version note in
+  `docs/specification-notes.md`. `draft-fane-opena2a-aip-04`, as submitted, does not carry
+  these changes.
 - `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
   giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
   valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,
@@ -97,6 +111,12 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `AIP-SPEC.md` §5.1 says that for each case §5.1.5 names, a transcript that verifies against
+  that section produces the same verdict as the conformance suite's reference verifiers, where
+  it had said so of every transcript: on 2026-10-23 the suite pins no fixture for the §5.1.4
+  rule on a repeated or undefined member name, and its reference verifiers accept a body with
+  one. `draft-fane-opena2a-aip-04`, as submitted, still says so of every transcript in
+  Section 6.1; `docs/specification-notes.md` lists the difference among the informative changes.
 - `AIP-SPEC.md` Appendix A.1 marks "§4 Capabilities" Partial, not Shipped. At
   `agent-identity-management` `main` (`9290cc1c`, 2026-10-21), when a verified agent that holds at
   least one granted capability, and is not marked compromised, requests a capability outside its
