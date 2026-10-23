@@ -358,9 +358,9 @@ Agent identity verification uses Ed25519 challenge-response:
 
 The wire bodies, the canonical signing form, and the replay rule below were
 first pinned by the [`aip-conformance`](https://github.com/opena2a-standards/aip-conformance)
-suite (v0.2) and are ratified here as normative. A transcript that verifies
-against this section produces the same verdict as the suite's reference
-verifiers.
+suite (v0.2) and are ratified here as normative. For each case §5.1.5 names, a
+transcript that verifies against this section produces the same verdict as the
+suite's reference verifiers.
 
 #### 5.1.1 Challenge body (IdP → RP)
 
@@ -507,8 +507,7 @@ with the challenge body.
 
 Byte-stable transcript fixtures for this section — valid, wrong-key,
 stale-challenge, nonce-replay, a response whose echo differs from the challenge
-body, an untrusted issuer, and a body with a member name used twice or not
-defined for it, each pinned by SHA-256 and verified by
+body, and an untrusted issuer, each pinned by SHA-256 and verified by
 parity-gated Go and Python reference verifiers — live at
 [`opena2a-standards/aip-conformance`](https://github.com/opena2a-standards/aip-conformance).
 An implementation claiming §5.1 conformance MUST produce the pinned verdict on
