@@ -6,7 +6,7 @@
 **Authors:** OpenA2A
 **Date:** October 2026 (first published March 2026)
 
-> **Version note.** This text is 1.2.0-draft, dated 2026-10-06, with later changes that no dated version carries yet. [CHANGELOG.md](./CHANGELOG.md) lists them under Unreleased, and those to §3.1, §3.3 and §5.4 change a requirement. `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft as dated; [docs/specification-notes.md](./docs/specification-notes.md#internet-draft) lists where this text differs from that draft.
+> **Version note.** This text is 1.2.0-draft, dated 2026-10-06, with later changes that no dated version carries yet. [CHANGELOG.md](./CHANGELOG.md) lists them under Unreleased, and those to §3.1, §3.3, §5.1.3, §5.1.4 and §5.4 change a requirement. `draft-fane-opena2a-aip-04` pairs with 1.2.0-draft as dated; [docs/specification-notes.md](./docs/specification-notes.md#internet-draft) lists where this text differs from that draft.
 
 > **Naming note.** As of 2026-09-30, at least three other Internet-Drafts use the abbreviation "AIP" for an agent identity protocol: draft-aip-agent-identity-protocol-00 (James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), first published 2026-03-16, expired 2026-09-17), draft-singla-agent-identity-protocol (Singla, first published 2026-04-16, active) and draft-prakash-aip (revision 01, 2026-08-19, active). When referenced outside this document, use the fully qualified name "OpenA2A AIP". The bare "AIP" is retained within this specification where context is unambiguous. See [docs/naming-and-prior-art.md](./docs/naming-and-prior-art.md) for the prior-art list and OpenA2A's position on the collision.
 
@@ -439,7 +439,7 @@ because the other RP's IdP would have issued different bytes.
 **Unsigned response fields are unauthenticated.** `publicKey`, `keyId`,
 `signedAt`, and `algorithm` are NOT covered by the signature. A verifier MUST
 resolve the agent's key from its own registration record (or DID document) for
-the claimed `agentDid` and MUST NOT trust the response's `publicKey` field as
+the challenge body's `agentDid` and MUST NOT trust the response's `publicKey` field as
 the verification key by itself — a response that verifies only under its own
 embedded key proves possession of *some* key, not the agent's bound key.
 JCS-canonical JSON signing (RFC 8785) over the full response is a candidate
@@ -448,32 +448,67 @@ AIP 1.x.
 
 #### 5.1.4 Verification rules
 
+Before the checks below, a relying party MUST reject the transcript when an
+object anywhere in the challenge body or the response body has two members
+with the same name, or when either body has a member whose name is not one
+that §5.1.1 or §5.1.2 gives that body (reject category `PARSE_ERROR`). Names
+are compared code point for code point after JSON escape sequences are
+resolved, so `"n\u006fnce"` is the name `nonce`, and a name that differs from
+a defined one in letter case or in any other character is another name:
+`Nonce` is not `nonce`, and neither `issued_at` nor `issuedAt` written with
+U+0131 LATIN SMALL LETTER DOTLESS I in place of its `i` is `issuedAt`. Two
+members with the same name are rejected whatever their values. RFC 8259,
+Section 4, says that "the names within an object SHOULD be unique" and that
+when they are not, "the behavior of software that receives such an object is
+unpredictable"; decoders also differ in which names they treat as one: some
+ignore letter case, some fold Unicode case, and some map one naming convention
+onto another. Without this rule, two relying parties could read different
+values from one transcript, and a relying party could read a member that no
+signature covers as one that the checks below read. An identity provider MUST
+NOT emit such a challenge body, and an agent MUST NOT emit such a response
+body.
+
 A relying party MUST reject the transcript unless all of the following hold.
 The checks run in this order and the first failure determines the reject
-category (the property the conformance fixtures pin):
+category (the property the conformance fixtures pin). The checks take each
+value from the challenge body, except the response's `publicKey` and
+`signature` and the five fields the response echoes, which check 1 compares
+with the challenge body.
 
-1. **Signature** — the Ed25519 signature verifies over the §5.1.3 canonical
-   bytes under the response's `publicKey` (reject category
-   `SIGNATURE_INVALID`). This proves possession of the presented key; step 2
-   proves it is the right key.
-2. **Bound key** — the presented `publicKey` matches the key bound to
-   `agentDid` in the verifier's registration state or resolved DID document
-   (for a provider-scoped `did:web` identifier, the document the issuing
-   provider serves, §3.2; reject category `UNTRUSTED_KEY`). A transcript MUST NOT be accepted on
-   step 1 alone.
-3. **Freshness** — the verifier's clock is before `expiresAt` (the window is
-   5 minutes from issuance, evaluated within the family clock-skew bound of
-   ATP Section 10.2, which never extends the window; reject category
-   `CHALLENGE_EXPIRED`).
-4. **Nonce single-use** — the nonce has not been consumed by a prior
-   verification. Verifiers MUST record consumed nonces at least until the
-   corresponding challenge's `expiresAt` (reject category `NONCE_REPLAY`).
-5. **Trusted issuer** — `issuerDid` is in the verifier's trusted-issuer set.
+1. **Signature** — each of the five fields the response echoes (`challenge`,
+   `agentDid`, `nonce`, `issuedAt`, `expiresAt`) is equal to the member of the
+   same name in the challenge body, as strings compared code point for code
+   point after JSON escape sequences are resolved, and the Ed25519 signature
+   verifies over the §5.1.3 canonical bytes under the response's `publicKey`
+   (reject category `SIGNATURE_INVALID`). An echo that differs in any
+   character is a signature failure, including a timestamp that writes the
+   same instant in another form, such as `+00:00` in place of `Z`: §5.1.3
+   normalizes the challenge body's timestamps to build the signed bytes, and
+   does not normalize an echo before the comparison. This proves possession of
+   the presented key; check 2 proves it is the right key.
+2. **Bound key** — the presented `publicKey` matches the key bound to the
+   challenge body's `agentDid` in the verifier's registration state or
+   resolved DID document (for a provider-scoped `did:web` identifier, the
+   document the issuing provider serves, §3.2; reject category
+   `UNTRUSTED_KEY`). A transcript MUST NOT be accepted on check 1 alone.
+3. **Freshness** — the verifier's clock is before the challenge body's
+   `expiresAt` (the window is 5 minutes from issuance, evaluated within the
+   family clock-skew bound of ATP Section 10.2, which never extends the window;
+   reject category `CHALLENGE_EXPIRED`).
+4. **Nonce single-use** — the challenge body's `nonce` has not been consumed
+   by a prior verification. Verifiers MUST record consumed nonces at least
+   until the corresponding challenge's `expiresAt` (reject category
+   `NONCE_REPLAY`).
+5. **Trusted issuer** — the challenge body's `issuerDid` is in the verifier's
+   trusted-issuer set, compared code point for code point with each entry; a
+   set with no entry trusts no issuer (reject category `UNTRUSTED_ISSUER`).
 
 #### 5.1.5 Conformance fixtures
 
 Byte-stable transcript fixtures for this section — valid, wrong-key,
-stale-challenge, and nonce-replay, each pinned by SHA-256 and verified by
+stale-challenge, nonce-replay, a response whose echo differs from the challenge
+body, an untrusted issuer, and a body with a member name used twice or not
+defined for it, each pinned by SHA-256 and verified by
 parity-gated Go and Python reference verifiers — live at
 [`opena2a-standards/aip-conformance`](https://github.com/opena2a-standards/aip-conformance).
 An implementation claiming §5.1 conformance MUST produce the pinned verdict on
@@ -986,6 +1021,7 @@ Trust scores MUST be computed server-side. Agents MUST NOT be able to self-repor
 - RFC 6749 — The OAuth 2.0 Authorization Framework
 - RFC 7523 — JSON Web Token (JWT) Profile for OAuth 2.0 Client Authentication and Authorization Grants
 - RFC 8785 — JSON Canonicalization Scheme (JCS)
+- RFC 8259 — The JavaScript Object Notation (JSON) Data Interchange Format
 - W3C DID Core — Decentralized Identifiers v1.0
 - W3C DID Extensions registry: `did:opena2a` method entry (w3c/did-extensions#717, merged 2026-07-04)
 - W3C CCG did:web Method Specification: the `did:web` method under which provider-scoped AIP identifiers are issued (§3.2)

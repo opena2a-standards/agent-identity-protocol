@@ -26,17 +26,18 @@ Six parts of the draft have no counterpart in the specification:
 - Appendix B, Document History.
 - Appendix C, Acknowledgments.
 
-Five changes made to the specification since that revision are to a requirement or its wording:
+Six changes made to the specification since that revision are to a requirement or its wording:
 
 - §3.1 defines the agent ID as `aim_` followed by the base64url encoding of the first 12 bytes of the public key, the form `opena2a-cli identity create` prints, and lets a provider assign its own identifier instead, where Section 4.1 of the draft gives the first eight hexadecimal characters of the SHA-256 digest of the public key. The examples in §3.3, §5.3, §7.1, §8.2 and §9.1 carry `aim_PUAXw-hDiVqStwqn`, an agent ID of that form, where the draft's examples carry `aim_7f3a9c2e`.
 - §3.3 gives the agent ID and name in the identity file the keys `agentId` and `agentName`, under which `opena2a-cli identity create` writes them, where Section 4.3 of the draft gives `id` and `name`.
+- §5.1.4 says that every check reads the challenge body, requires the five fields the response echoes to equal the challenge body's, and gives the trusted-issuer check the reject category `UNTRUSTED_ISSUER`; before the checks, it rejects as `PARSE_ERROR` a body in which an object has two members with the same name, or which has a member whose name is not defined for that body. §5.1.3 resolves the verification key for the challenge body's `agentDid`. Sections 6.1.3 and 6.1.4 of the draft carry none of these rules.
 - §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, where Section 6.4 of the draft gives JWT bearer tokens "a one-hour time-to-live".
 - §6.1 no longer says "Implementers substituting their own scoring functions SHOULD NOT treat the stubbed factors as validated by the reference implementation until it measures them", a statement that was in the specification when that revision was made and that Section 7.1 of the draft does not carry either. The statement applied until the reference implementation measured compliance, drift detection and user feedback, and it now has a scoring function for each.
 - §12.1 reads "MUST NOT be transmitted" where Section 13.1 of the draft reads "MUST NEVER be transmitted". This change is editorial.
 
 Nine changes made since that revision are informative:
 
-- A version note above the abstract says the text is 1.2.0-draft with changes made after that version was dated, and names §3.1, §3.3 and §5.4 as the changed requirements.
+- A version note above the abstract says the text is 1.2.0-draft with changes made after that version was dated, and names §3.1, §3.3, §5.1.3, §5.1.4 and §5.4 as the changed requirements.
 - The naming note gives each author of draft-aip-agent-identity-protocol-00 their own affiliation, James Cao (Montcao) and Carlos Eduardo Arango Gutierrez (NVIDIA), where it had given both the second one. The draft cites that document in its Appendix A, Related Work, and its reference gives the authors as "Cao and Arango".
 - Each line of the abstract's list of protocols AIP is designed to complement ends with an implementation status, which Section 1 of the draft does not give.
 - §3.2 says the reference implementation will issue `did:web:aim.opena2a.org:agents:<uuid>` and identify itself as `did:web:aim.opena2a.org`, where it had said it does, as Section 4.2 of the draft still says. §10.1 says its discovery sample shows the target form and gives the `providerDid` the reference provider reported on 2026-10-11, `did:aip:provider_opena2a`; Section 12 of the draft carries the sample without that note. §3.2 also lists the registered `did:opena2a` type prefixes as Section 3.2 of `did-method-opena2a` registers them, `registry`, `authority`, `publisher`, `agent`, `mcp_server`, `ai_tool`, `llm` and `skill`, and says that section names `a2a_agent` a deprecated alias of `agent`, where it had listed `a2a_agent` as a registered type and had left out `registry`; Section 4.2 of the draft lists no type prefix and says they are registered in that specification.
