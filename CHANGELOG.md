@@ -111,6 +111,13 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `docs/specification-notes.md` names RFC 8259 in its item on §14, among the RFCs §14 lists and
+  Section 15 of `draft-fane-opena2a-aip-04` does not, and says that only §5.1.4 cites it, where
+  it rejects a body in which an object has two members with the same name, a rule the draft does
+  not carry. The item named five RFCs and left out RFC 8259, which §14 came to list with the
+  §5.1.4 change. `scripts/test_checks.py` checks that each RFC that §14 lists and the references
+  section of the paired draft does not is named in an item on §14, and that the draft cites none
+  of them.
 - `AIP-SPEC.md` §5.1 says that for each case §5.1.5 names, a transcript that verifies against
   that section produces the same verdict as the conformance suite's reference verifiers, where
   it had said so of every transcript: on 2026-10-23 the suite pins no fixture for the §5.1.4
