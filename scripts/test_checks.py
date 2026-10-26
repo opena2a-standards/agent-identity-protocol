@@ -1546,6 +1546,31 @@ class References(unittest.TestCase):
         cited = set(re.findall(r"\bRFC (\d{4})\b", spec))
         self.assertEqual(sorted(cited - listed), [], "RFCs AIP-SPEC.md cites and Section 14 does not list")
 
+    def test_notes_name_each_rfc_section_14_lists_and_the_paired_draft_does_not(self):
+        # Each RFC that §14 lists and the references section of the paired draft does not is named
+        # in a docs/specification-notes.md item on §14, and the draft cites none of them, as that
+        # item says. §14 came to list RFC 8259 while the item still named five RFCs.
+        spec = check_draft_sync.SPEC.read_text(encoding="utf-8")
+        changelog = check_draft_sync.CHANGELOG.read_text(encoding="utf-8")
+        draft, _ = check_draft_sync.pairing(changelog, check_draft_sync.spec_version(spec))
+        if draft is None or not (check_draft_sync.ROOT / f"{draft}.txt").exists():
+            self.skipTest("the draft paired with the specification's version is not built")
+        txt = (check_draft_sync.ROOT / f"{draft}.txt").read_text(encoding="utf-8")
+        numbers = [number for number, title in DRAFT_SECTION.findall(txt) if title == "References"]
+        self.assertEqual(len(numbers), 1, f"headings titled References in {draft}.txt")
+        in_draft = set(re.findall(r"\[RFC(\d{4})\]", draft_section(txt, numbers[0])))
+        listed = set(re.findall(r"^- RFC (\d{4}) — ", spec_parts(spec)["§14"], re.MULTILINE))
+        only_listed = listed - in_draft
+        notes = check_draft_sync.NOTES.read_text(encoding="utf-8")
+        items = " ".join(item for item in change_items(notes) if names_part(item, "§14"))
+        named = set(re.findall(r"\bRFC (\d{4})\b", items))
+        self.assertEqual(
+            sorted(only_listed - named), [], f"RFCs Section 14 lists and {draft} does not that no item on §14 names"
+        )
+        text = check_draft_sync.draft_text(txt)
+        cited = [rfc for rfc in sorted(only_listed) if re.search(rf"\bRFC ?{rfc}\b", text)]
+        self.assertEqual(cited, [], f"RFCs Section 14 lists that {draft} cites and does not list")
+
 
 class GapAnalysisPriorities(unittest.TestCase):
     def test_priority_list_asks_for_the_id_token_and_not_for_oauth_again(self):
