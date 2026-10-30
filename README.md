@@ -59,6 +59,12 @@ That is the provider's document on the date in [its capture record](docs/capture
 
 To resolve a registered agent's DID document, and for what the provider's endpoints answered when last measured, see [docs/specification-notes.md](docs/specification-notes.md#reference-provider).
 
+## Who this is for
+
+Security leaders deciding what an agent's identity provider must guarantee, identity architects fitting agent identities beside OAuth 2.0, OpenID Connect and DIDs, engineers who verify agents at runtime, developers who implement a provider or a relying party, auditors reading the audit trail, and standards reviewers.
+
+[Who reads this](docs/use-cases.md#who-reads-this) names the question each one brings and the section of the specification that answers it.
+
 ## Specification
 
 [AIP-SPEC.md](AIP-SPEC.md) — the full protocol specification.
@@ -87,7 +93,7 @@ The [OpenA2A AIM Platform](https://github.com/opena2a-org/agent-identity-managem
 - [docs/interoperability.md](docs/interoperability.md) — the protocols AIP is designed to complement, a status for each, and how AIP and ATP work together
 - [GAP-ANALYSIS.md](GAP-ANALYSIS.md) — what the reference implementation has against what the specification requires
 - [docs/naming-and-prior-art.md](docs/naming-and-prior-art.md) — the other specifications named "AIP"
-- [docs/use-cases.md](docs/use-cases.md) — two use cases, with what you can run today and where the reference implementation stops
+- [docs/use-cases.md](docs/use-cases.md): who reads the specification, and four use cases, with what you can run today and where the reference implementation stops
 - [CHANGELOG.md](CHANGELOG.md) — changes to the specification, by version
 - [CONTRIBUTING.md](CONTRIBUTING.md) — co-authors, an independent second implementation and security review are wanted; how to contribute
 - [OASB (Open Agent Security Benchmark)](https://github.com/opena2a-org/oasb) — security controls
