@@ -1,6 +1,6 @@
 # Use cases
 
-The use cases below moved here from the README, which links this page. Each says what AIP gives the case, what you can run today and where the reference implementation stops. The page opens with who reads the specification and where each reader's question is answered.
+The first two use cases below moved here from the README, which links this page; the other two were written for this page. Each says what AIP gives the case, what you can run today and where the reference implementation stops. The page opens with who reads the specification and where each reader's question is answered.
 
 ## Who reads this
 
