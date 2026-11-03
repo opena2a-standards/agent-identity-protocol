@@ -306,6 +306,21 @@ class PhrasingTest(CountsTest):
         self.assertFails(self.tree("# Use cases\n\nNo count here.\n"),
                          "docs/use-cases.md states no aip-conformance count")
 
+    def test_a_total_worded_in_a_form_the_check_does_not_read_fails(self):
+        # Two words before "fixtures" and a number written as a word are not read as the total.
+        commit = self.commit(14, 3)
+        for wording in ("18 byte-pinned conformance fixtures", "eighteen byte-pinned fixtures"):
+            with self.subTest(wording=wording):
+                text = sentence(17, 14, 3, commit).replace("17 byte-pinned fixtures", wording)
+                self.assertFails(self.tree(text),
+                                 "docs/use-cases.md states no aip-conformance fixtures count",
+                                 "every count it states is read")
+
+    def test_a_class_count_worded_in_a_form_the_check_does_not_read_fails(self):
+        commit = self.commit(14, 3)
+        text = sentence(17, 14, 3, commit).replace("3 trust-score compositions", "3 Trust-Score compositions")
+        self.assertFails(self.tree(text), "docs/use-cases.md states no aip-conformance trust-score fixtures count")
+
     def test_a_missing_use_cases_page_fails(self):
         self.commit(14, 3)
         self.assertFails(self.tree(None), "docs/use-cases.md is missing")

@@ -29,8 +29,10 @@ A section number, as in "the Section 5.1 fixtures", is not a count.
 It fails when a stated count differs from the suite at the named commit; when
 a count names no commit, two commits, or no suite before it; when the named
 commit is not in the history of the suite checkout's HEAD or ships no
-fixtures; and when docs/use-cases.md states no aip-conformance count, so it
-never passes vacuously. When the suite's HEAD ships a different number of
+fixtures; and when docs/use-cases.md does not state each of the three
+aip-conformance counts in a phrasing listed above, so it never passes
+vacuously and a count worded another way ("eighteen fixtures", or two words
+before "fixtures") cannot pass unread. When the suite's HEAD ships a different number of
 fixtures than the named commit, it says so and passes: the sentence is true
 at the commit it names.
 
@@ -277,7 +279,7 @@ def check(root: Path, suite_path: Path) -> tuple[list[str], list[str], int, str]
 
     if not (root / REQUIRED).is_file():
         failures.append(f"{REQUIRED} is missing")
-    required_stated = False
+    required_kinds: set[str] = set()
     for path in claim_files(root):
         rel = path.relative_to(root).as_posix()
         for part in parts(path.read_text(encoding="utf-8")):
@@ -298,7 +300,7 @@ def check(root: Path, suite_path: Path) -> tuple[list[str], list[str], int, str]
                     )
                 continue
             if rel == REQUIRED:
-                required_stated = True
+                required_kinds.update(kind for kind, _, _ in part.counts)
             commits = sorted({commit for commit, _ in part.commits})
             if not commits:
                 at_head = suite.facts(suite.head)
@@ -351,10 +353,19 @@ def check(root: Path, suite_path: Path) -> tuple[list[str], list[str], int, str]
                     f"fixtures); at HEAD {head} the suite ships {moved}. The sentence holds at the "
                     f"commit it names."
                 )
-    if (root / REQUIRED).is_file() and not required_stated:
+    if (root / REQUIRED).is_file() and not required_kinds:
         failures.append(
             f"{REQUIRED} states no {SUITE} count; the check would pass vacuously, so this is a failure"
         )
+    elif (root / REQUIRED).is_file():
+        for kind in KINDS:
+            if kind not in required_kinds:
+                failures.append(
+                    f"{REQUIRED} states no {SUITE} {kind} count in a phrasing this check reads; "
+                    f"a count worded another way would pass unchecked, so word each count as the "
+                    f"docstring of scripts/check_conformance_counts.py lists, so that every count "
+                    f"it states is read"
+                )
     return failures, notes, checked, hint(suite)
 
 
