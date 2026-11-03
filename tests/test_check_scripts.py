@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Regression tests for the check scripts in scripts/ and the .gitignore entries.
+"""Regression tests for the check scripts in scripts/ and the .gitignore entries, and for the
+conformance suite counts docs/use-cases.md gives at a named commit of the suite.
 
 Run from the repository root:
     python3 -m unittest discover -s tests
@@ -28,6 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 SCRIPTS = ROOT / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
+import check_conformance_counts  # noqa: E402
 import check_draft_sync  # noqa: E402
 import check_first_use  # noqa: E402
 
@@ -396,6 +398,64 @@ class ImplementationStatusChallenge(unittest.TestCase):
         self.assertEqual(status, "Partial")
         self.assertIn(self.ROUTE, note)
         self.assertIn("registers no such route", note)
+
+
+class UseCasesConformanceSuiteCounts(unittest.TestCase):
+    """docs/use-cases.md gives its Section 5.1 transcript counts at the commit of its fixture counts.
+
+    scripts/check_conformance_counts.py reads the fixture counts of the "Why you can check this
+    yourself" paragraph against the conformance suite at the commit that paragraph names. The
+    transcript sentence of the browser agent use case gives what that check does not read: the
+    number of Section 5.1 transcripts, the one accepted, the number rejected and a count per
+    rejection case. The suite grows, so a count is true of one commit: the transcript sentence
+    names the aip-conformance commit the paragraph names, read the way the check reads one, its
+    counts add up, and its number of transcripts is the paragraph's number of challenge-response
+    transcripts.
+    """
+
+    TRANSCRIPTS = re.compile(r"there are (?P<transcripts>[0-9]+): one is accepted, and (?P<rejected>[0-9]+) are rejected for (?P<cases>[^\n]+?)\.(?:\s|$)")
+
+    def paragraph(self, heading: str, start: str) -> str:
+        uses = (ROOT / "docs" / "use-cases.md").read_text(encoding="utf-8")
+        self.assertIn(heading, uses)
+        lines = uses.split(heading, 1)[1].split("\n#", 1)[0].splitlines()
+        first = next((i for i, line in enumerate(lines) if line.startswith(start)), None)
+        self.assertIsNotNone(first, f"no paragraph under {heading!r} starts with {start!r}")
+        end = next((i for i in range(first, len(lines)) if not lines[i].strip()), len(lines))
+        return "\n".join(lines[first:end])
+
+    def transcript_sentence(self) -> str:
+        return self.paragraph("## A browser agent acts for someone you cannot see", "What you can do today:")
+
+    def fixture_sentence(self) -> str:
+        return self.paragraph("## Why you can check this yourself", "Why you can check this yourself:")
+
+    def suite_part(self, text: str) -> check_conformance_counts.Part:
+        """The aip-conformance part of text, as scripts/check_conformance_counts.py reads it."""
+        found = [part for part in check_conformance_counts.parts(text) if part.suite == check_conformance_counts.SUITE]
+        self.assertEqual(len(found), 1, text)
+        return found[0]
+
+    def test_the_transcript_sentence_names_the_commit_the_fixture_counts_name(self) -> None:
+        transcripts = {commit for commit, _ in self.suite_part(self.transcript_sentence()).commits}
+        fixtures = {commit for commit, _ in self.suite_part(self.fixture_sentence()).commits}
+        self.assertEqual(len(transcripts), 1, self.transcript_sentence())
+        self.assertEqual(transcripts, fixtures, self.fixture_sentence())
+
+    def test_the_transcript_counts_agree_with_each_other(self) -> None:
+        match = self.TRANSCRIPTS.search(self.transcript_sentence())
+        self.assertIsNotNone(match, self.transcript_sentence())
+        rejected = int(match.group("rejected"))
+        self.assertEqual(int(match.group("transcripts")), 1 + rejected)
+        per_case = [int(count) for count in re.findall(r"\(([0-9]+)\)", match.group("cases"))]
+        self.assertGreater(len(per_case), 1, match.group("cases"))
+        self.assertEqual(sum(per_case), rejected, match.group("cases"))
+
+    def test_the_fixture_counts_state_the_number_of_transcripts_the_transcript_sentence_gives(self) -> None:
+        stated = {kind: value for kind, value, _ in self.suite_part(self.fixture_sentence()).counts}
+        counted = self.TRANSCRIPTS.search(self.transcript_sentence())
+        self.assertIsNotNone(counted, self.transcript_sentence())
+        self.assertEqual(stated.get("challenge-response fixtures"), int(counted.group("transcripts")), stated)
 
 
 class ImplementationStatusTrustScoring(unittest.TestCase):

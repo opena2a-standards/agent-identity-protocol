@@ -54,7 +54,7 @@ A shopping agent drives a real browser to your checkout for a person who has lef
 
 AIP gives the agent a cryptographic identity and a way to prove it. The verifier issues a random challenge, the agent signs it with the key bound to its identity, and the verifier checks the signature, the key binding, the challenge's freshness and that the nonce was used once (AIP-SPEC Section 5.1).
 
-What you can do today: run the Section 5.1 transcripts in the conformance suite. One is accepted; three are rejected for a wrong key, a stale challenge and a replayed nonce.
+What you can do today: run the Section 5.1 transcripts in the conformance suite. At aip-conformance commit `52ba849` there are 14: one is accepted, and 13 are rejected for a key that is not the agent's (2), a stale challenge (1), a replayed nonce (1), a response that echoes a nonce or an agent DID other than the signed challenge body's (2), an issuer the verifier does not trust (2), and a body that repeats a member name or holds an undefined one (5).
 
 ```bash
 git clone https://github.com/opena2a-standards/aip-conformance
@@ -138,4 +138,4 @@ Out of scope: the specification requires an append-only store and does not requi
 
 ## Why you can check this yourself
 
-Why you can check this yourself: [`AIP-SPEC.md`](../AIP-SPEC.md) and the Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/); [aip-conformance](https://github.com/opena2a-standards/aip-conformance), 17 byte-pinned fixtures at commit `52ba849` (14 challenge-response transcripts, 3 trust-score compositions) with Go and Python verifiers; the live discovery document at `https://aim.opena2a.org/.well-known/aip`; and the reference implementation, [OpenA2A AIM (Agent Identity Management)](https://github.com/opena2a-org/agent-identity-management).
+Why you can check this yourself: [`AIP-SPEC.md`](../AIP-SPEC.md) and the Internet-Draft [draft-fane-opena2a-aip](https://datatracker.ietf.org/doc/draft-fane-opena2a-aip/); [aip-conformance](https://github.com/opena2a-standards/aip-conformance), 17 byte-pinned fixtures at commit `52ba849` (14 challenge-response transcripts, 3 trust-score compositions) with Go and Python verifiers, and 5 files under `fixtures/load-errors/`, outside that count, that both verifiers refuse to load; the live discovery document at `https://aim.opena2a.org/.well-known/aip`; and the reference implementation, [OpenA2A AIM (Agent Identity Management)](https://github.com/opena2a-org/agent-identity-management).

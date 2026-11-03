@@ -111,6 +111,17 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
 
 ### Fixed
 
+- `docs/use-cases.md` gives the Section 5.1 transcripts of the browser agent use case at
+  aip-conformance commit `52ba849`, the commit its "Why you can check this yourself" paragraph
+  states the fixture counts at: 14 transcripts, of which one is accepted and 13 are rejected,
+  with a count per rejection case. The use case said that one was accepted and three were
+  rejected, for a wrong key, a stale challenge and a replayed nonce, and named no commit. The
+  paragraph also names the 5 files under `fixtures/load-errors/` that both verifiers refuse to
+  load, outside its count of 17 fixtures. `tests/test_check_scripts.py` checks that the
+  transcript sentence names the commit the paragraph names, read the way
+  `scripts/check_conformance_counts.py` reads one; that its counts per rejection case add up to
+  the number rejected, and one accepted and the number rejected to the number of transcripts;
+  and that the paragraph states that number of challenge-response transcripts.
 - `docs/specification-notes.md` names RFC 8259 in its item on §14, among the RFCs §14 lists and
   Section 15 of `draft-fane-opena2a-aip-04` does not, and says that only §5.1.4 cites it, where
   it rejects a body in which an object has two members with the same name, a rule the draft does
