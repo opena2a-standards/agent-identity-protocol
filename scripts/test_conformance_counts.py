@@ -5,9 +5,10 @@ Each phrasing the check reads is built here in a scratch tree and checked
 against a scratch aip-conformance suite: a git repository whose commits ship
 fixtures of a known number and fixtureType. A stated count that differs from
 the suite at the commit it names is asserted to exit 1 naming the file, the
-line and the kind of count. A count-like phrase the check does not read, after
-aip-conformance is named in its paragraph, is asserted to exit 1 naming the
-file, the line and the phrase. The delivered docs/use-cases.md is asserted to
+line and the kind of count. A count-like phrase the check does not read, whose
+noun stands in the aip-conformance part of its paragraph or before the
+paragraph names a suite, is asserted to exit 1 naming the file, the line and
+the phrase. The delivered docs/use-cases.md is asserted to
 state three counts at one named commit that agree with each other, and the
 delivered README.md and docs/ pass against a suite of the shape they state.
 
@@ -384,6 +385,45 @@ class PhrasingTest(CountsTest):
         text = sentence(17, 14, 3, commit) + f"\n{LINK} at commit `{commit}` ships eighteen\nbyte-pinned fixtures.\n"
         self.assertFails(self.tree(text),
                          'docs/use-cases.md:5 states "eighteen byte-pinned fixtures" for aip-conformance')
+
+    def test_a_count_like_phrase_before_any_suite_is_named_fails_as_the_digit_form_does(self):
+        # "Eighteen fixtures" before the suite name passed, while "18 fixtures" there failed.
+        commit = self.commit(14, 3)
+        cases = {
+            f"Eighteen fixtures ship in {LINK} at commit `{commit}`.": "Eighteen fixtures",
+            f"18 byte-pinned conformance fixtures ship in {LINK} at commit `{commit}`.":
+                "18 byte-pinned conformance fixtures",
+            f"Fourteen challenge-response transcripts ship in {LINK} at commit `{commit}`.":
+                "Fourteen challenge-response transcripts",
+            f"3 Trust-Score compositions ship in {LINK} at commit `{commit}`.": "3 Trust-Score compositions",
+            "The suite ships seventeen fixtures.": "seventeen fixtures",
+        }
+        for paragraph, phrase in cases.items():
+            with self.subTest(paragraph=paragraph):
+                self.assertFails(self.tree(sentence(17, 14, 3, commit) + f"\n{paragraph}\n"),
+                                 f'docs/use-cases.md:5 states "{phrase}" before naming a conformance suite, '
+                                 f"a count in a phrasing this check does not read")
+        self.assertFails(self.tree(sentence(17, 14, 3, commit) + f"\n18 fixtures ship in {LINK} at commit `{commit}`.\n"),
+                         "docs/use-cases.md:5 states 18 (fixtures) before naming a conformance suite")
+
+    def test_a_count_that_uses_the_suite_name_as_its_qualifier_fails(self):
+        # The suite name split "18 aip-conformance fixtures" between two parts of its paragraph,
+        # so neither part held the phrase and it passed unread.
+        commit = self.commit(14, 3)
+        cases = {
+            f"The family ships 18 aip-conformance fixtures at commit `{commit}`.": "18 aip-conformance fixtures",
+            f"The family ships eighteen {LINK} fixtures at commit `{commit}`.": "eighteen aip-conformance fixtures",
+            f"The family ships 18 byte-pinned aip-conformance fixtures at commit `{commit}`.":
+                "18 byte-pinned aip-conformance fixtures",
+            f"The family ships 18\naip-conformance fixtures at commit `{commit}`.": "18 aip-conformance fixtures",
+            ("The [atx-conformance](https://github.com/opena2a-standards/atx-conformance) page lists "
+             f"17 aip-conformance fixtures at commit `{commit}`."): "17 aip-conformance fixtures",
+        }
+        for paragraph, phrase in cases.items():
+            with self.subTest(paragraph=paragraph):
+                self.assertFails(self.tree(sentence(17, 14, 3, commit) + f"\n{paragraph}\n"),
+                                 f'docs/use-cases.md:5 states "{phrase}" for aip-conformance, a count in a '
+                                 f"phrasing this check does not read")
 
     def test_number_words_inside_other_words_and_no_before_a_noun_are_not_counts(self):
         commit = self.commit(14, 3)
