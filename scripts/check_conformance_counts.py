@@ -24,7 +24,10 @@ the commit named in that suite's part of the paragraph, as in
   "14 challenge-response transcripts"  the fixtures whose fixtureType is challengeResponse
   "3 trust-score compositions"         the fixtures whose fixtureType is trustScoreComposition
 
-A section number, as in "the Section 5.1 fixtures", is not a count.
+A section number, as in "the Section 5.1 fixtures", is not a count. A count
+whose thousands groups are separated by one comma, space, no-break space or
+narrow no-break space throughout, as in "1,017 byte-pinned fixtures", is read
+as the whole number (1017), not as its last group of digits.
 
 It fails when a stated count differs from the suite at the named commit; when
 a count names no commit, two commits, or no suite before it; when the named
@@ -75,8 +78,24 @@ KINDS = ("fixtures",) + tuple(f"{word} fixtures" for word in CLASSES)
 # whole suite.
 WHOLE_SUITE_QUALIFIERS = ("byte-pinned", "pinned", "shipped", "conformance")
 
-# A number that is not the end of a section number such as 5.1.
-NUMBER = r"(?<![\w.])(\d+)"
+# The characters that may separate the thousands groups of a count, as in
+# 1,017 or 1 017: a comma, a space, a no-break space or a narrow no-break space.
+THOUSANDS_SEPARATORS = (",", " ", " ", " ")
+# A run of digits grouped by one separator throughout, as in 1,017 or 12 345 678.
+GROUPED = "|".join(rf"\d{{1,3}}(?:{re.escape(sep)}\d{{3}})+" for sep in THOUSANDS_SEPARATORS)
+# A number that is not the end of a section number such as 5.1, and not the
+# last digit group of a number such as 1,017 read on its own.
+NUMBER = (
+    r"(?<![\w.])(?<!\d[" + "".join(THOUSANDS_SEPARATORS) + r"])"
+    r"(" + GROUPED + r"|\d+)"
+)
+
+
+def number_value(text: str) -> int:
+    """The value of a number NUMBER matched, its thousands separators removed."""
+    for sep in THOUSANDS_SEPARATORS:
+        text = text.replace(sep, "")
+    return int(text)
 CLASS_RE = re.compile(
     NUMBER + r"\s+(" + "|".join(map(re.escape, CLASSES)) + r")\s+(?:transcripts|compositions|fixtures)\b"
 )
@@ -134,8 +153,8 @@ def paragraphs(text: str):
 
 def counts_in(segment: str) -> list[tuple[str, int, int]]:
     """Every count stated in one suite's part of a paragraph, as (kind, value, offset)."""
-    found = [(f"{m.group(2)} fixtures", int(m.group(1)), m.start()) for m in CLASS_RE.finditer(segment)]
-    found += [("fixtures", int(m.group(1)), m.start()) for m in FIXTURES_RE.finditer(segment)]
+    found = [(f"{m.group(2)} fixtures", number_value(m.group(1)), m.start()) for m in CLASS_RE.finditer(segment)]
+    found += [("fixtures", number_value(m.group(1)), m.start()) for m in FIXTURES_RE.finditer(segment)]
     return sorted(found, key=lambda item: item[2])
 
 
