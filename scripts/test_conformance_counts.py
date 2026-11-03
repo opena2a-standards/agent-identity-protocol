@@ -256,6 +256,28 @@ class PhrasingTest(CountsTest):
         )
         self.assertPasses(self.tree(text), "3 stated value(s) checked")
 
+    def test_a_count_with_a_thousands_separator_is_read_as_the_whole_number(self):
+        # 1,017 was read as its last digit group, 17, and passed against a suite of 17.
+        commit = self.commit(14, 3)
+        for separator in (",", " ", " ", " "):
+            with self.subTest(separator=repr(separator)):
+                text = sentence(17, 14, 3, commit).replace(
+                    "17 byte-pinned fixtures", f"1{separator}017 byte-pinned fixtures")
+                self.assertFails(self.tree(text),
+                                 f"docs/use-cases.md:3 states 1017 (fixtures) for aip-conformance at {commit}, "
+                                 f"which has 17")
+
+    def test_a_class_count_with_a_thousands_separator_is_read_as_the_whole_number(self):
+        commit = self.commit(1003, 14)
+        text = (sentence(17, 14, 3, commit)
+                .replace("17 byte-pinned fixtures", "1,017 byte-pinned fixtures")
+                .replace("14 challenge-response transcripts", "1,003 challenge-response transcripts")
+                .replace("3 trust-score compositions", "14 trust-score compositions"))
+        self.assertPasses(self.tree(text), "3 stated value(s) checked")
+        self.assertFails(self.tree(text.replace("1,003 challenge-response", "2,003 challenge-response")),
+                         f"docs/use-cases.md:3 states 2003 (challenge-response fixtures) for aip-conformance "
+                         f"at {commit}, which has 1003")
+
     def test_fenced_code_is_not_read(self):
         commit = self.commit(14, 3)
         text = sentence(17, 14, 3, commit) + (
