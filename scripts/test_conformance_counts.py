@@ -5,7 +5,9 @@ Each phrasing the check reads is built here in a scratch tree and checked
 against a scratch aip-conformance suite: a git repository whose commits ship
 fixtures of a known number and fixtureType. A stated count that differs from
 the suite at the commit it names is asserted to exit 1 naming the file, the
-line and the kind of count. The delivered docs/use-cases.md is asserted to
+line and the kind of count. A count-like phrase the check does not read, after
+aip-conformance is named in its paragraph, is asserted to exit 1 naming the
+file, the line and the phrase. The delivered docs/use-cases.md is asserted to
 state three counts at one named commit that agree with each other, and the
 delivered README.md and docs/ pass against a suite of the shape they state.
 
@@ -342,6 +344,54 @@ class PhrasingTest(CountsTest):
         commit = self.commit(14, 3)
         text = sentence(17, 14, 3, commit).replace("3 trust-score compositions", "3 Trust-Score compositions")
         self.assertFails(self.tree(text), "docs/use-cases.md states no aip-conformance trust-score fixtures count")
+
+    def test_a_further_count_in_a_form_the_check_does_not_read_fails_beside_the_counts_it_reads(self):
+        # Line 3 states the three counts in phrasings the check reads; a further aip-conformance
+        # count worded another way, on that page or in README.md, is reported, not passed unread.
+        commit = self.commit(14, 3)
+        for wording in ("eighteen fixtures", "18 byte-pinned conformance fixtures"):
+            further = f"{LINK} at commit `{commit}` ships {wording}.\n"
+            reported = f'"{wording}" for aip-conformance, a count in a phrasing this check does not read'
+            with self.subTest(wording=wording, page="docs/use-cases.md"):
+                self.assertFails(self.tree(sentence(17, 14, 3, commit) + "\n" + further),
+                                 f"docs/use-cases.md:5 states {reported}")
+            with self.subTest(wording=wording, page="README.md"):
+                self.assertFails(self.tree(sentence(17, 14, 3, commit), {"README.md": "# Title\n\n" + further}),
+                                 f"README.md:3 states {reported}")
+
+    def test_each_count_like_form_the_check_does_not_read_fails_after_aip_conformance_is_named(self):
+        # The further paragraph names no commit and states no count the check reads.
+        commit = self.commit(14, 3)
+        cases = {
+            "Eighteen Fixtures": "Eighteen Fixtures",
+            "17 FIXTURES": "17 FIXTURES",
+            "twenty-one fixtures": "twenty-one fixtures",
+            "a dozen fixtures": "dozen fixtures",
+            "1 fixture": "1 fixture",
+            "17 of the suite's fixtures": "17 of the suite's fixtures",
+            "fourteen challenge-response transcripts": "fourteen challenge-response transcripts",
+            "3 Trust-Score compositions": "3 Trust-Score compositions",
+        }
+        for wording, phrase in cases.items():
+            with self.subTest(wording=wording):
+                text = sentence(17, 14, 3, commit) + f"\n{LINK} ships {wording}.\n"
+                self.assertFails(self.tree(text),
+                                 f'docs/use-cases.md:5 states "{phrase}" for aip-conformance, a count in a '
+                                 f"phrasing this check does not read")
+
+    def test_a_count_like_phrase_wrapped_onto_the_next_line_is_reported_at_the_line_of_its_number(self):
+        commit = self.commit(14, 3)
+        text = sentence(17, 14, 3, commit) + f"\n{LINK} at commit `{commit}` ships eighteen\nbyte-pinned fixtures.\n"
+        self.assertFails(self.tree(text),
+                         'docs/use-cases.md:5 states "eighteen byte-pinned fixtures" for aip-conformance')
+
+    def test_number_words_inside_other_words_and_no_before_a_noun_are_not_counts(self):
+        commit = self.commit(14, 3)
+        text = sentence(17, 14, 3, commit) + (
+            f"\n{LINK} has no fixture for Section 8.3: none of the fixtures covers it, often the transcripts "
+            "name someone else's transcripts, and the one-time compositions stay pinned.\n"
+        )
+        self.assertPasses(self.tree(text), "3 stated value(s) checked")
 
     def test_a_missing_use_cases_page_fails(self):
         self.commit(14, 3)

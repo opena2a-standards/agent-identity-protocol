@@ -32,12 +32,19 @@ as the whole number (1017), not as its last group of digits.
 It fails when a stated count differs from the suite at the named commit; when
 a count names no commit, two commits, or no suite before it; when the named
 commit is not in the history of the suite checkout's HEAD or ships no
-fixtures; and when docs/use-cases.md does not state each of the three
+fixtures; when docs/use-cases.md does not state each of the three
 aip-conformance counts in a phrasing listed above, so it never passes
-vacuously and a count worded another way ("eighteen fixtures", or two words
-before "fixtures") cannot pass unread. When the suite's HEAD ships a different number of
-fixtures than the named commit, it says so and passes: the sentence is true
-at the commit it names.
+vacuously; and when the aip-conformance part of a paragraph holds a count in a
+phrasing not listed above. Such a count is a number, in digits or in words
+("eighteen", "twenty-one", "dozen"; NUMBER_WORDS lists the words), then at
+most three words of letters, hyphens and apostrophes, then "fixture",
+"transcript" or "composition", singular or plural, separated by white space
+and ignoring letter case. So "eighteen fixtures", "18 byte-pinned conformance
+fixtures" and "3 Trust-Score compositions" fail there, even where the page
+also states that count in a phrasing listed above. A count in another form, as
+in "fixtures: 18" or "an 18-fixture suite", is not read. When the suite's HEAD
+ships a different number of fixtures than the named commit, it says so and
+passes: the sentence is true at the commit it names.
 
 This repository does not contain the fixtures, so the caller supplies the
 suite as a git clone with its history, because the check reads a commit
@@ -102,6 +109,25 @@ CLASS_RE = re.compile(
 FIXTURES_RE = re.compile(
     NUMBER + r"\s+(?:(?:" + "|".join(map(re.escape, WHOLE_SUITE_QUALIFIERS)) + r")\s+)?fixtures\b"
 )
+# The words a count may be written in instead of digits, alone or joined by
+# hyphens as in "twenty-one".
+NUMBER_WORDS = (
+    "zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten",
+    "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen",
+    "nineteen", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety",
+    "hundred", "thousand", "dozen",
+)
+_NUMBER_WORD = "(?:" + "|".join(NUMBER_WORDS) + ")"
+# A count-like phrase: a number in digits or in words, at most three words of
+# letters, hyphens and apostrophes, then the noun. CLASS_RE and FIXTURES_RE read
+# some of these; an aip-conformance one that neither reads is reported, so it
+# does not pass unread. The phrase ends at the first noun after the number, so
+# it holds one count.
+COUNT_LIKE_RE = re.compile(
+    r"(?:" + NUMBER + r"|(?<![\w.-])" + _NUMBER_WORD + r"(?:-" + _NUMBER_WORD + r")*(?![\w-]))"
+    r"\s+(?:[^\W\d_](?:[^\W\d_]|['\N{RIGHT SINGLE QUOTATION MARK}-])*\s+){0,3}?(?:fixture|transcript|composition)s?\b",
+    re.IGNORECASE,
+)
 # The conformance suites of the family. Naming one starts that suite's part of
 # a paragraph; the name inside a link target or a path does not.
 SUITE_NAME_RE = re.compile(r"(?<![\w/.-])((?:aap|aip|atp|atx)-conformance)(?![\w-])")
@@ -120,6 +146,7 @@ class Part:
     suite: str | None
     commits: list[tuple[str, int]] = field(default_factory=list)  # (commit, line)
     counts: list[tuple[str, int, int]] = field(default_factory=list)  # (kind, value, line)
+    unread: list[tuple[str, int]] = field(default_factory=list)  # (count-like phrase, line)
 
 
 def paragraphs(text: str):
@@ -158,8 +185,18 @@ def counts_in(segment: str) -> list[tuple[str, int, int]]:
     return sorted(found, key=lambda item: item[2])
 
 
+def unread_in(segment: str) -> list[tuple[str, int]]:
+    """The count-like phrases in one suite's part of a paragraph that counts_in does not read, as (phrase, offset)."""
+    read = {offset for _, _, offset in counts_in(segment)}
+    return [
+        (" ".join(m.group(0).split()), m.start())
+        for m in COUNT_LIKE_RE.finditer(segment)
+        if m.start() not in read
+    ]
+
+
 def parts(text: str) -> list[Part]:
-    """Each part of each paragraph of text that states a count or names a commit."""
+    """Each part of each paragraph of text that states a count, names a commit or holds a count-like phrase."""
     result = []
     for numbers, lines in paragraphs(text):
         joined = "\n".join(lines)
@@ -178,7 +215,8 @@ def parts(text: str) -> list[Part]:
             part = Part(suite)
             part.commits = [(m.group(1), line_of(begin + m.start())) for m in COMMIT_RE.finditer(segment)]
             part.counts = [(kind, value, line_of(begin + offset)) for kind, value, offset in counts_in(segment)]
-            if part.counts or part.commits:
+            part.unread = [(phrase, line_of(begin + offset)) for phrase, offset in unread_in(segment)]
+            if part.counts or part.commits or part.unread:
                 result.append(part)
     return result
 
@@ -302,6 +340,13 @@ def check(root: Path, suite_path: Path) -> tuple[list[str], list[str], int, str]
     for path in claim_files(root):
         rel = path.relative_to(root).as_posix()
         for part in parts(path.read_text(encoding="utf-8")):
+            if part.suite == SUITE:
+                for phrase, line in part.unread:
+                    failures.append(
+                        f"{rel}:{line} states \"{phrase}\" for {SUITE}, a count in a phrasing this "
+                        f"check does not read; word it as the docstring of "
+                        f"scripts/check_conformance_counts.py lists, so that the check reads it"
+                    )
             if not part.counts:
                 continue
             if part.suite is None:
@@ -381,7 +426,7 @@ def check(root: Path, suite_path: Path) -> tuple[list[str], list[str], int, str]
             if kind not in required_kinds:
                 failures.append(
                     f"{REQUIRED} states no {SUITE} {kind} count in a phrasing this check reads; "
-                    f"a count worded another way would pass unchecked, so word each count as the "
+                    f"a count worded another way could pass unchecked, so word each count as the "
                     f"docstring of scripts/check_conformance_counts.py lists, so that every count "
                     f"it states is read"
                 )
