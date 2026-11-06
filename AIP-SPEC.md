@@ -468,6 +468,33 @@ signature covers as one that the checks below read. An identity provider MUST
 NOT emit such a challenge body, and an agent MUST NOT emit such a response
 body.
 
+Before the checks below, a relying party MUST also reject the transcript when
+any of the following holds (reject category `PARSE_ERROR`):
+
+- The challenge body or the response body is not a JSON object.
+- A member that §5.1.1 or §5.1.2 gives a body is absent from that body, or its
+  value is not a JSON string. A value of `null` is not a string.
+- The challenge body's `issuedAt` or `expiresAt`, read after JSON escape
+  sequences are resolved, is not in the date-time form below.
+
+The date-time form is the `date-time` production of RFC 3339, Section 5.6,
+written with an upper-case `T` and `Z` and a second from `00` to `59`: a date
+`YYYY-MM-DD` that is a day of the Gregorian calendar (RFC 3339, Section 5.7),
+`T`, a time `HH:MM:SS` whose hour is from `00` to `23` and whose minute is from
+`00` to `59`, optionally a full stop and one or more digits of fractional
+seconds, and then `Z` or a numeric offset `+HH:MM` or `-HH:MM` whose hour is
+from `00` to `23` and whose minute is from `00` to `59`. RFC 3339 also admits a
+lower-case `t` and `z` and a leap second `60`; this form does not. It is the
+date-time form that ATX core §1.3a.2, rule 1, states for
+`behavioralProfile.generatedAt`. `2026-05-27T23:58:00Z` and
+`2026-05-28T01:58:00.5+02:00` are in this form, and `2026-05-27t23:58:00z`,
+`2026-05-27T23:58:60Z`, `2026-05-27 23:58:00Z`, `2026-02-30T00:00:00Z` and
+`2026-05-27T23:58:00` are not. The response's `issuedAt`, `expiresAt` and
+`signedAt` are not tested for the date-time form: check 1 compares the first
+two with the challenge body's, and no check reads `signedAt`. An identity
+provider MUST NOT emit a challenge body, and an agent MUST NOT emit a response
+body, that this rule rejects.
+
 A relying party MUST reject the transcript unless all of the following hold.
 The checks run in this order and the first failure determines the reject
 category (the property the conformance fixtures pin). The checks take each

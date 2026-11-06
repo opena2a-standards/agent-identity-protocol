@@ -76,6 +76,21 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   the sections whose requirement changed, as does the line on the version note in
   `docs/specification-notes.md`. `draft-fane-opena2a-aip-04`, as submitted, does not carry
   these changes.
+- `AIP-SPEC.md` §5.1.4 also rejects a transcript as `PARSE_ERROR`, before the checks, when its
+  challenge body or response body is not a JSON object, when a member that §5.1.1 or §5.1.2
+  gives a body is absent from that body or holds a value that is not a JSON string, `null`
+  included, or when the challenge body's `issuedAt` or `expiresAt` is not in the date-time form
+  the section states. That form is the RFC 3339 `date-time` production written with an
+  upper-case `T` and `Z` and a second from `00` to `59`, with an optional fraction of a second
+  and `Z` or a `+HH:MM` or `-HH:MM` offset, the form ATX core §1.3a.2, rule 1, states for
+  `behavioralProfile.generatedAt`; the section gives examples in and out of it. The response's
+  `issuedAt`, `expiresAt` and `signedAt` are not tested for that form, and an identity provider
+  and an agent MUST NOT emit a body the rule rejects. §5.1.5 names no fixture case for the rule,
+  `docs/specification-notes.md` names it in its line on §5.1.4, and `draft-fane-opena2a-aip-04`,
+  as submitted, does not carry it. `tests/test_body_form.py` reads the rule from §5.1.4, checks
+  each example timestamp the section gives against the form as it states it, and checks that the
+  §5.1.1 and §5.1.2 example bodies have that form and that the two body schemas require each
+  member of those examples, as a string.
 - `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
   giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
   valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,
