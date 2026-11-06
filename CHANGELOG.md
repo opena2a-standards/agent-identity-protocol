@@ -105,6 +105,19 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   each example timestamp the section gives against the form as it states it, and checks that the
   §5.1.1 and §5.1.2 example bodies have that form and that the two body schemas require each
   member of those examples, as a string.
+- `AIP-SPEC.md` §5.1.4 bounds the date-time form of the challenge body's `issuedAt` and
+  `expiresAt`: the instant a value names, its date and time less its offset, falls in a year from
+  `0000` to `9999` in UTC. A challenge body whose `issuedAt` or `expiresAt` names an instant
+  outside those years is not in the form, so a relying party rejects it as `PARSE_ERROR` before
+  the checks. The section gives `0000-01-01T00:00:00+00:01` and `9999-12-31T23:59:00-00:01`,
+  which name instants in the year before `0000` and the year after `9999` in UTC, as values
+  outside the form. §5.1.3 says that its normalized form, `YYYY-MM-DDTHH:MM:SSZ`, writes the years
+  `0000` to `9999` only, and that §5.1.4 rejects such a challenge body before its checks, so no
+  signed bytes are built for it. Before this change neither section bounded the year of that
+  instant. `draft-fane-opena2a-aip-04`, as submitted, does not carry the bound.
+  `tests/test_body_form.py` reads the bound from §5.1.4 and the outcome from §5.1.3, computes, for
+  each example value written in the form, the year in UTC of the instant it names, and checks that
+  the examples outside the form include one before `0000` and one after `9999`.
 - `AIP-SPEC.md` §5.4 says a JWT access token's lifetime SHOULD NOT exceed 2 hours, instead of
   giving JWT bearer tokens a fixed 1-hour TTL. The reference implementation issues access tokens
   valid for 2 hours by default and makes the lifetime configurable. `draft-fane-opena2a-aip-04`,
