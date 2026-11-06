@@ -431,7 +431,13 @@ surrounding whitespace) — the byte construction is `challenge + "|" + agentDid
 and `expiresAt` are normalized to UTC RFC 3339 (`Z`-suffixed, second
 precision), so an equivalent offset form (`+00:00`) produces the same signed
 bytes; `challenge`, `agentDid`, and `nonce` are used byte-exactly as they
-appear in the challenge body. Binding `agentDid` and the IdP-issued
+appear in the challenge body. When `issuedAt` and `expiresAt` are normalized,
+a fraction of a second is dropped, not rounded: a timestamp becomes the last
+whole second at or before the instant it writes, so
+`2026-05-28T01:58:00.5+02:00` is normalized to `2026-05-27T23:58:00Z`, not
+`2026-05-27T23:58:01Z`, and `2026-05-27T23:59:59.999Z` to
+`2026-05-27T23:59:59Z`, not `2026-05-28T00:00:00Z`.
+Binding `agentDid` and the IdP-issued
 `nonce` into the signed bytes is what prevents cross-relying-party replay: a
 signature produced for one RP's challenge cannot be presented to another,
 because the other RP's IdP would have issued different bytes.

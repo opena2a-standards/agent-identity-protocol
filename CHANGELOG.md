@@ -62,6 +62,20 @@ Versions follow the OpenA2A spec-family ladder `MAJOR.MINOR.PATCH-{draft|rcN|fin
   checks that the §3.3 example has each key the CLI writes except `secretKey`, and has
   `encryptedPrivateKey`, and that the line on the version note in `docs/specification-notes.md`
   names the sections the note names.
+- `AIP-SPEC.md` §5.1.3 says that a fraction of a second is dropped, not rounded, when
+  `issuedAt` and `expiresAt` are normalized to second precision for the signed bytes: a
+  timestamp becomes the last whole second at or before the instant it writes. Its examples are
+  `2026-05-28T01:58:00.5+02:00`, normalized to `2026-05-27T23:58:00Z` and not
+  `2026-05-27T23:58:01Z`, and `2026-05-27T23:59:59.999Z`, normalized to `2026-05-27T23:59:59Z`
+  and not `2026-05-28T00:00:00Z`. The section had not said which of the two applies, and
+  §5.1.4 accepts a timestamp with a fraction of a second, so an agent and a relying party that
+  read it differently would build different signed bytes from one challenge body.
+  `docs/specification-notes.md` names the change in its line on §5.1.4, and
+  `draft-fane-opena2a-aip-04`, as submitted, does not say in Section 6.1.3 whether a fraction is
+  dropped or rounded. `tests/test_signing_form.py` reads the rule from §5.1.3, checks each
+  example the section gives against the rule and against the §5.1.4 date-time form, checks that
+  the value each example rules out is the rounded one, and checks that the timestamps of the
+  §5.1.1 example body are already normalized.
 - `AIP-SPEC.md` §5.1.4 says that its checks read the challenge body: check 2 compares the
   presented `publicKey` with the key bound to the challenge body's `agentDid`, check 3 reads its
   `expiresAt`, check 4 its `nonce` and check 5 its `issuerDid`, and §5.1.3 resolves the
