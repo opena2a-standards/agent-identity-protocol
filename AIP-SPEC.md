@@ -437,6 +437,10 @@ whole second at or before the instant it writes, so
 `2026-05-28T01:58:00.5+02:00` is normalized to `2026-05-27T23:58:00Z`, not
 `2026-05-27T23:58:01Z`, and `2026-05-27T23:59:59.999Z` to
 `2026-05-27T23:59:59Z`, not `2026-05-28T00:00:00Z`.
+The normalized form, `YYYY-MM-DDTHH:MM:SSZ`, writes the years `0000` to
+`9999` only. §5.1.4 rejects, as `PARSE_ERROR` before its checks, a challenge
+body whose `issuedAt` or `expiresAt` names an instant outside those years in
+UTC, so no signed bytes are built for such a value.
 Binding `agentDid` and the IdP-issued
 `nonce` into the signed bytes is what prevents cross-relying-party replay: a
 signature produced for one RP's challenge cannot be presented to another,
@@ -489,13 +493,18 @@ written with an upper-case `T` and `Z` and a second from `00` to `59`: a date
 `T`, a time `HH:MM:SS` whose hour is from `00` to `23` and whose minute is from
 `00` to `59`, optionally a full stop and one or more digits of fractional
 seconds, and then `Z` or a numeric offset `+HH:MM` or `-HH:MM` whose hour is
-from `00` to `23` and whose minute is from `00` to `59`. RFC 3339 also admits a
-lower-case `t` and `z` and a leap second `60`; this form does not. It is the
-date-time form that ATX core §1.3a.2, rule 1, states for
-`behavioralProfile.generatedAt`. `2026-05-27T23:58:00Z` and
+from `00` to `23` and whose minute is from `00` to `59`. The instant the value
+names, its date and time less its offset, falls in a year from `0000` to
+`9999` in UTC. RFC 3339 also admits a lower-case `t` and `z` and a leap second
+`60`; this form does not. It is the date-time form that ATX core §1.3a.2,
+rule 1, states for `behavioralProfile.generatedAt`. `2026-05-27T23:58:00Z` and
 `2026-05-28T01:58:00.5+02:00` are in this form, and `2026-05-27t23:58:00z`,
-`2026-05-27T23:58:60Z`, `2026-05-27 23:58:00Z`, `2026-02-30T00:00:00Z` and
-`2026-05-27T23:58:00` are not. The response's `issuedAt`, `expiresAt` and
+`2026-05-27T23:58:60Z`, `2026-05-27 23:58:00Z`, `2026-02-30T00:00:00Z`,
+`2026-05-27T23:58:00`, `0000-01-01T00:00:00+00:01` and
+`9999-12-31T23:59:00-00:01` are not. The last two are written in the years
+`0000` and `9999`, and the instants they name fall in the year before `0000`
+and the year after `9999` in UTC, years that the §5.1.3 normalized form cannot
+write. The response's `issuedAt`, `expiresAt` and
 `signedAt` are not tested for the date-time form: check 1 compares the first
 two with the challenge body's, and no check reads `signedAt`. An identity
 provider MUST NOT emit a challenge body, and an agent MUST NOT emit a response
